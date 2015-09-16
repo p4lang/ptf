@@ -102,21 +102,19 @@ def config_setup():
 
     usage = "usage: ptf [options] --test-dir TEST_DIR [tests]"
 
-    description = """\
-OFTest is a framework and set of tests for validating OpenFlow switches.
+    description = """PTF (Packet Test Framework) is a framework and set of tests
+to test a software switch. It is strongly inspired by the OFTest framework, but
+it is not tied to OpenFlow. It does not provide any control plane features, but
+it is targetted at helping you test a dataplane.
 
-The default configuration assumes that an OpenFlow 1.0 switch is attempting to
-connect to a controller on the machine running OFTest, port 6653. Additionally,
-the interfaces veth1, veth3, veth5, and veth7 should be connected to the switch's
-dataplane.
+The default configuration assumes that interfaces veth1, veth3, veth5, and veth7
+should be connected to the switch's dataplane.
 
-If no positional arguments are given then OFTest will run all tests that
-depend only on standard OpenFlow 1.0. Otherwise each positional argument
-is interpreted as either a test name or a test group name. The union of
-these will be executed. To see what groups each test belongs to use the
---list option. Tests and groups can be subtracted from the result by
-prefixing them with the '^' character.
-"""
+If no positional arguments are given then OFTest will run all tests found in the
+--test-dir directory. Otherwise each positional argument is interpreted as
+either a test name or a test group name. The union of these will be executed. To
+see what groups each test belongs to use the --list option. Tests and groups can
+be subtracted from the result by prefixing them with the '^' character.  """
 
     class ActionInterface(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):

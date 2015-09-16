@@ -13,18 +13,16 @@ def platform_config_update(config):
 
     port_map = {}
 
-    for (ofport, interface) in config["interfaces"]:
-        port_map[ofport] = interface
+    for (port, interface) in config["interfaces"]:
+        port_map[port] = interface
 
     # Default to a veth configuration compatible with the reference switch
     if not port_map:
-        max_port_cnt = 288
-        port_count = 9
-        device_id = 0
-        print "eth.py: device id is ", device_id
-        base_if_index = 1
-        base_if_index = base_if_index + (2*port_count*device_id)
-        base_of_port = device_id*max_port_cnt
-        for idx in range(port_count):
-            port_map[base_of_port + idx] = "veth%d" % (base_if_index + 2 * idx)
+        port_map = {
+            0: 'veth1',
+            1: 'veth3',
+            2: 'veth5',
+            3: 'veth7',
+        }
+
     config['port_map'] = port_map

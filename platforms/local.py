@@ -11,12 +11,12 @@ def platform_config_update(config):
 
     @param config The configuration dictionary to use/update
     """
-    base_of_port = 1
+    base_port = 0 # oftest uses 0
     base_if_index = 1
     port_count = 4
 
     port_map = {}
     # Use every other veth interface (veth1, veth3, ...)
     for idx in range(port_count):
-        port_map[base_of_port + idx] = "veth%d" % (base_if_index + 2 * idx)
+        port_map[base_port + idx] = "veth%d" % (base_if_index + 2 * idx)
     config['port_map'] = port_map

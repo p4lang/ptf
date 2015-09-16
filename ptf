@@ -130,7 +130,7 @@ prefixing them with the '^' character.
                 return (port, interface)
 
             assert(type(values) is str)
-            setattr(namespace, self.dest, check_interface(values))
+            getattr(namespace, self.dest).append(check_interface(values))
 
     class ActionTestDir(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):

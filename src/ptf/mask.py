@@ -18,6 +18,7 @@ class Mask:
     def set_do_not_care_scapy(self, hdr_type, field_name):
         if hdr_type not in self.exp_pkt:
             self.valid = False
+            print "Unknown header type"
             return
         try:
             fields_desc = hdr_type.fields_desc
@@ -63,7 +64,9 @@ def utest():
     assert(m.pkt_match(p))
     p1 = scapy.Ether() / scapy.IP() / scapy.TCP(sport=97)
     assert(not m.pkt_match(p1))
-    m.set_do_not_care_scapy(scapy.TCP(), "sport")
+    m.set_do_not_care_scapy(scapy.TCP, "sport")
     assert(not m.pkt_match(p1))
-    m.set_do_not_care_scapy(scapy.TCP(), "chksum")
+    m.set_do_not_care_scapy(scapy.TCP, "chksum")
     assert(m.pkt_match(p1))
+
+utest()

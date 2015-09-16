@@ -23,6 +23,35 @@ UDP_PROTOCOL = 0x11
 
 MINSIZE = 0
 
+FILTERS = []
+
+def reset_filters():
+    FILTERS = []
+
+# Needs to be a callable
+def add_filter(my_filter):
+    FILTERS.append(my_filter)
+
+def get_filters():
+    return FILTERS
+
+def ether_filter(pkt_str):
+    try:
+        pkt = scapy.Ether(pkt_str)
+        return True
+    except:
+        return False
+
+def ipv6_filter(pkt_str):
+    try:
+        pkt = scapy.Ether(pkt_str)
+        return (scapy.IPv6 in pkt)
+    except:
+        return False
+
+def not_ipv6_filter(pkt_str):
+    return not ipv6_filter(pkt_str)
+
 def simple_tcp_packet(pktlen=100,
                       eth_dst='00:01:02:03:04:05',
                       eth_src='00:06:07:08:09:0a',
@@ -1201,7 +1230,7 @@ def verify_packet(test, pkt, port):
     Check that an expected packet is received
     """
     logging.debug("Checking for pkt on port %r", port)
-    (rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=str(pkt))
+    (rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=pkt, filters=FILTERS)
     test.assertTrue(rcv_pkt != None, "Did not receive pkt on %r" % port)
 
 def verify_no_packet(test, pkt, port):
@@ -1211,8 +1240,9 @@ def verify_no_packet(test, pkt, port):
     logging.debug("Negative check for pkt on port %r", port)
     (rcv_port, rcv_pkt, pkt_time) = \
         test.dataplane.poll(
-            port_number=port, exp_pkt=str(pkt),
-            timeout=ptf.ptfutils.default_negative_timeout)
+            port_number=port, exp_pkt=pkt,
+            timeout=ptf.ptfutils.default_negative_timeout,
+            filters=FILTERS)
     test.assertTrue(rcv_pkt == None, "Received packet on %r" % port)
 
 def verify_no_other_packets(test):
@@ -1224,7 +1254,7 @@ def verify_no_other_packets(test):
     if ptf.config["relax"]:
         return
     logging.debug("Checking for unexpected packets on all ports")
-    (rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(timeout=ptf.ptfutils.default_negative_timeout)
+    (rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(timeout=ptf.ptfutils.default_negative_timeout, filters=FILTERS)
     if rcv_pkt != None:
         logging.debug("Received unexpected packet on port %r: %s", rcv_port, format_packet(rcv_pkt))
     test.assertTrue(rcv_pkt == None, "Unexpected packet on port %r" % rcv_port)
@@ -1241,7 +1271,6 @@ def verify_packets(test, pkt, ports):
     multiple packets on the same port, use the primitive verify_packet,
     verify_no_packet, and verify_no_other_packets functions directly.
     """
-    pkt = str(pkt)
     for port in ptf_ports():
         if port in ports:
             verify_packet(test, pkt, port)
@@ -1256,13 +1285,12 @@ def verify_packets_any(test, pkt, ports):
     Also verifies that the packet is ot received on any other ports, and that no
     other packets are received (unless --relax is in effect).
     """
-    pkt = str(pkt)
     received = False
     for port in ptf_ports():
         if port in ports:
             logging.debug("Checking for pkt on port %r", port)
             print 'verifying packet on port {0}'.format(port)
-            (rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(port_number=port, exp_pkt=str(pkt))
+            (rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(port_number=port, exp_pkt=pkt, filters=FILTERS)
             if rcv_pkt != None:
                 received = True
         else:

@@ -25,6 +25,7 @@ from threading import Lock
 from threading import Condition
 import ptfutils
 import netutils
+import mask
 from pcap_writer import PcapWriter
 
 if "linux" in sys.platform:
@@ -49,6 +50,10 @@ def match_exp_pkt(exp_pkt, pkt):
     less than the minimum Ethernet frame size (60 bytes), then padding
     bytes in pkt are ignored.
     """
+    if isinstance(exp_pkt, mask.Mask):
+        if not exp_pkt.is_valid():
+            return False
+        return exp_pkt.pkt_match(pkt)
     e = str(exp_pkt)
     p = str(pkt)
     if len(e) < 60:
@@ -358,7 +363,7 @@ class DataPlane(Thread):
             pkt, time = queue.pop(0)
             yield (rcv_port_number, pkt, time)
 
-    def poll(self, port_number=None, timeout=-1, exp_pkt=None):
+    def poll(self, port_number=None, timeout=-1, exp_pkt=None, filters=[]):
         """
         Poll one or all dataplane ports for a packet
 
@@ -379,6 +384,11 @@ class DataPlane(Thread):
         occurs, return None, None, None
         """
 
+        def filter_check(pkt):
+            for f in filters:
+                if not f(pkt): return False
+            return True
+
         if exp_pkt and (port_number is None):
             self.logger.warn("Dataplane poll with exp_pkt but no port number")
 
@@ -387,6 +397,9 @@ class DataPlane(Thread):
             self.logger.debug("Grabbing packet")
             for (rcv_port_number, pkt, time) in self.packets(port_number):
                 self.logger.debug("Checking packet from port %d", rcv_port_number)
+                if not filter_check(pkt):
+                    self.logger.debug("Paket does not match filter, discarding")
+                    continue
                 if not exp_pkt or match_exp_pkt(exp_pkt, pkt):
                     return (rcv_port_number, pkt, time)
             self.logger.debug("Did not find packet")

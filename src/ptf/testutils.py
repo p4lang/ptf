@@ -283,10 +283,10 @@ def simple_geneve_packet(pktlen=300,
     @param geneve_vni GENEVE Network Identifier
     @param geneve_reserved2 reserved field
     @param inner_frame The inner Ethernet frame
-
-    Generates a simple VXLAN packet. Users shouldn't assume anything about
-    this packet other than that it is a valid ethernet/IP/UDP/VXLAN frame.
     """
+    if scapy.GENEVE is None:
+        logging.error("A GENEVE packet was requested but GENEVE is not supported by your Scapy. See README for more information")
+        return None
 
     udp_dport = 6081 # UDP port assigned by IANA for GENEVE
 
@@ -363,6 +363,9 @@ def simple_nvgre_packet(pktlen=300,
     Generates a simple GRE packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/NVGRE frame.
     """
+    if scapy.NVGRE is None:
+        logging.error("A NVGRE packet was requested but NVGRE is not supported by your Scapy. See README for more information")
+        return None
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
@@ -437,6 +440,9 @@ def simple_vxlan_packet(pktlen=300,
     Generates a simple VXLAN packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/UDP/VXLAN frame.
     """
+    if scapy.VXLAN is None:
+        logging.error("A VXLAN packet was requested but VXLAN is not supported by your Scapy. See README for more information")
+        return None
 
     udp_dport = 4789 # UDP port assigned by IANA for VXLAN
 
@@ -635,6 +641,9 @@ def simple_gre_erspan_packet(pktlen=300,
     Generates a simple GRE/ERSPAN packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/GRE/ERSPAN frame.
     """
+    if scapy.GRE is None or scapy.ERSPAN is None:
+        logging.error("A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information")
+        return None
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
@@ -717,6 +726,9 @@ def ipv4_erspan_pkt(pktlen=350,
     @param span_id (mirror_session_id)
     @param inner_frame payload of the GRE packet
     """
+    if scapy.GRE is None or scapy.ERSPAN is None or scapy.ERSPAN_III is None:
+        logging.error("A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information")
+        return None
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
@@ -1079,9 +1091,10 @@ def simple_mpls_packet(pktlen=300,
     @param mpls_tags mpls tag stack
     @param inner_frame The inner frame
 
-    Generates a simple MPLS packet. Users shouldn't assume anything about
-    this packet other than that it is a valid ethernet/IP/UDP/VXLAN frame.
     """
+    if scapy.MPLS is None:
+        logging.error("A MPLS packet was requested but MPLS is not supported by your Scapy. See README for more information")
+        return None
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE

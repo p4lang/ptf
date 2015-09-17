@@ -1,3 +1,5 @@
 *.pyc
 profiles/*.pyc
 *~
+*.log
+*.pcap

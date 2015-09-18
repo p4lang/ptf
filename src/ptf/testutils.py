@@ -1151,6 +1151,29 @@ def get_egr_list(parent, ports, how_many, exclude_list=[]):
     logging.debug("Could not generate enough egress ports for test")
     return []
 
+def test_params_get(default={}):
+    """
+    Return all the values passed via test-params if present
+
+    @param default Default dictionary to use if no valid params found
+
+    WARNING: TEST PARAMETERS MUST BE PYTHON IDENTIFIERS;
+    AND CANNOT START WITH "__";
+    eg egr_count, not egr-count.
+    """
+    test_params = ptf.config["test_params"]
+    params_str = "class _TestParams:\n    " + test_params
+    try:
+        exec params_str
+    except:
+        return default
+
+    params = {}
+    for k, v in vars(_TestParams).items():
+        if k[:2] != "__":
+            params[k] = v
+    return params
+
 def test_param_get(key, default=None):
     """
     Return value passed via test-params if present
@@ -1158,20 +1181,13 @@ def test_param_get(key, default=None):
     @param key The lookup key
     @param default Default value to use if not found
 
-    If the pair 'key=val' appeared in the string passed to --test-params
-    on the command line, return val (as interpreted by exec).  Otherwise
-    return default value.
-
     WARNING: TEST PARAMETERS MUST BE PYTHON IDENTIFIERS;
     eg egr_count, not egr-count.
     """
-    try:
-        exec ptf.config["test_params"]
-    except:
-        return default
+    params = test_params_get()
 
     try:
-        return eval(str(key))
+        return params[key]
     except:
         return default
 

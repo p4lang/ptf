@@ -444,16 +444,9 @@ Tests are shown grouped by module. If a test is in any groups beyond "standard"
 and its module's group then they are shown in parentheses."""
     print
     print """\
-Tests marked with '*' are non-standard and may require vendor extensions or
-special switch configuration. These are not part of the "standard" test group."""
-    print
-    print """\
 Tests marked with '!' are disabled because they are experimental, special-purpose,
 or are too long to be run normally. These are not part of the "standard" test
 group or their module's test group."""
-    print
-    print "Tests marked (TP1) after name take --test-params including:"
-    print "    'vid=N;strip_vlan=bool;add_vlan=bool'"
     print
     print "Test List:"
     for (modname, (mod, tests)) in test_modules.items():

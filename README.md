@@ -161,9 +161,16 @@ There is a facility for passing test-specific parameters into tests that works a
 
     --test-params="key1=17;key2=True"
 
-Currently the keys used control whether VLAN tagged packets are used and whether VLAN tag stripping should be included as an action. These parameters include:
+You can then access these parameters in your tests' Pyhton code using the
+following code:
 
-    vid=N: Use tagged packets with VLAN id of N
-    strip_vlan=bool: If True, add the strip VLAN tag action to the packet test
+    import ptf.testutils as testutils
+    # Returns a dictionary which includes all your parameters
+    test_params = testutils.test_params_get()
+    # Returns the value of the parameter "param", or None if not found
+    param_value = testutils.test_param_get("param")
+
+Take a look at [sai_base_test.py](example/mytests/sai_base_test.py) for an
+example.
 
 ---

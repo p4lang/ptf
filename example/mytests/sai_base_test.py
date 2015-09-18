@@ -28,6 +28,12 @@ class SAIThriftTest(BaseTest):
     def setUp(self):
         BaseTest.setUp(self)
 
+        test_params = testutils.test_params_get()
+        print
+        print "You specified the following test-params when invoking ptf:"
+        for k, v in test_params.items():
+            print k, ":\t\t\t", v
+
         # Set up thrift client and contact server
         self.transport = TSocket.TSocket('localhost', 9092)
         self.transport = TTransport.TBufferedTransport(self.transport)

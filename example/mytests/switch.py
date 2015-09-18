@@ -293,6 +293,8 @@ class L2AccessToAccessVlanTest(sai_base_test.SAIThriftDataplaneTest):
             self.client.sai_thrift_remove_ports_from_vlan(vlan_id, [vlan_port1, vlan_port2])
             self.client.sai_thrift_delete_vlan(vlan_id)
 
+#illustrates how to put test in a group
+@group("group_1")
 # illustrates how to disable a test
 @disabled
 class L2AccessToTrunkVlanTest(sai_base_test.SAIThriftDataplaneTest):
@@ -337,6 +339,7 @@ class L2AccessToTrunkVlanTest(sai_base_test.SAIThriftDataplaneTest):
             self.client.sai_thrift_remove_ports_from_vlan(vlan_id, [vlan_port1, vlan_port2])
             self.client.sai_thrift_delete_vlan(vlan_id)
 
+@group("group_1")
 class L2AccessToTrunkVlanTest_Mask(sai_base_test.SAIThriftDataplaneTest):
     def runTest(self):
         print "Sending L2 packet - port 1 -> port 2 [trunk vlan=10])"
@@ -383,6 +386,8 @@ class L2AccessToTrunkVlanTest_Mask(sai_base_test.SAIThriftDataplaneTest):
             self.client.sai_thrift_remove_ports_from_vlan(vlan_id, [vlan_port1, vlan_port2])
             self.client.sai_thrift_delete_vlan(vlan_id)
 
+@group("group_1")
+@group("group_2")
 class L2TrunkToAccessVlanTest(sai_base_test.SAIThriftDataplaneTest):
     def runTest(self):
         print

@@ -173,4 +173,18 @@ following code:
 Take a look at [sai_base_test.py](example/mytests/sai_base_test.py) for an
 example.
 
+## Grouping Tests together
+
+It is very easy to create groups of tests, using the provided `group` Python
+decorator. Simply decorate your test with `@group(<name of group>)`.
+
+Take a look at [switch.py](example/mytests/switch.py) for an example.
+
+One given test can belong to several groups. You can choose to run only the
+tests belonging to a given group using a command like this one:
+
+    sudo ./ptf --test-dir mytests/ --pypath $PWD <name of group>
+
+We also provide a convenient `disabled` decorator for tests.
+
 ---

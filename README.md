@@ -149,10 +149,10 @@ This can be enable by modifying the `platforms/remote.py` file to point to 4
 NICs on the host running PTF, like so:
 
     remote_port_map = {
-        23 : "eth2", # port 23 of the switch is connected to physical port on the server eth2
-        24 : "eth3", # port 24 of the switch is connected to physical port on the server eth3
-        25 : "eth4",
-        26 : "eth5"
+        (0, 23) : "eth2", # port 23 of device 0 is connected to physical port on the server eth2
+        (0, 24) : "eth3", # port 24 of device 0 is connected to physical port on the server eth3
+        (0, 25) : "eth4",
+        (0, 26) : "eth5"
     }
 
 ## Passing Parameters to Tests
@@ -186,5 +186,22 @@ tests belonging to a given group using a command like this one:
     sudo ./ptf --test-dir mytests/ --pypath $PWD <name of group>
 
 We also provide a convenient `disabled` decorator for tests.
+
+## Support for multidevice tests
+
+The original OFTest was meant to unit test a single OF-compliant switch. With
+PTF, we tried to add support for testing a network of several devices. If you do
+not intend to use this multi-device feature, you do not need to worry about it,
+it should not impact you. If you want to leverage this feature, here is what you
+need to do:
+
+* when adding interfaces, instead of writing `<port_number>@<interface_name>`,
+  you need to write `<device_number>-<port_number>@<interface_name>`
+* when sending a packet, the port number becomes a tuple (device, port):
+  `send_packet(self, (<device_number>, <port_number>), pkt)`
+* the `verify_*` functions where also updated to include device information. For
+  example: `verify_packets(self, pkt, device_number=<device_number>,
+  ports=<port_list>)`. For more information, you can take a look at these
+  functions in [src/ptf/dataplane.py](src/ptf/dataplane.py).
 
 ---

@@ -69,7 +69,7 @@ class DataPlanePortLinux:
     ETH_P_ALL = 0x03
     RCV_TIMEOUT = 10000
 
-    def __init__(self, interface_name, port_number):
+    def __init__(self, interface_name, device_number, port_number):
         """
         @param interface_name The name of the physical interface like eth1
         """
@@ -127,7 +127,7 @@ class DataPlanePort:
     ETH_P_ALL = 0x03
     RCV_TIMEOUT = 10000
 
-    def __init__(self, interface_name, port_number):
+    def __init__(self, interface_name, device_number, port_number):
         """
         @param interface_name The name of the physical interface like eth1
         """
@@ -184,7 +184,7 @@ class DataPlanePortPcap:
     socket. libpcap understands how to read the VLAN tag from the kernel.
     """
 
-    def __init__(self, interface_name, port_number):
+    def __init__(self, interface_name, device_number, port_number):
         self.pcap = pcap.pcap(interface_name)
         self.pcap.setnonblock()
 
@@ -218,10 +218,10 @@ class DataPlane(Thread):
     def __init__(self, config=None):
         Thread.__init__(self)
 
-        # dict from port number to port object
+        # dict from device number, port number to port object
         self.ports = {}
 
-        # dict from port number to list of (timestamp, packet)
+        # dict from device number, port number to list of (timestamp, packet)
         self.packet_queues = {}
 
         # cvar serves double duty as a regular top level lock and
@@ -284,11 +284,13 @@ class DataPlane(Thread):
                         # Enqueue packet
                         pkt, timestamp = port.recv()
                         port_number = port._port_number
-                        self.logger.debug("Pkt len %d in on port %d",
-                                          len(pkt), port_number)
+                        device_number = port._device_number
+                        self.logger.debug("Pkt len %d in on device %d, port %d",
+                                          len(pkt), device_number, port_number)
                         if self.pcap_writer:
-                            self.pcap_writer.write(pkt, timestamp, port_number)
-                        queue = self.packet_queues[port_number]
+                            self.pcap_writer.write(pkt, timestamp,
+                                                   device_number, port_number)
+                        queue = self.packet_queues[(device_number, port_number)]
                         if len(queue) >= self.MAX_QUEUE_LEN:
                             # Queue full, throw away oldest
                             queue.pop(0)
@@ -298,90 +300,100 @@ class DataPlane(Thread):
 
         self.logger.info("Thread exit")
 
-    def port_add(self, interface_name, port_number):
+    def port_add(self, interface_name, device_number, port_number):
         """
         Add a port to the dataplane
         @param interface_name The name of the physical interface like eth1
+        @param device_number The device id used to refer to the device
         @param port_number The port number used to refer to the port
         Stashes the port number on the created port object.
         """
-        self.ports[port_number] = self.dppclass(interface_name, port_number)
-        self.ports[port_number]._port_number = port_number
-        self.packet_queues[port_number] = []
+        port_id = (device_number, port_number)
+        self.ports[port_id] = self.dppclass(interface_name,
+                                            device_number, port_number)
+        self.ports[port_id]._port_number = port_number
+        self.ports[port_id]._device_number = device_number
+        self.packet_queues[port_id] = []
         # Need to wake up event loop to change the sockets being selected on.
         self.waker.notify()
 
-    def send(self, port_number, packet):
+    def send(self, device_number, port_number, packet):
         """
         Send a packet to the given port
-        @param port_number The port to send the data to
+        @param device_number, port_number The port to send the data to
         @param packet Raw packet data to send to port
         """
-        self.logger.debug("Sending %d bytes to port %d" %
-                          (len(packet), port_number))
+        self.logger.debug("Sending %d bytes to device %d, port %d" %
+                          (len(packet), device_number, port_number))
         if self.pcap_writer:
-            self.pcap_writer.write(packet, time.time(), port_number)
-        bytes = self.ports[port_number].send(packet)
+            self.pcap_writer.write(packet, time.time(),
+                                   device_number, port_number)
+        bytes = self.ports[(device_number, port_number)].send(packet)
         if bytes != len(packet):
             self.logger.error("Unhandled send error, length mismatch %d != %d" %
                      (bytes, len(packet)))
         return bytes
 
-    def oldest_port_number(self):
+    def oldest_port_number(self, device):
         """
-        Returns the port number with the oldest packet, or
-        None if no packets are queued.
+        Returns the port number with the oldest packet, 
+        or None if no packets are queued.
         """
         min_port_number = None
         min_time = float('inf')
-        for (port_number, queue) in self.packet_queues.items():
+        for (port_id, queue) in self.packet_queues.items():
+            if port_id[0] != device:
+                continue
             if queue and queue[0][1] < min_time:
                 min_time = queue[0][1]
                 min_port_number = port_number
         return min_port_number
 
     # Dequeues and yields packets in the order they were received.
-    # Yields (port number, packet, received time).
-    # If port_number is not specified yields packets from all ports.
-    def packets(self, port_number=None):
+    # Yields (port, packet, received time).
+    # If port is not specified yields packets from all ports.
+    def packets(self, device, port=None):
         while True:
-            if port_number is None:
-                rcv_port_number = self.oldest_port_number()
+            if port is None:
+                rcv_port = self.oldest_port_number(device)
             else:
-                rcv_port_number = port_number
+                rcv_port = port
 
-            if rcv_port_number == None:
+            if rcv_port == None:
                 self.logger.debug("Out of packets on all ports")
                 break
 
-            queue = self.packet_queues[rcv_port_number]
+            queue = self.packet_queues[(device, rcv_port)]
 
             if len(queue) == 0:
-                self.logger.debug("Out of packets on port %d", rcv_port_number)
+                self.logger.debug("Out of packets on device %d, port %d",
+                                  device, rcv_port)
                 break
 
             pkt, time = queue.pop(0)
-            yield (rcv_port_number, pkt, time)
+            yield (rcv_port, pkt, time)
 
-    def poll(self, port_number=None, timeout=-1, exp_pkt=None, filters=[]):
+    def poll(self, device_number=0, port_number=None, timeout=-1, exp_pkt=None, filters=[]):
         """
         Poll one or all dataplane ports for a packet
 
-        If port_number is given, get the oldest packet from that port.
+        If port_number is given, get the oldest packet from that port (and for
+        that device).
         Otherwise, find the port with the oldest packet and return
         that packet.
 
         If exp_pkt is true, discard all packets until that one is found
 
+        @param device_number Get packet from this device
         @param port_number If set, get packet from this port
         @param timeout If positive and no packet is available, block
         until a packet is received or for this many seconds
         @param exp_pkt If not None, look for this packet and ignore any
         others received.  Note that if port_number is None, all packets
         from all ports will be discarded until the exp_pkt is found
-        @return The triple port_number, packet, pkt_time where packet
-        is received from port_number at time pkt_time.  If a timeout
-        occurs, return None, None, None
+        @return The tuple device_number, port_number, packet, pkt_time where
+        packet is received from device_number, port_number at time pkt_time.  If
+        a timeout occurs, return None, None, None, None
         """
 
         def filter_check(pkt):
@@ -392,16 +404,18 @@ class DataPlane(Thread):
         if exp_pkt and (port_number is None):
             self.logger.warn("Dataplane poll with exp_pkt but no port number")
 
-        # Retrieve the packet. Returns (port number, packet, time).
+        # Retrieve the packet. Returns (device number, port number, packet, time).
         def grab():
             self.logger.debug("Grabbing packet")
-            for (rcv_port_number, pkt, time) in self.packets(port_number):
-                self.logger.debug("Checking packet from port %d", rcv_port_number)
+            for (rcv_port_number, pkt, time) in self.packets(device_number, port_number):
+                rcv_device_number = device_number
+                self.logger.debug("Checking packet from device %d, port %d",
+                                  rcv_device_number, rcv_port_number)
                 if not filter_check(pkt):
                     self.logger.debug("Paket does not match filter, discarding")
                     continue
                 if not exp_pkt or match_exp_pkt(exp_pkt, pkt):
-                    return (rcv_port_number, pkt, time)
+                    return (rcv_device_number, rcv_port_number, pkt, time)
             self.logger.debug("Did not find packet")
             return None
 
@@ -411,8 +425,9 @@ class DataPlane(Thread):
         if ret != None:
             return ret
         else:
-            self.logger.debug("Poll time out, no packet from " + str(port_number))
-            return (None, None, None)
+            self.logger.debug("Poll time out, no packet from device %d, port %r",
+                              device_number, port_number)
+            return (None, None, None, None)
 
     def kill(self):
         """
@@ -425,20 +440,20 @@ class DataPlane(Thread):
         # even if someone keeps holding a reference to the dataplane.
         del self.ports
 
-    def port_down(self, port_number):
+    def port_down(self, device_number, port_number):
         """Brings the specified port down"""
-        self.ports[port_number].down()
+        self.ports[(device_number, port_number)].down()
 
-    def port_up(self, port_number):
+    def port_up(self, device_number, port_number):
         """Brings the specified port up"""
-        self.ports[port_number].up()
+        self.ports[(device_number, port_number)].up()
 
     def flush(self):
         """
         Drop any queued packets.
         """
-        for port_number in self.packet_queues.keys():
-            self.packet_queues[port_number] = []
+        for port_id in self.packet_queues.keys():
+            self.packet_queues[port_id] = []
 
     def start_pcap(self, filename):
         assert(self.pcap_writer == None)

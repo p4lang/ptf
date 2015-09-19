@@ -1243,7 +1243,7 @@ def group(name):
 
 def ptf_ports(num=None):
     """
-    Return a list of 'num' port numbers
+    Return a list of 'num' port ids (device_number, port_number)
 
     If 'num' is None, return all available ports. Otherwise, limit the length
     of the result to 'num' and raise an exception if not enough ports are
@@ -1254,78 +1254,128 @@ def ptf_ports(num=None):
         raise Exception("test requires %d ports but only %d are available" % (num, len(ports)))
     return ports[:num]
 
-def verify_packet(test, pkt, port):
+def port_to_tuple(port):
+    if type(port) is int:
+        return 0, port
+    if type(port) is tuple:
+        return port
+    if type(port) is str:
+        try:
+            return 0, int(port)
+        except:
+            pass
+    return None
+
+def send_packet(test, port_id, pkt):
+    """
+    Send a packet out of port_id
+    port_id can either be a single integer (port_number on default device 0)
+    or a tuple of 2 integers (device_number, port_number)
+    """
+    pkt = str(pkt)
+    device, port = port_to_tuple(port_id)
+    return test.dataplane.send(device, port, pkt)
+
+def send(test, port_id, pkt):
+    """
+    See send_packet.
+    """
+    return send_packet(test, port_id, pkt)
+
+def verify_packet(test, pkt, port_id):
     """
     Check that an expected packet is received
+    port_id can either be a single integer (port_number on default device 0)
+    or a tuple of 2 integers (device_number, port_number)
     """
-    logging.debug("Checking for pkt on port %r", port)
-    (rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=pkt, filters=FILTERS)
-    test.assertTrue(rcv_pkt != None, "Did not receive pkt on %r" % port)
+    device, port = port_to_tuple(port_id)
+    logging.debug("Checking for pkt on device %d, port %d", device, port)
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
+        device_number=device, port_number=port,
+        timeout=2, exp_pkt=pkt, filters=FILTERS
+    )
+    test.assertTrue(rcv_pkt != None, "Did not receive pkt on device %d, port %r" % (device, port))
 
-def verify_no_packet(test, pkt, port):
+def verify_no_packet(test, pkt, port_id):
     """
     Check that a particular packet is not received
+    port_id can either be a single integer (port_number on default device 0)
+    or a tuple of 2 integers (device_number, port_number)
     """
-    logging.debug("Negative check for pkt on port %r", port)
-    (rcv_port, rcv_pkt, pkt_time) = \
-        test.dataplane.poll(
-            port_number=port, exp_pkt=pkt,
-            timeout=ptf.ptfutils.default_negative_timeout,
-            filters=FILTERS)
-    test.assertTrue(rcv_pkt == None, "Received packet on %r" % port)
+    device, port = port_to_tuple(port_id)
+    logging.debug("Negative check for pkt on device %d, port %d", device, port)
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
+        device_number=device, port_number=port, exp_pkt=pkt,
+        timeout=ptf.ptfutils.default_negative_timeout,
+        filters=FILTERS)
+    test.assertTrue(rcv_pkt == None, "Received packet on device %d, port %r" % (device, port))
 
-def verify_no_other_packets(test):
+def verify_no_other_packets(test, device_number=0):
     """
-    Check that no unexpected packets are received
+    Check that no unexpected packets are received on specified device
 
     This is a no-op if the --relax option is in effect.
     """
     if ptf.config["relax"]:
         return
-    logging.debug("Checking for unexpected packets on all ports")
-    (rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(timeout=ptf.ptfutils.default_negative_timeout, filters=FILTERS)
+    logging.debug("Checking for unexpected packets on all ports of device %d" % device_number)
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
+        device_number=device_number,
+        timeout=ptf.ptfutils.default_negative_timeout, filters=FILTERS
+    )
     if rcv_pkt != None:
-        logging.debug("Received unexpected packet on port %r: %s", rcv_port, format_packet(rcv_pkt))
-    test.assertTrue(rcv_pkt == None, "Unexpected packet on port %r" % rcv_port)
+        logging.debug("Received unexpected packet on device %d, port %r: %s", device_number, rcv_port, format_packet(rcv_pkt))
+    test.assertTrue(rcv_pkt == None, "Unexpected packet on device %d, port %r" % (device_number, rcv_port))
 
-def verify_packets(test, pkt, ports):
+def verify_packets(test, pkt, ports=[], device_number=0):
     """
-    Check that a packet is received on each of the specified ports.
+    Check that a packet is received on each of the specified port numbers for a
+    given device (default device number is 0).
 
-    Also verifies that the packet is not received on any other ports, and that no
-    other packets are received (unless --relax is in effect).
+    Also verifies that the packet is not received on any other ports for this
+    device, and that no other packets are received on the device (unless --relax
+    is in effect).
 
     This covers the common and simplest cases for checking dataplane outputs.
     For more complex usage, like multiple different packets being output, or
     multiple packets on the same port, use the primitive verify_packet,
     verify_no_packet, and verify_no_other_packets functions directly.
     """
-    for port in ptf_ports():
+    for device, port in ptf_ports():
+        if device != device_number:
+            continue
         if port in ports:
-            verify_packet(test, pkt, port)
+            verify_packet(test, pkt, (device, port))
         else:
-            verify_no_packet(test, pkt, port)
-    verify_no_other_packets(test)
+            verify_no_packet(test, pkt, (device, port))
+    verify_no_other_packets(test, device_number=device_number)
 
-def verify_packets_any(test, pkt, ports):
+def verify_packets_any(test, pkt, ports=[], device_number=0):
     """
-    Check that a packet is received on _any_ of the specified ports.
+    Check that a packet is received on _any_ of the specified ports belonging to
+    the given device (default device_number is 0).
 
-    Also verifies that the packet is ot received on any other ports, and that no
-    other packets are received (unless --relax is in effect).
+    Also verifies that the packet is ot received on any other ports for this
+    device, and that no other packets are received on the device (unless --relax
+    is in effect).
     """
     received = False
-    for port in ptf_ports():
+    for device, port in ptf_ports():
+        if device != device_number:
+            continue
         if port in ports:
-            logging.debug("Checking for pkt on port %r", port)
-            print 'verifying packet on port {0}'.format(port)
-            (rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(port_number=port, exp_pkt=pkt, filters=FILTERS)
+            logging.debug("Checking for pkt on device %d, port %d", device_number, port)
+            print 'verifying packet on port device', device_number, 'port', port
+            (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
+                device_number=device, port_number=port,
+                exp_pkt=pkt, filters=FILTERS
+            )
             if rcv_pkt != None:
                 received = True
         else:
-            verify_no_packet(test, pkt, port)
+            verify_no_packet(test, pkt, (device, port))
     verify_no_other_packets(test)
 
-    test.assertTrue(received == True, "Did not receive pkt on any of ports %r" % ports)
+    test.assertTrue(received == True, "Did not receive pkt on any of ports %r for device %d" % (ports, device_number))
 
 __all__ = list(set(locals()) - _import_blacklist)

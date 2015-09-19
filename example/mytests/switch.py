@@ -284,8 +284,13 @@ class L2AccessToAccessVlanTest(sai_base_test.SAIThriftDataplaneTest):
                                 ip_ttl=64)
 
         try:
-            self.dataplane.send(2, str(pkt))
-            verify_packets(self, pkt, [1])
+            # in tuple: 0 is device number, 2 is port number
+            # this tuple uniquely identifies a port
+            send_packet(self, (0, 2), pkt)
+            verify_packets(self, pkt, device_number=0, ports=[1])
+            # or simply
+            # send_packet(self, 2, pkt)
+            # verify_packets(self, pkt, ports=[1])
         finally:
             sai_thrift_delete_fdb(self.client, vlan_id, mac1, port1)
             sai_thrift_delete_fdb(self.client, vlan_id, mac2, port2)
@@ -330,7 +335,7 @@ class L2AccessToTrunkVlanTest(sai_base_test.SAIThriftDataplaneTest):
                                 ip_ttl=64,
                                 pktlen=104)
         try:
-            self.dataplane.send(2, str(pkt))
+            send_packet(self, 2, pkt)
             verify_packets(self, exp_pkt, [1])
         finally:
             sai_thrift_delete_fdb(self.client, vlan_id, mac1, port1)
@@ -377,7 +382,7 @@ class L2AccessToTrunkVlanTest_Mask(sai_base_test.SAIThriftDataplaneTest):
         m = Mask(exp_pkt)
         m.set_do_not_care_scapy(IP, 'ttl')
         try:
-            self.dataplane.send(2, str(pkt))
+            send_packet(self, 2, pkt)
             verify_packets(self, m, [1])
         finally:
             sai_thrift_delete_fdb(self.client, vlan_id, mac1, port1)
@@ -422,7 +427,7 @@ class L2TrunkToAccessVlanTest(sai_base_test.SAIThriftDataplaneTest):
                                 ip_ttl=64,
                                 pktlen=96)
         try:
-            self.dataplane.send(2, str(pkt))
+            send_packet(self, 2, pkt)
             verify_packets(self, exp_pkt, [1])
         finally:
             sai_thrift_delete_fdb(self.client, vlan_id, mac1, port1)

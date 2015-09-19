@@ -26,7 +26,7 @@ class PcapWriter(object):
             192 # PPI linktype
         ))
 
-    def write(self, data, timestamp, port):
+    def write(self, data, timestamp, device, port):
         """
         Write a packet to a pcap file
 
@@ -34,7 +34,7 @@ class PcapWriter(object):
         'timestamp' should be a float.
         'port' should be an integer port number.
         """
-        ppi_len = PPIPktHeader.size + PPIAggregateField.size
+        ppi_len = PPIPktHeader.size + 2 * PPIAggregateField.size
         self.stream.write(PcapPktHeader.pack(
             int(timestamp), # timestamp seconds
             int((timestamp - int(timestamp)) * 10**6), # timestamp microseconds
@@ -48,6 +48,7 @@ class PcapWriter(object):
             1, # ethernet dlt
         ))
         self.stream.write(PPIAggregateField.pack(8, PPIAggregateField.size - 4, port))
+        self.stream.write(PPIAggregateField.pack(8, PPIAggregateField.size - 4, device))
         self.stream.write(data)
 
     def close(self):

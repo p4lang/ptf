@@ -121,11 +121,17 @@ be subtracted from the result by prefixing them with the '^' character.  """
             # Parse --interface
             def check_interface(value):
                 try:
-                    port, interface = value.split('@', 1)
-                    port = int(port)
+                    dev_and_port, interface = value.split('@', 1)
+                    dev_and_port = dev_and_port.split("-")
+                    if len(dev_and_port) == 1:
+                        dev, port = 0, int(dev_and_port[0])
+                    elif len(dev_and_port) == 2:
+                        dev, port = int(dev_and_port[0]), int(dev_and_port[1])
+                    else:
+                        raise ValueError("")
                 except ValueError:
-                    parser.error("incorrect interface syntax (got %s, expected 'port@interface')" % repr(value))
-                return (port, interface)
+                    parser.error("incorrect interface syntax (got %s, expected 'port@interface' or 'device-port@interface')" % repr(value))
+                return (dev, port, interface)
 
             assert(type(values) is str)
             getattr(namespace, self.dest).append(check_interface(values))
@@ -167,7 +173,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
     group.add_argument("-a", "--platform-args", help="Custom arguments for the platform")
     group.add_argument("--platform-dir", type=str, help="Directory containing platform modules")
     group.add_argument("--interface", "-i", type=str, dest="interfaces", metavar="INTERFACE", action=ActionInterface,
-                       help="Specify a port number and the dataplane interface to use. May be given multiple times. Example: 1@eth1")
+                       help="Specify a port number and the dataplane interface to use. May be given multiple times. Example: 1@eth1 or 0-1@eth2 (use eth2 as port 1 of device 0)")
 
     group = parser.add_argument_group("Logging options")
     group.add_argument("--log-file", help="Name of log file")
@@ -551,8 +557,9 @@ if __name__ == "__main__":
     # Set up the dataplane
     ptf.dataplane_instance = ptf.dataplane.DataPlane(config)
     pcap_setup(config)
-    for port, ifname in config["port_map"].items():
-        ptf.dataplane_instance.port_add(ifname, port)
+    for port_id, ifname in config["port_map"].items():
+        device, port = port_id
+        ptf.dataplane_instance.port_add(ifname, device, port)
 
     logging.info("*** TEST RUN START: " + time.asctime())
     if config["xunit"]:

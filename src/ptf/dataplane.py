@@ -346,7 +346,7 @@ class DataPlane(Thread):
                 continue
             if queue and queue[0][1] < min_time:
                 min_time = queue[0][1]
-                min_port_number = port_number
+                min_port_number = port_id[1]
         return min_port_number
 
     # Dequeues and yields packets in the order they were received.

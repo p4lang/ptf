@@ -1191,6 +1191,22 @@ def test_param_get(key, default=None):
     except:
         return default
 
+def hex_dump_buffer(src, length=16):
+    """
+    Convert src to a hex dump string and return the string
+    @param src The source buffer
+    @param length The number of bytes shown in each line
+    @returns A string showing the hex dump
+    """
+    result = ["\n"]
+    for i in xrange(0, len(src), length):
+       chars = src[i:i+length]
+       hex = ' '.join(["%02x" % ord(x) for x in chars])
+       printable = ''.join(["%s" % ((ord(x) <= 127 and
+                                     FILTER[ord(x)]) or '.') for x in chars])
+       result.append("%04x  %-*s  %s\n" % (i, length*3, hex, printable))
+    return ''.join(result)
+
 def format_packet(pkt):
     return "Packet length %d \n%s" % (len(str(pkt)),
                                       hex_dump_buffer(str(pkt)))

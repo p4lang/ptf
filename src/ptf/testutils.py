@@ -1290,6 +1290,7 @@ def send_packet(test, port_id, pkt):
     """
     pkt = str(pkt)
     device, port = port_to_tuple(port_id)
+    test.before_send(pkt, device_number=device, port_number=port)
     return test.dataplane.send(device, port, pkt)
 
 def send(test, port_id, pkt):
@@ -1297,6 +1298,19 @@ def send(test, port_id, pkt):
     See send_packet.
     """
     return send_packet(test, port_id, pkt)
+
+def dp_poll(test, device_number=0, port_number=None, timeout=-1, exp_pkt=None):
+    """
+    Wrapper function around dataplane.poll
+    """
+    t = test.dataplane.poll(
+        device_number=device_number, port_number=port_number,
+        timeout=timeout, exp_pkt=exp_pkt, filters=FILTERS
+    )
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = t
+    if rcv_pkt is not None:
+        test.at_receive(rcv_pkt, device_number=rcv_device, port_number=rcv_port)
+    return t
 
 def verify_packet(test, pkt, port_id):
     """
@@ -1306,9 +1320,8 @@ def verify_packet(test, pkt, port_id):
     """
     device, port = port_to_tuple(port_id)
     logging.debug("Checking for pkt on device %d, port %d", device, port)
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
-        device_number=device, port_number=port,
-        timeout=2, exp_pkt=pkt, filters=FILTERS
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
+        test, device_number=device, port_number=port, timeout=2, exp_pkt=pkt
     )
     test.assertTrue(rcv_pkt != None, "Did not receive pkt on device %d, port %r" % (device, port))
 
@@ -1320,10 +1333,10 @@ def verify_no_packet(test, pkt, port_id):
     """
     device, port = port_to_tuple(port_id)
     logging.debug("Negative check for pkt on device %d, port %d", device, port)
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
-        device_number=device, port_number=port, exp_pkt=pkt,
-        timeout=ptf.ptfutils.default_negative_timeout,
-        filters=FILTERS)
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
+        test, device_number=device, port_number=port, exp_pkt=pkt,
+        timeout=ptf.ptfutils.default_negative_timeout
+    )
     test.assertTrue(rcv_pkt == None, "Received packet on device %d, port %r" % (device, port))
 
 def verify_no_other_packets(test, device_number=0):
@@ -1335,9 +1348,9 @@ def verify_no_other_packets(test, device_number=0):
     if ptf.config["relax"]:
         return
     logging.debug("Checking for unexpected packets on all ports of device %d" % device_number)
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
-        device_number=device_number,
-        timeout=ptf.ptfutils.default_negative_timeout, filters=FILTERS
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
+        test, device_number=device_number,
+        timeout=ptf.ptfutils.default_negative_timeout
     )
     if rcv_pkt != None:
         logging.debug("Received unexpected packet on device %d, port %r: %s", device_number, rcv_port, format_packet(rcv_pkt))
@@ -1382,9 +1395,8 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
         if port in ports:
             logging.debug("Checking for pkt on device %d, port %d", device_number, port)
             print 'verifying packet on port device', device_number, 'port', port
-            (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
-                device_number=device, port_number=port,
-                exp_pkt=pkt, filters=FILTERS
+            (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
+                test, device_number=device, port_number=port, exp_pkt=pkt
             )
             if rcv_pkt != None:
                 received = True

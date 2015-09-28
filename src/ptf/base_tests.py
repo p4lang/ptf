@@ -21,6 +21,9 @@ class BaseTest(unittest.TestCase):
         ptf.open_logfile(str(self))
         logging.info("** START TEST CASE " + str(self))
 
+    def run(self, result=None):
+        unittest.TestCase.run(self, result)
+
     def tearDown(self):
         logging.info("** END TEST CASE " + str(self))
 

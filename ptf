@@ -79,6 +79,7 @@ config_default = {
     # Test behavior options
     "relax"              : False,
     "test_params"        : "None",
+    "failfast"           : False,
     "fail_skipped"       : False,
     "default_timeout"    : 2.0,
     "default_negative_timeout" : 0.1,
@@ -205,6 +206,8 @@ be subtracted from the result by prefixing them with the '^' character.  """
     group = parser.add_argument_group("Test behavior options")
     group.add_argument("--relax", action="store_true",
                       help="Relax packet match checks allowing other packets")
+    group.add_argument("--failfast", action="store_true",
+                      help="Stop running tests as soon as one fails")
     test_params_help = """Set test parameters: key=val;... (see --list)
     """
     group.add_argument("-t", "--test-params", help=test_params_help)
@@ -596,6 +599,10 @@ if __name__ == "__main__":
         result = runner.run(t)
         run_failures.extend(result.failures)
         run_errors.extend(result.errors)
+
+        if config["failfast"] and not result.wasSuccessful():
+            logging.info("Test failed and failfast mode enabled, stopping")
+            break
 
     ptf.open_logfile('main')
     if ptf.testutils.skipped_test_count > 0:

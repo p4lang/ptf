@@ -21,6 +21,7 @@ import random
 import signal
 import fnmatch
 import copy
+from collections import OrderedDict
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -57,6 +58,8 @@ config_default = {
     "test_spec"          : "",
     "test_file"          : None,
     "test_dir"           : None,
+    "test_order"         : "default",
+    "test_order_seed"    : 0xaba,
 
     # Switch connection options
     "platform"           : "eth",
@@ -76,6 +79,7 @@ config_default = {
     # Test behavior options
     "relax"              : False,
     "test_params"        : "None",
+    "failfast"           : False,
     "fail_skipped"       : False,
     "default_timeout"    : 2.0,
     "default_negative_timeout" : 0.1,
@@ -160,13 +164,22 @@ be subtracted from the result by prefixing them with the '^' character.  """
     parser.add_argument("--allow-user", action="store_true",
                         help="Proceed even if ptf is not run as root")
 
-    # Needed for p4factory
     parser.add_argument("--pypath", dest="pypath", action="append")
 
     group = parser.add_argument_group("Test selection options")
     group.add_argument("-f", "--test-file", help="File of tests to run, one per line")
     group.add_argument("--test-dir", type=str, action=ActionTestDir,
                        required=True, help="Directory containing tests")
+    test_order_help = """Choose the order in which the tests will be run:
+    default (tests are run in the order in which they appear on command line),
+    lexico (use default string ordering on test names),
+    rand (random order, use --test-order-seed to specify a seed)
+    """
+    group.add_argument("--test-order",
+                       choices=["default", "lexico", "rand"],
+                       help=test_order_help)
+    group.add_argument("--test-order-seed", type=int,
+                       help="Specify seed to randomize test order")
 
     group = parser.add_argument_group("Switch connection options")
     group.add_argument("-P", "--platform", help="Platform module name")
@@ -193,6 +206,8 @@ be subtracted from the result by prefixing them with the '^' character.  """
     group = parser.add_argument_group("Test behavior options")
     group.add_argument("--relax", action="store_true",
                       help="Relax packet match checks allowing other packets")
+    group.add_argument("--failfast", action="store_true",
+                      help="Stop running tests as soon as one fails")
     test_params_help = """Set test parameters: key=val;... (see --list)
     """
     group.add_argument("-t", "--test-params", help=test_params_help)
@@ -317,7 +332,7 @@ def load_test_modules(config):
     (module, dictionary from test names to test classes).
     """
 
-    result = {}
+    result = OrderedDict()
 
     for root, dirs, filenames in os.walk(config["test_dir"]):
         # Iterate over each python file
@@ -368,7 +383,7 @@ def prune_tests(test_specs, test_modules):
     @param test_modules Same format as the output of load_test_modules.
     @returns Same format as the output of load_test_modules.
     """
-    result = {}
+    result = OrderedDict()
     for e in test_specs:
         matched = False
 
@@ -381,7 +396,7 @@ def prune_tests(test_specs, test_modules):
         for (modname, (mod, tests)) in test_modules.items():
             for (testname, test) in tests.items():
                 if e in test._groups or e == "%s.%s" % (modname, testname):
-                    result.setdefault(modname, (mod, {}))
+                    result.setdefault(modname, (mod, OrderedDict()))
                     if not negated:
                         # if not hasattr(test, "_versions") or version in test._versions:
                         result[modname][1][testname] = test
@@ -497,12 +512,16 @@ if config["list_test_names"]:
     sys.exit(0)
 
 # Generate the test suite
-#@todo Decide if multiple suites are ever needed
-suite = unittest.TestSuite()
-
+test_suite = []
 for (modname, (mod, tests)) in test_modules.items():
     for (testname, test) in tests.items():
-        suite.addTest(test())
+        test_suite.append(test())
+if config["test_order"] == "lexico":
+    test_suite.sort()
+elif config["test_order"] == "rand":
+    seed = config["test_order_seed"]
+    random.seed(seed)
+    random.shuffle(test_suite)
 
 # Allow platforms to import each other
 sys.path.append(config["platform_dir"])
@@ -572,9 +591,19 @@ if __name__ == "__main__":
         runner = xmlrunner.XMLTestRunner(output=config["xunit_dir"],
                                          outsuffix="",
                                          verbosity=2)
-        result = runner.run(suite)
     else:
-        result = unittest.TextTestRunner(verbosity=2).run(suite)
+        runner = unittest.TextTestRunner(verbosity=2)
+    run_failures = []
+    run_errors = []
+    for t in test_suite:
+        result = runner.run(t)
+        run_failures.extend(result.failures)
+        run_errors.extend(result.errors)
+
+        if config["failfast"] and not result.wasSuccessful():
+            logging.info("Test failed and failfast mode enabled, stopping")
+            break
+
     ptf.open_logfile('main')
     if ptf.testutils.skipped_test_count > 0:
         ts = " tests"
@@ -590,7 +619,7 @@ if __name__ == "__main__":
 
     profiler_teardown(profiler)
 
-    if result.failures or result.errors:
+    if run_failures or run_errors:
         # exit(1) hangs sometimes
         os._exit(1)
     if ptf.testutils.skipped_test_count > 0 and config["fail_skipped"]:

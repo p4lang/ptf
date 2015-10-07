@@ -238,17 +238,17 @@ class DataPlane(Thread):
         if config is None:
             self.config = {}
         else:
-            self.config = config; 
+            self.config = config;
 
         ############################################################
         #
         # The platform/config can provide a custom DataPlanePort class
         # here if you have a custom implementation with different
-        # behavior. 
+        # behavior.
         #
         # Set config.dataplane.portclass = MyDataPlanePortClass
         # where MyDataPlanePortClass has the same interface as the class
-        # DataPlanePort defined here. 
+        # DataPlanePort defined here.
         #
         if "dataplane" in self.config and "portclass" in self.config["dataplane"]:
             self.dppclass = self.config["dataplane"]["portclass"]
@@ -336,7 +336,7 @@ class DataPlane(Thread):
 
     def oldest_port_number(self, device):
         """
-        Returns the port number with the oldest packet, 
+        Returns the port number with the oldest packet,
         or None if no packets are queued.
         """
         min_port_number = None
@@ -362,7 +362,6 @@ class DataPlane(Thread):
             if rcv_port == None:
                 self.logger.debug("Out of packets on all ports")
                 break
-
             queue = self.packet_queues[(device, rcv_port)]
 
             if len(queue) == 0:

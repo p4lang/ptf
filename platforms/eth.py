@@ -25,4 +25,7 @@ def platform_config_update(config):
             (0, 3): 'veth7',
         }
 
+    cpu_port = config["cpu_port"]
+    port_map[(0, cpu_port)] = 'veth251'
+
     config['port_map'] = port_map

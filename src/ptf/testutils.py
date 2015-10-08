@@ -1561,7 +1561,7 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
             if str(pkt) == str(rcv_pkt):
                 match_index = ports.index(rcv_port)
                 received = True
-    verify_no_other_packets(test)
+    verify_no_other_packets(test, device_number=device_number)
 
     test.assertTrue(received == True, "Did not receive pkt on any of ports %r for device %d" % (ports, device_number))
     return match_index
@@ -1577,22 +1577,18 @@ def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):
     """
     pkt_cnt = 0
     test.assertTrue(len(pkts) == len(ports), "packet list count does not match port list count")
-    for device, port in ptf_ports():
-        if device != device_number:
-            continue
-        if port in ports:
-            pkt = pkts[ports.index(port)]
-            logging.debug("Checking for pkt on device %d, port %d", device_number, port)
-            (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
-                test,
-                device_number=device_number,
-                port_number=port,
-                exp_pkt=pkt
-            )
-            if rcv_pkt != None:
-                pkt_cnt += 1
+    for port, pkt in zip(ports, pkts):
+        logging.debug("Checking for pkt on device %d, port %d", device_number, port)
+        (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
+            test,
+            device_number=device_number,
+            port_number=port,
+            exp_pkt=pkt
+        )
+        if rcv_pkt != None:
+            pkt_cnt += 1
 
-    verify_no_other_packets(test)
+    verify_no_other_packets(test, device_number=device_number)
     test.assertTrue(pkt_cnt == len(ports), "Did not receive pkt on one of ports %r for device %d" % (ports, device_number))
 
 def verify_packet_prefix(test, pkt, port, len, device_number=0):

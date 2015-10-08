@@ -16,6 +16,10 @@ def hex_to_byte(h):
 def uint_to_i32(u):
     if (u > 0x7FFFFFFF): u-= 0x100000000
     return u
+def char_to_uchar(x):
+    if (x >= 0):
+        return x
+    return 256 + x
 
 def bytes_to_string(byte_array):
     form = 'B' * len(byte_array)
@@ -36,7 +40,7 @@ def ipv4Addr_to_i32(addr):
     return uint_to_i32(res)
 
 def stringify_macAddr(addr):
-    return ':'.join('%02x' % byte_to_u(x) for x in addr)
+    return ':'.join('%02x' % char_to_uchar(x) for x in addr)
 
 def i32_to_ipv4Addr(addr):
     return socket.inet_ntoa(struct.pack("!I", addr))

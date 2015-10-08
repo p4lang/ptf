@@ -64,6 +64,7 @@ def simple_tcp_packet(pktlen=100,
                       ip_tos=0,
                       ip_ttl=64,
                       ip_id=0x0001,
+                      ip_frag=0,
                       tcp_sport=1234,
                       tcp_dport=80,
                       tcp_flags="S",
@@ -88,7 +89,7 @@ def simple_tcp_packet(pktlen=100,
     @param ip_id IP ID
     @param tcp_dport TCP destination port
     @param tcp_sport TCP source port
-    @param tcp_flags TCP Control flags  	
+    @param tcp_flags TCP Control flags
     @param with_tcp_chksum Valid TCP checksum
 
     Generates a simple TCP request.  Users
@@ -113,11 +114,11 @@ def simple_tcp_packet(pktlen=100,
     else:
         if not ip_options:
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
-                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, frag=ip_frag)/ \
                 tcp_hdr
         else:
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
-                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, options=ip_options)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, frag=ip_frag, options=ip_options)/ \
                 tcp_hdr
 
     pkt = pkt/("".join([chr(x) for x in xrange(pktlen - len(pkt))]))
@@ -409,6 +410,7 @@ def simple_vxlan_packet(pktlen=300,
                         ip_ttl=64,
                         ip_id=0x0001,
                         udp_sport=1234,
+                        udp_dport=4789,
                         with_udp_chksum=True,
                         ip_ihl=None,
                         ip_options=False,
@@ -432,6 +434,7 @@ def simple_vxlan_packet(pktlen=300,
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param udp_sport UDP source port
+    @param udp_dport UDP dest port (IANA) = 4789 (VxLAN)
     @param vxlan_reserved1 reserved field (3B)
     @param vxlan_vni VXLAN Network Identifier
     @param vxlan_reserved2 reserved field (1B)
@@ -443,8 +446,6 @@ def simple_vxlan_packet(pktlen=300,
     if scapy.VXLAN is None:
         logging.error("A VXLAN packet was requested but VXLAN is not supported by your Scapy. See README for more information")
         return None
-
-    udp_dport = 4789 # UDP port assigned by IANA for VXLAN
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
@@ -469,6 +470,79 @@ def simple_vxlan_packet(pktlen=300,
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, options=ip_options)/ \
                 udp_hdr
+
+    pkt = pkt / VXLAN(vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
+
+    if inner_frame:
+        pkt = pkt / inner_frame
+    else:
+        pkt = pkt / simple_tcp_packet(pktlen = pktlen - len(pkt))
+
+    return pkt
+
+def simple_vxlanv6_packet(pktlen=300,
+                          eth_dst='00:01:02:03:04:05',
+                          eth_src='00:06:07:08:09:0a',
+                          dl_vlan_enable=False,
+                          vlan_vid=0,
+                          vlan_pcp=0,
+                          dl_vlan_cfi=0,
+                          ipv6_src='1::2',
+                          ipv6_dst='3::4',
+                          ipv6_fl=0,
+                          ipv6_tc=0,
+                          ipv6_hlim=64,
+                          udp_sport=1234,
+                          udp_dport=4789,
+                          with_udp_chksum=True,
+                          vxlan_reserved1=0x000000,
+                          vxlan_vni = 0xaba,
+                          vxlan_reserved2=0x00,
+                          inner_frame = None):
+    """
+    Return a simple dataplane VXLAN packet
+
+    Supports a few parameters:
+    @param len Length of packet in bytes w/o CRC
+    @param eth_dst Destination MAC
+    @param eth_src Source MAC
+    @param dl_vlan_enable True if the packet is with vlan, False otherwise
+    @param vlan_vid VLAN ID
+    @param vlan_pcp VLAN priority
+    @param ipv6_src IPv6 source
+    @param ipv6_dst IPv6 destination
+    @param ip_tos IP ToS
+    @param ip_ttl IP TTL
+    @param ip_id IP ID
+    @param udp_sport UDP source port
+    @param udp_dport UDP dest port (IANA) = 4789 (VxLAN)
+    @param vxlan_reserved1 reserved field (3B)
+    @param vxlan_vni VXLAN Network Identifier
+    @param vxlan_reserved2 reserved field (1B)
+    @param inner_frame The inner Ethernet frame
+
+    Generates a simple VXLAN packet. Users shouldn't assume anything about
+    this packet other than that it is a valid ethernet/IP/UDP/VXLAN frame.
+    """
+
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    if with_udp_chksum:
+        udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport)
+    else:
+        udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+
+    # Note Dot1Q.id is really CFI
+    if (dl_vlan_enable):
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
+            scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim)/ \
+            udp_hdr
+    else:
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+              scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim)/ \
+            udp_hdr
 
     pkt = pkt / VXLAN(vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
 
@@ -1127,6 +1201,62 @@ def simple_mpls_packet(pktlen=300,
 
     return pkt
 
+def simple_qinq_tcp_packet(pktlen=100,
+                    eth_dst='00:01:02:03:04:05',
+                    eth_src='00:06:07:08:09:0a',
+                    dl_vlan_outer=20,
+                    dl_vlan_pcp_outer=0,
+                    dl_vlan_cfi_outer=0,
+                    vlan_vid=10,
+                    vlan_pcp=0,
+                    dl_vlan_cfi=0,
+                    ip_src='192.168.0.1',
+                    ip_dst='192.168.0.2',
+                    ip_tos=0,
+                    ip_ttl=64,
+                    tcp_sport=1234,
+                    tcp_dport=80,
+                    ip_ihl=None,
+                    ip_options=False
+                    ):
+    """
+    Return a doubly tagged dataplane TCP packet
+
+    Supports a few parameters:
+    @param len Length of packet in bytes w/o CRC
+    @param eth_dst Destinatino MAC
+    @param eth_src Source MAC
+    @param dl_vlan_outer Outer VLAN ID
+    @param dl_vlan_pcp_outer Outer VLAN priority
+    @param dl_vlan_cfi_outer Outer VLAN cfi bit
+    @param vlan_vid Inner VLAN ID
+    @param vlan_pcp VLAN priority
+    @param dl_vlan_cfi VLAN cfi bit
+    @param ip_src IP source
+    @param ip_dst IP destination
+    @param ip_tos IP ToS
+    @param tcp_dport TCP destination port
+    @param ip_sport TCP source port
+
+    Generates a TCP request.  Users
+    shouldn't assume anything about this packet other than that
+    it is a valid ethernet/IP/TCP frame.
+    """
+
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    # Note Dot1Q.id is really CFI
+    pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+          scapy.Dot1Q(prio=dl_vlan_pcp_outer, id=dl_vlan_cfi_outer, vlan=dl_vlan_outer)/ \
+          scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
+          scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl)/ \
+          scapy.TCP(sport=tcp_sport, dport=tcp_dport)
+
+    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+
+    return pkt
+
 def get_egr_list(parent, ports, how_many, exclude_list=[]):
     """
     Generate a list of ports avoiding those in the exclude list
@@ -1405,5 +1535,67 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
     verify_no_other_packets(test)
 
     test.assertTrue(received == True, "Did not receive pkt on any of ports %r for device %d" % (ports, device_number))
+
+def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
+    """
+    Check that _any_ of the packet is received on _any_ of the specified ports belonging to
+    the given device (default device_number is 0).
+
+    Also verifies that the packet is ot received on any other ports for this
+    device, and that no other packets are received on the device (unless --relax
+    is in effect).
+
+    Returns the index of the port on which the packet is recevied.
+    """
+    received = False
+    match_index = 0
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
+        test,
+        device_number=device_number,
+        timeout=1
+    )
+
+    logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
+    if rcv_port in ports:
+        for pkt in pkts:
+            if str(pkt) == str(rcv_pkt):
+                match_index = ports.index(rcv_port)
+                received = True
+    verify_no_other_packets(test, device_number=device_number)
+
+    test.assertTrue(received == True, "Did not receive pkt on any of ports %r for device %d" % (ports, device_number))
+    return match_index
+
+def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):
+    """
+    Check that each packet is received on corresponding port in the port list belonging to
+    the given device (default device_number is 0).
+
+    Also verifies that the packet is ot received on any other ports for this
+    device, and that no other packets are received on the device (unless --relax
+    is in effect).
+    """
+    pkt_cnt = 0
+    test.assertTrue(len(pkts) == len(ports), "packet list count does not match port list count")
+    for port, pkt in zip(ports, pkts):
+        logging.debug("Checking for pkt on device %d, port %d", device_number, port)
+        (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
+            test,
+            device_number=device_number,
+            port_number=port,
+            exp_pkt=pkt
+        )
+        test.assertTrue(rcv_pkt != None, "Did not receive pkt on port %d for device %d" %(port, device_number))
+
+    verify_no_other_packets(test, device_number=device_number)
+
+def verify_packet_prefix(test, pkt, port, len, device_number=0):
+    """
+    Check that an expected packet is received
+    """
+    logging.debug("Checking for pkt on port %r", port)
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=str(pkt)[:len])
+    test.assertTrue(rcv_pkt != None, "Did not receive pkt on %r" % port)
+
 
 __all__ = list(set(locals()) - _import_blacklist)

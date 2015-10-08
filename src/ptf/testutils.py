@@ -1585,11 +1585,9 @@ def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):
             port_number=port,
             exp_pkt=pkt
         )
-        if rcv_pkt != None:
-            pkt_cnt += 1
+        test.assertTrue(rcv_pkt != None, "Did not receive pkt on port %d for device %d" %(port, device_number))
 
     verify_no_other_packets(test, device_number=device_number)
-    test.assertTrue(pkt_cnt == len(ports), "Did not receive pkt on one of ports %r for device %d" % (ports, device_number))
 
 def verify_packet_prefix(test, pkt, port, len, device_number=0):
     """

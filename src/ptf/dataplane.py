@@ -362,6 +362,7 @@ class DataPlane(Thread):
             if rcv_port == None:
                 self.logger.debug("Out of packets on all ports")
                 break
+
             queue = self.packet_queues[(device, rcv_port)]
 
             if len(queue) == 0:

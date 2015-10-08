@@ -515,7 +515,7 @@ def simple_vxlanv6_packet(pktlen=300,
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param udp_sport UDP source port
-    @param udp_dport UDP dest port (IANA) = 4789 (VxLAN) 4790 (VxLAN-GPE)
+    @param udp_dport UDP dest port (IANA) = 4789 (VxLAN)
     @param vxlan_reserved1 reserved field (3B)
     @param vxlan_vni VXLAN Network Identifier
     @param vxlan_reserved2 reserved field (1B)
@@ -544,16 +544,12 @@ def simple_vxlanv6_packet(pktlen=300,
               scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim)/ \
             udp_hdr
 
-    if udp_dport == 4789:
-        pkt = pkt / VXLAN(vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
-    else:
-        pkt = pkt / VXLAN_GPE(vni = vxlan_vni)
+    pkt = pkt / VXLAN(vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
 
     if inner_frame:
         pkt = pkt / inner_frame
     else:
-        if udp_dport == 4789:
-            pkt = pkt / simple_tcp_packet(pktlen = pktlen - len(pkt))
+        pkt = pkt / simple_tcp_packet(pktlen = pktlen - len(pkt))
 
     return pkt
 
@@ -1548,30 +1544,29 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
     Also verifies that the packet is ot received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
+
+    Returns the index of the port on which the packet is recevied.
     """
     received = False
-    index = 0
     match_index = 0
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
-        timeout=1,
-        filters=FILTERS
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
+        test,
+        device_number=device_number,
+        timeout=1
     )
-    for port in ports:
-        if rcv_device != device_number:
-            continue
-        if port in ports:
-            for pkt in pkts:
-                logging.debug("Checking for pkt on device %d, port %d", device_number, port)
-                if str(rcv_pkt) == str(pkt) and rcv_port == port:
-                    received = True
-                    match_index = index
-        index += 1
+
+    logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
+    if rcv_port in ports:
+        for pkt in pkts:
+            if str(pkt) == str(rcv_pkt):
+                match_index = ports.index(rcv_port)
+                received = True
     verify_no_other_packets(test)
 
     test.assertTrue(received == True, "Did not receive pkt on any of ports %r for device %d" % (ports, device_number))
     return match_index
 
-def verify_packets_on_ports(test, pkts=[], ports=[], device_number=0):
+def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):
     """
     Check that each packet is received on corresponding port in the port list belonging to
     the given device (default device_number is 0).
@@ -1580,58 +1575,27 @@ def verify_packets_on_ports(test, pkts=[], ports=[], device_number=0):
     device, and that no other packets are received on the device (unless --relax
     is in effect).
     """
-    cnt = 0
     pkt_cnt = 0
     test.assertTrue(len(pkts) == len(ports), "packet list count does not match port list count")
-    for port in ports:
+    for device, port in ptf_ports():
+        if device != device_number:
+            continue
         if port in ports:
-            pkt = pkts[cnt]
+            pkt = pkts[ports.index(port)]
             logging.debug("Checking for pkt on device %d, port %d", device_number, port)
-            #(rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
             (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
-                test, device_number,
+                test,
+                device_number=device_number,
                 port_number=port,
                 exp_pkt=pkt
             )
-            if rcv_device != device_number:
-                continue
-
             if rcv_pkt != None:
                 pkt_cnt += 1
-        cnt += 1
 
     verify_no_other_packets(test)
     test.assertTrue(pkt_cnt == len(ports), "Did not receive pkt on one of ports %r for device %d" % (ports, device_number))
 
-def verify_any_packet_on_ports_list(test, pkts=[], ports=[], device_number=0):
-    """
-    Ports is list of port lists
-    Check that _any_ packet is received atleast once in every sublist in ports belonging to
-    the given device (default device_number is 0).
-
-    Also verifies that the packet is ot received on any other ports for this
-    device, and that no other packets are received on the device (unless --relax
-    is in effect).
-    """
-    pkt_cnt = 0
-    for port_list in ports:
-        for port in port_list:
-            (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
-                port_number=port,
-                timeout=1,
-                filters=FILTERS
-            )
-            if rcv_device != device_number:
-                continue
-            for pkt in pkts:
-                logging.debug("Checking for pkt on device %d, port %d", device_number, port)
-                if str(rcv_pkt) == str(pkt):
-                    pkt_cnt += 1
-
-    verify_no_other_packets(test)
-    test.assertTrue(pkt_cnt == len(ports), "Did not receive pkt on one of ports %r for device %d" % (ports, device_number))
-
-def verify_packet_len(test, pkt, port, len, device_number=0):
+def verify_packet_prefix(test, pkt, port, len, device_number=0):
     """
     Check that an expected packet is received
     """

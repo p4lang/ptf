@@ -66,7 +66,6 @@ config_default = {
     "platform_args"      : None,
     "platform_dir"       : os.path.join(root_dir, "platforms"),
     "interfaces"         : [],
-    "device_type"        : "bm",
 
     # Logging options
     "log_file"           : "ptf.log",
@@ -95,7 +94,6 @@ config_default = {
 
     # Other configuration
     "port_map"           : {},
-    "cpu_port"           : 64,
 }
 
 def config_setup():
@@ -189,7 +187,6 @@ be subtracted from the result by prefixing them with the '^' character.  """
     group.add_argument("--platform-dir", type=str, help="Directory containing platform modules")
     group.add_argument("--interface", "-i", type=str, dest="interfaces", metavar="INTERFACE", action=ActionInterface,
                        help="Specify a port number and the dataplane interface to use. May be given multiple times. Example: 1@eth1 or 0-1@eth2 (use eth2 as port 1 of device 0)")
-    group.add_argument("--device-type", help="Test device type (default %default)")
 
     group = parser.add_argument_group("Logging options")
     group.add_argument("--log-file", help="Name of log file")
@@ -237,8 +234,6 @@ be subtracted from the result by prefixing them with the '^' character.  """
                        help="Disable MPLS (do not import from scapy even if supported)")
     group.add_argument("--disable-nvgre", action="store_true",
                        help="Disable NVGRE (do not import from scapy even if supported)")
-
-    group.add_argument("--cpu-port", help="cpu port")
 
     # Might need this if other parsers want command line
     # parser.allow_interspersed_args = False

@@ -340,6 +340,7 @@ def simple_nvgre_packet(pktlen=300,
                       ip_options=False,
                       nvgre_version=0,
                       nvgre_tni=None,
+                      nvgre_flowid=0,
                       inner_frame=None
                       ):
     """
@@ -359,6 +360,7 @@ def simple_nvgre_packet(pktlen=300,
     @param ip_id IP ID
     @param nvgre_version Version
     @param nvgre_tni
+    @param nvgre_flowid
     @param inner_frame payload of the GRE packet
 
     Generates a simple GRE packet. Users shouldn't assume anything about
@@ -371,7 +373,7 @@ def simple_nvgre_packet(pktlen=300,
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    nvgre_hdr = scapy.NVGRE(vsid=nvgre_tni)
+    nvgre_hdr = scapy.NVGRE(vsid=nvgre_tni, flowid=nvgre_flowid)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):

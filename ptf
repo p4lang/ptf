@@ -620,6 +620,18 @@ if __name__ == "__main__":
     profiler_teardown(profiler)
 
     if run_failures or run_errors:
+        print
+        print "******************************************"
+        print "ATTENTION: SOME TESTS DID NOT PASS!!!"
+        print
+        if run_failures:
+            print "The following tests failed:"
+            print ", ".join([f[0].__class__.__name__ for f in run_failures])
+        if run_errors:
+            print
+            print "The following tests errored:"
+            print ", ".join([f[0].__class__.__name__ for f in run_errors])
+        print "******************************************"
         # exit(1) hangs sometimes
         os._exit(1)
     if ptf.testutils.skipped_test_count > 0 and config["fail_skipped"]:

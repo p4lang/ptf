@@ -122,7 +122,7 @@ def simple_tcp_packet(pktlen=100,
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, frag=ip_frag, options=ip_options)/ \
                 tcp_hdr
 
-    pkt = pkt/("".join([chr(x) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
 
     return pkt
 

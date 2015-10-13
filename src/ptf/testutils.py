@@ -1462,21 +1462,23 @@ def verify_packet(test, pkt, port_id):
     )
     test.assertTrue(rcv_pkt != None, "Did not receive pkt on device %d, port %r" % (device, port))
 
-def verify_no_packet(test, pkt, port_id):
+def verify_no_packet(test, pkt, port_id, timeout=None):
     """
     Check that a particular packet is not received
     port_id can either be a single integer (port_number on default device 0)
     or a tuple of 2 integers (device_number, port_number)
     """
+    if timeout is None:
+        timeout = ptf.ptfutils.default_negative_timeout
     device, port = port_to_tuple(port_id)
     logging.debug("Negative check for pkt on device %d, port %d", device, port)
     (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
         test, device_number=device, port_number=port, exp_pkt=pkt,
-        timeout=ptf.ptfutils.default_negative_timeout
+        timeout=timeout
     )
     test.assertTrue(rcv_pkt == None, "Received packet on device %d, port %r" % (device, port))
 
-def verify_no_other_packets(test, device_number=0):
+def verify_no_other_packets(test, device_number=0, timeout=None):
     """
     Check that no unexpected packets are received on specified device
 
@@ -1484,10 +1486,12 @@ def verify_no_other_packets(test, device_number=0):
     """
     if ptf.config["relax"]:
         return
+    if timeout is None:
+        timeout = ptf.ptfutils.default_negative_timeout
     logging.debug("Checking for unexpected packets on all ports of device %d" % device_number)
     (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
         test, device_number=device_number,
-        timeout=ptf.ptfutils.default_negative_timeout
+        timeout=timeout
     )
     if rcv_pkt != None:
         logging.debug("Received unexpected packet on device %d, port %r: %s", device_number, rcv_port, format_packet(rcv_pkt))

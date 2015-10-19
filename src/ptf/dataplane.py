@@ -215,7 +215,7 @@ class DataPlane(Thread):
 
     MAX_QUEUE_LEN = 100
 
-    def __init__(self, qlen=MAX_QUEUE_LEN, config=None):
+    def __init__(self, config=None):
         Thread.__init__(self)
 
         # dict from device number, port number to port object
@@ -235,7 +235,6 @@ class DataPlane(Thread):
         self.logger = logging.getLogger("dataplane")
         self.pcap_writer = None
 
-        self.qlen = qlen
 
         if config is None:
             self.config = {}
@@ -261,6 +260,11 @@ class DataPlane(Thread):
         else:
             self.logger.warning("Missing pypcap, VLAN tests may fail. See README for installation instructions.")
             self.dppclass = DataPlanePort
+
+        if "qlen" in self.config:
+            self.qlen = self.config["qlen"]
+        else:
+            self.qlen = self.MAX_QUEUE_LEN
 
         self.start()
 
@@ -301,6 +305,9 @@ class DataPlane(Thread):
                 self.cvar.notify_all()
 
         self.logger.info("Thread exit")
+
+    def set_qlen(self, qlen):
+        self.qlen = qlen
 
     def port_add(self, interface_name, device_number, port_number):
         """

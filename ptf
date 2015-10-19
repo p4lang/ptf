@@ -91,6 +91,7 @@ config_default = {
     "disable_geneve"     : False,
     "disable_mpls"       : False,
     "disable_nvgre"      : False,
+    "qlen"               : 100,
 
     # Other configuration
     "port_map"           : {},
@@ -223,6 +224,8 @@ be subtracted from the result by prefixing them with the '^' character.  """
                        help="Random number generator seed")
     group.add_argument("--disable-ipv6", action="store_true",
                        help="Disable IPv6 tests")
+    group.add_argument("--qlen", type=int,
+                       help="Default queue length ")
 
     group.add_argument("--disable-vxlan", action="store_true",
                        help="Disable VXLAN (do not import from scapy even if supported)")

@@ -235,6 +235,8 @@ class DataPlane(Thread):
         self.logger = logging.getLogger("dataplane")
         self.pcap_writer = None
 
+        self.qlen = self.MAX_QUEUE_LEN
+
         if config is None:
             self.config = {}
         else:
@@ -291,7 +293,7 @@ class DataPlane(Thread):
                             self.pcap_writer.write(pkt, timestamp,
                                                    device_number, port_number)
                         queue = self.packet_queues[(device_number, port_number)]
-                        if len(queue) >= self.MAX_QUEUE_LEN:
+                        if len(queue) >= self.qlen:
                             # Queue full, throw away oldest
                             queue.pop(0)
                             self.logger.debug("Discarding oldest packet to make room")

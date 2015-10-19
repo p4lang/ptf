@@ -215,7 +215,7 @@ class DataPlane(Thread):
 
     MAX_QUEUE_LEN = 100
 
-    def __init__(self, config=None):
+    def __init__(self, qlen=MAX_QUEUE_LEN, config=None):
         Thread.__init__(self)
 
         # dict from device number, port number to port object
@@ -235,7 +235,7 @@ class DataPlane(Thread):
         self.logger = logging.getLogger("dataplane")
         self.pcap_writer = None
 
-        self.qlen = self.MAX_QUEUE_LEN
+        self.qlen = qlen
 
         if config is None:
             self.config = {}

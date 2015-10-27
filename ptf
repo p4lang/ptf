@@ -626,14 +626,15 @@ if __name__ == "__main__":
         print
         print "******************************************"
         print "ATTENTION: SOME TESTS DID NOT PASS!!!"
-        print
-        if run_failures:
+        if (not config["xunit"]) and run_failures:
+            print
             print "The following tests failed:"
             print ", ".join([f[0].__class__.__name__ for f in run_failures])
-        if run_errors:
+        if (not config["xunit"]) and run_errors:
             print
             print "The following tests errored:"
             print ", ".join([f[0].__class__.__name__ for f in run_errors])
+        print
         print "******************************************"
         # exit(1) hangs sometimes
         os._exit(1)

@@ -64,7 +64,7 @@ config_default = {
     # Switch connection options
     "platform"           : "eth",
     "platform_args"      : None,
-    "platform_dir"       : os.path.join(root_dir, "platforms"),
+    "platform_dir"       : None,
     "interfaces"         : [],
 
     # Logging options
@@ -525,6 +525,11 @@ elif config["test_order"] == "rand":
     seed = config["test_order_seed"]
     random.seed(seed)
     random.shuffle(test_suite)
+
+
+if config["platform_dir"] is None:
+    from ptf import platforms
+    config["platform_dir"] = os.path.dirname(os.path.abspath(platforms.__file__))
 
 # Allow platforms to import each other
 sys.path.append(config["platform_dir"])

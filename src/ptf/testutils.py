@@ -782,6 +782,7 @@ def ipv4_erspan_pkt(pktlen=350,
                       ip_options=False,
                       version=2,
                       mirror_id=0x3FF,
+                      sgt_other=0,
                       inner_frame=None
                       ):
     """
@@ -811,7 +812,7 @@ def ipv4_erspan_pkt(pktlen=350,
         pktlen = MINSIZE
 
     if version == 2:
-        erspan_hdr = scapy.GRE(proto=0x22eb)/scapy.ERSPAN_III(span_id=mirror_id)
+        erspan_hdr = scapy.GRE(proto=0x22eb)/scapy.ERSPAN_III(span_id=mirror_id, sgt_other = sgt_other)
     else:
         erspan_hdr = scapy.GRE(proto=0x88be)/scapy.ERSPAN(span_id=mirror_id)
 
@@ -1338,7 +1339,7 @@ def hex_dump_buffer(src, length=16):
     result = ["\n"]
     for i in xrange(0, len(src), length):
        chars = src[i:i+length]
-       hex = ' '.join(["%02x" % ord(x) for x in chars])
+       hex = ' '.join(["%02X" % ord(x) for x in chars])
        printable = ''.join(["%s" % ((ord(x) <= 127 and
                                      FILTER[ord(x)]) or '.') for x in chars])
        result.append("%04x  %-*s  %s\n" % (i, length*3, hex, printable))

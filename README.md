@@ -155,6 +155,20 @@ NICs on the host running PTF, like so:
         (0, 26) : "eth5"
     }
 
+### `nn`
+
+We introduce a new platform, `nn`, which uses [nanomsg] (http://nanomsg.org/) to
+send and receive packet to the switch. We support IPC and TCP nanomsg
+sockets. When using this platform, you need to make sure that the Python package
+[nnpy] (https://github.com/nanomsg/nnpy) is installed. With `nn`, do not use
+`--interface`, instead use `--device-socket`. For each device, you need to
+provide a list of enabled ports and a nanomsg socket address. For example:
+
+    --device-socket 0-{1,2,5-8}@ipc:///tmp/bmv2_packets_1.ipc
+
+This command will enable ports 1, 2, 5, 6, 7, 8 on device 0. Packets for device
+0 will be captured and send on IPC socket `ipc:///tmp/bmv2_packets_1.ipc`.
+
 ## Passing Parameters to Tests
 
 There is a facility for passing test-specific parameters into tests that works as follows. On the command line, give the parameter

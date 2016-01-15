@@ -28,6 +28,12 @@ import netutils
 import mask
 from pcap_writer import PcapWriter
 
+try:
+    import nnpy
+    with_nnpy = True
+except ImportError:
+    with_nnpy = False
+
 if "linux" in sys.platform:
     import afpacket
 else:
@@ -60,7 +66,56 @@ def match_exp_pkt(exp_pkt, pkt):
         p = p[:len(e)]
     return e == p
 
-class DataPlanePortLinux:
+
+class DataPlanePacketSourceIface:
+    """
+    Interface for an object that can be passed to select and on which packets
+    can be received. This was introduced so that several ports can share the
+    same packet 'source'
+    """
+    def fileno(self):
+        """
+        Return an integer file descriptor that can be passed to select(2).
+        """
+        raise NotImplementedError()
+
+    def recv(self):
+        """
+        Receive a packet from this port.
+        @retval (device, port, packet data, timestamp)
+        """
+        raise NotImplementedError()
+
+
+class DataPlanePortIface:
+    def get_packet_source(self):
+        """
+        @retval An object implementing DataPlanePacketSourceIface
+        """
+        raise NotImplementedError()
+
+    def send(self, packet):
+        """
+        Send a packet out this port.
+        @param packet The packet data to send to the port
+        @retval The number of bytes sent
+        """
+        raise NotImplementedError()
+
+    def down(self):
+        """
+        Bring the physical link down.
+        """
+        raise NotImplementedError()
+
+    def up(self):
+        """
+        Bring the physical link up.
+        """
+        raise NotImplementedError()
+
+
+class DataPlanePortLinux(DataPlanePortIface, DataPlanePacketSourceIface):
     """
     Uses raw sockets to capture and send packets on a network interface.
     """
@@ -74,6 +129,8 @@ class DataPlanePortLinux:
         @param interface_name The name of the physical interface like eth1
         """
         self.interface_name = interface_name
+        self.device_number = device_number
+        self.port_number = port_number
         self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, 0)
         afpacket.enable_auxdata(self.socket)
         self.socket.bind((interface_name, self.ETH_P_ALL))
@@ -93,10 +150,16 @@ class DataPlanePortLinux:
     def recv(self):
         """
         Receive a packet from this port.
-        @retval (packet data, timestamp)
+        @retval (device, port, packet data, timestamp)
         """
         pkt = afpacket.recv(self.socket, self.RCV_SIZE_DEFAULT)
-        return (pkt, time.time())
+        return (self.device_number, self.port_number, pkt, time.time())
+
+    def get_packet_source(self):
+        """
+        @retval An object implementing DataPlanePacketSourceIface
+        """
+        return self
 
     def send(self, packet):
         """
@@ -118,7 +181,139 @@ class DataPlanePortLinux:
         """
         os.system("ifconfig up %s" % self.interface_name)
 
-class DataPlanePort:
+
+class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
+    """
+    Wrapper class around nnpy used to capture data packets, send data packets
+    and send port status messages. It implements DataPlanePacketSourceIface by
+    exposing nanomsg receive file descriptor (RCVFD).
+    Note that there has to be a 1-1 mapping between device and nanomsg
+    socket. This is because the device number is not included in the PACKET_OUT
+    messages. Maybe something to add in the future?
+    """
+
+    MSG_TYPE_PORT_ADD = 0
+    MSG_TYPE_PORT_REMOVE = 1
+    MSG_TYPE_PORT_SET_STATUS = 2
+    MSG_TYPE_PACKET_IN = 3
+    MSG_TYPE_PACKET_OUT = 4
+
+    def __init__(self, device_number, socket_addr, rcv_timeout):
+        self.device_number = device_number
+        self.socket_addr = socket_addr
+        self.socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)
+        self.socket.connect(socket_addr)
+        self.rcv_timeout = rcv_timeout
+        self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.RCVTIMEO, rcv_timeout)
+        self.buffers = defaultdict(list)
+
+    def close(self):
+        # TODO(antonin): something to do?
+        pass
+
+    def fileno(self):
+        """
+        Return an integer file descriptor that can be passed to select(2).
+        """
+        return self.socket.getsockopt(nnpy.SOL_SOCKET, nnpy.RCVFD)
+
+    def send_port_msg(self, msg_type, port_number, more):
+        hdr = struct.pack("<iii", msg_type, port_number, more)
+        self.socket.send(hdr)
+
+    def port_add(self, port_number):
+        self.send_port_msg(self.MSG_TYPE_PORT_ADD, port_number, 0)
+
+    def port_remove(self, port_number):
+        self.send_port_msg(self.MSG_TYPE_PORT_REMOVE, port_number, 0)
+
+    def port_bring_up(self, port_number):
+        self.send_port_msg(self.MSG_TYPE_PORT_SET_STATUS, port_number,
+                           self.MSG_PORT_STATUS_UP)
+
+    def port_bring_down(self, port_number):
+        self.send_port_msg(self.MSG_TYPE_PORT_SET_STATUS, port_number,
+                           self.MSG_PORT_STATUS_DOWN)
+
+    def recv(self):
+        msg = self.socket.recv()
+        fmt = "<iii"
+        msg_type, port_number, length = struct.unpack_from(fmt, msg)
+        hdr_size = struct.calcsize(fmt)
+        msg = msg[hdr_size:]
+        assert (msg_type == self.MSG_TYPE_PACKET_OUT)
+        assert (len(msg) == length)
+        return (self.device_number, port_number, msg, time.time())
+
+    def send(self, port_number, packet):
+        msg = struct.pack("<iii%ds" % len(packet), self.MSG_TYPE_PACKET_IN,
+                          port_number, len(packet), packet)
+        # because nnpy expects unicode when using str
+        msg = list(msg)
+        self.socket.send(msg)
+        # nnpy does not return the number of bytes sent
+        return len(packet)
+
+
+class DataPlanePortNN(DataPlanePortIface):
+    """
+    Uses nanomsg sockets to capture and send packets (through IPC or TCP)
+    """
+
+    RCV_TIMEOUT = 10000
+
+    # indexed by device_number, maps to a PacketInjectNN instance
+    packet_injecters = {}
+
+    def __init__(self, interface_name, device_number, port_number):
+        """
+        @param interface_name The addr of the socket (like ipc://<path to file>
+        or tcp://<iface>:<port>)
+        """
+        self.interface_name = interface_name
+        if device_number not in self.packet_injecters:
+            self.packet_injecters[device_number] = DataPlanePacketSourceNN(
+                device_number, interface_name, self.RCV_TIMEOUT)
+        self.packet_inject = self.packet_injecters[device_number]
+        self.port_number = port_number
+        self.device_number = device_number
+        self.packet_inject.port_add(port_number)
+
+    def __del__(self):
+        if self.packet_inject:
+            self.packet_inject.port_remove(self.port_number)
+
+    def get_packet_source(self):
+        """
+        @retval An object implementing DataPlanePacketSourceIface
+        """
+        return self.packet_injecters[self.device_number]
+
+    def send(self, packet):
+        """
+        Send a packet out this port.
+        @param packet The packet data to send to the port
+        @retval The number of bytes sent
+        """
+        return self.packet_injecters[self.device_number].send(
+            self.port_number, packet)
+
+    def down(self):
+        """
+        Bring the physical link down.
+        """
+        self.packet_injecters[self.device_number].port_bring_down(
+            self.port_number)
+
+    def up(self):
+        """
+        Bring the physical link up.
+        """
+        self.packet_injecters[self.device_number].port_bring_up(
+            self.port_number)
+
+
+class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):
     """
     Uses raw sockets to capture and send packets on a network interface.
     """
@@ -132,6 +327,8 @@ class DataPlanePort:
         @param interface_name The name of the physical interface like eth1
         """
         self.interface_name = interface_name
+        self.device_number = device_number
+        self.port_number = port_number
         self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
                                     socket.htons(self.ETH_P_ALL))
         self.socket.bind((interface_name, 0))
@@ -151,10 +348,16 @@ class DataPlanePort:
     def recv(self):
         """
         Receive a packet from this port.
-        @retval (packet data, timestamp)
+        @retval (device, port, packet data, timestamp)
         """
         pkt = self.socket.recv(self.RCV_SIZE_DEFAULT)
-        return (pkt, time.time())
+        return (self.device_number, self.port_number, pkt, time.time())
+
+    def get_packet_source(self):
+        """
+        @retval An object implementing DataPlanePacketSourceIface
+        """
+        return self
 
     def send(self, packet):
         """
@@ -185,6 +388,8 @@ class DataPlanePortPcap:
     """
 
     def __init__(self, interface_name, device_number, port_number):
+        self.device_number = device_number
+        self.port_number = port_number
         self.pcap = pcap.pcap(interface_name)
         self.pcap.setnonblock()
 
@@ -193,7 +398,10 @@ class DataPlanePortPcap:
 
     def recv(self):
         (timestamp, pkt) = next(self.pcap)
-        return (pkt[:], timestamp)
+        return (self.device_number, self.port_number, pkt[:], timestamp)
+
+    def get_packet_source(self):
+        return self
 
     def send(self, packet):
         return self.pcap.inject(packet, len(packet))
@@ -251,7 +459,11 @@ class DataPlane(Thread):
         # where MyDataPlanePortClass has the same interface as the class
         # DataPlanePort defined here.
         #
-        if "dataplane" in self.config and "portclass" in self.config["dataplane"]:
+        if self.config["platform"] == "nn":
+            # assert is ok here because this is caught earlier in ptf
+            assert(with_nnpy == True)
+            self.dppclass = DataPlanePortNN
+        elif "dataplane" in self.config and "portclass" in self.config["dataplane"]:
             self.dppclass = self.config["dataplane"]["portclass"]
         elif "linux" in sys.platform:
             self.dppclass = DataPlanePortLinux
@@ -273,7 +485,8 @@ class DataPlane(Thread):
         Activity function for class
         """
         while not self.killed:
-            sockets = [self.waker] + self.ports.values()
+            sockets = set([p.get_packet_source() for p in self.ports.values()])
+            sockets.add(self.waker)
             try:
                 sel_in, sel_out, sel_err = select.select(sockets, [], [], 1)
             except:
@@ -282,15 +495,13 @@ class DataPlane(Thread):
                 break
 
             with self.cvar:
-                for port in sel_in:
-                    if port == self.waker:
+                for sel in sel_in:
+                    if sel == self.waker:
                         self.waker.wait()
                         continue
                     else:
                         # Enqueue packet
-                        pkt, timestamp = port.recv()
-                        port_number = port._port_number
-                        device_number = port._device_number
+                        device_number, port_number, pkt, timestamp = sel.recv()
                         self.logger.debug("Pkt len %d in on device %d, port %d",
                                           len(pkt), device_number, port_number)
                         if self.pcap_writer:

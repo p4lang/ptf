@@ -66,6 +66,7 @@ config_default = {
     "platform_args"      : None,
     "platform_dir"       : None,
     "interfaces"         : [],
+    "device_sockets"     : [],  # when using nanomsg
 
     # Logging options
     "log_file"           : "ptf.log",
@@ -141,6 +142,50 @@ be subtracted from the result by prefixing them with the '^' character.  """
             assert(type(values) is str)
             getattr(namespace, self.dest).append(check_interface(values))
 
+    class ActionDeviceSocket(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            # Parse --device-socket
+            def check_device_socket(value):
+                def parse_ports(ports):
+                    port_set = set()
+                    try:
+                        ports = ports.strip("{}")
+                        ports = ports.split(",")
+                    except:
+                        raise ValueError("")
+                    for port in ports:
+                        try:
+                            p = int(port)
+                            port_set.add(p)
+                            continue
+                        except:
+                            pass
+                        try:
+                            p1, p2 = port.split("-", 1)
+                            p1, p2 = int(p1), int(p2)
+                            for p in xrange(p1, p2 + 1):  # p2 included
+                                port_set.add(p)
+                        except:
+                            raise ValueError("")
+                    return port_set
+
+                try:
+                    dev_and_port, addr = value.split('@', 1)
+                    if dev_and_port[0] == '{':
+                        dev, ports = (0, parse_ports(dev_and_port))
+                    else:
+                        dev_and_port = dev_and_port.split("-", 1)
+                        if len(dev_and_port) != 2:
+                            raise ValueError("")
+                        dev, ports = (int(dev_and_port[0]),
+                                      parse_ports(dev_and_port[1]))
+                except ValueError:
+                    parser.error("incorrect device-socket syntax (got %s, expected something of the form 0-{1,2,5-8}@<socket addr>)" % repr(value))
+                return (dev, ports, addr)
+
+            assert(type(values) is str)
+            getattr(namespace, self.dest).append(check_device_socket(values))
+
     class ActionTestDir(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
             assert(type(values) is str)
@@ -188,6 +233,8 @@ be subtracted from the result by prefixing them with the '^' character.  """
     group.add_argument("--platform-dir", type=str, help="Directory containing platform modules")
     group.add_argument("--interface", "-i", type=str, dest="interfaces", metavar="INTERFACE", action=ActionInterface,
                        help="Specify a port number and the dataplane interface to use. May be given multiple times. Example: 1@eth1 or 0-1@eth2 (use eth2 as port 1 of device 0)")
+    group.add_argument("--device-socket", type=str, dest="device_sockets", metavar="DEVICE-SOCKET", action=ActionDeviceSocket,
+                       help="Specify the nanomsg socket to use to send / receive packets for a given device, as well as the ports to enable on the device. May be given multiple times. Example: 0-{1,2,5-8}@<socket addr>")
 
     group = parser.add_argument_group("Logging options")
     group.add_argument("--log-file", help="Name of log file")
@@ -537,6 +584,14 @@ sys.path.append(config["platform_dir"])
 # Load the platform module
 platform_name = config["platform"]
 logging.info("Importing platform: " + platform_name)
+
+# TODO(antonin): put this check in platforms/nn.py ?
+if platform_name == "nn":
+    try:
+        import nnpy
+    except:
+        die("Cannot use 'nn' platform if nnpy package is not installed")
+
 platform_mod = None
 try:
     platform_mod = imp.load_module(platform_name, *imp.find_module(platform_name, [config["platform_dir"]]))
@@ -560,7 +615,7 @@ ptf.ptfutils.default_timeout = config["default_timeout"]
 ptf.ptfutils.default_negative_timeout = config["default_negative_timeout"]
 ptf.testutils.MINSIZE = config['minsize']
 
-if os.getuid() != 0 and not config["allow_user"]:
+if os.getuid() != 0 and not config["allow_user"] and platform_name != "nn":
     print "ERROR: Super-user privileges required. Please re-run with " \
           "sudo or as root."
     sys.exit(1)

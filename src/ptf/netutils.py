@@ -51,6 +51,9 @@ def get_if(iff,cmd):
 def get_if_index(iff):
   return int(struct.unpack("I",get_if(iff, SIOCGIFINDEX)[16:20])[0])
 
+def get_mac(iff):
+  return ':'.join(['%02x' % ord(char) for char in get_if(iff, SIOCGIFHWADDR)[18:24]])
+
 def set_promisc(s,iff,val=1):
   mreq = struct.pack("IHH8s", get_if_index(iff), PACKET_MR_PROMISC, 0, "")
   if val:

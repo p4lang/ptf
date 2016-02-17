@@ -514,9 +514,9 @@ def simple_vxlanv6_packet(pktlen=300,
     @param vlan_pcp VLAN priority
     @param ipv6_src IPv6 source
     @param ipv6_dst IPv6 destination
-    @param ip_tos IP ToS
-    @param ip_ttl IP TTL
-    @param ip_id IP ID
+    @param ipv6_fl IPv6 flowlabel
+    @param ipv6_tc IPv6 traffic class
+    @param ipv6_hlim IPv6 hop limit
     @param udp_sport UDP source port
     @param udp_dport UDP dest port (IANA) = 4789 (VxLAN)
     @param vxlan_reserved1 reserved field (3B)
@@ -644,6 +644,97 @@ def simple_gre_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
+        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+            pkt['GRE'].proto = 0x86DD
+    else:
+        pkt = pkt / scapy.IP()
+        pkt = pkt/("D" * (pktlen - len(pkt)))
+
+    return pkt
+
+def simple_grev6_packet(pktlen=300,
+                        eth_dst='00:01:02:03:04:05',
+                        eth_src='00:06:07:08:09:0a',
+                        dl_vlan_enable=False,
+                        vlan_vid=0,
+                        vlan_pcp=0,
+                        dl_vlan_cfi=0,
+                        ipv6_src='1::2',
+                        ipv6_dst='3::4',
+                        ipv6_fl=0,
+                        ipv6_tc=0,
+                        ipv6_hlim=64,
+                        gre_chksum_present=0,
+                        gre_routing_present=0, # begin reserved0
+                        gre_key_present=0,
+                        gre_seqnum_present=0,
+                        gre_strict_route_source=0,
+                        gre_flags=0, # end reserved0
+                        gre_version=0,
+                        gre_offset=None, # reserved1
+                        gre_key=None,
+                        gre_sequence_number=None,
+                        inner_frame=None
+                       ):
+    """
+    Return a simple dataplane GRE packet
+
+    Supports a few parameters:
+    @param len Length of packet in bytes w/o CRC
+    @param eth_dst Destination MAC
+    @param eth_src Source MAC
+    @param dl_vlan_enable True if the packet is with vlan, False otherwise
+    @param vlan_vid VLAN ID
+    @param vlan_pcp VLAN priority
+    @param ipv6_src IPv6 source
+    @param ipv6_dst IPv6 destination
+    @param ipv6_fl IPv6 flowlabel
+    @param ipv6_tc IPv6 traffic class
+    @param ipv6_hlim IPv6 hop limit
+    @param gre_chkum_present with or without checksum
+    @param gre_routing_present
+    @param gre_key_present
+    @param gre_seqnum_present
+    @param gre_strict_route_source
+    @param gre_flags
+    @param gre_version Version
+    @param gre_offset
+    @param gre_key
+    @param gre_sequence_number
+    @param inner_frame payload of the GRE packet
+
+    Generates a simple GRE packet. Users shouldn't assume anything about
+    this packet other than that it is a valid ethernet/IP/GRE frame.
+    """
+
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    # proto (ethertype) is set by Scapy based on the payload
+    gre_hdr = scapy.GRE(chksum_present=gre_chksum_present,
+                        routing_present=gre_routing_present,
+                        key_present=gre_key_present,
+                        seqnum_present=gre_seqnum_present,
+                        strict_route_source=gre_strict_route_source,
+                        flags=gre_flags, version=gre_version,
+                        offset=gre_offset, key=gre_key,
+                        seqence_number=gre_sequence_number) # typo in Scapy
+
+    # Note Dot1Q.id is really CFI
+    if (dl_vlan_enable):
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
+            scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim, nh=47)/ \
+            gre_hdr
+    else:
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim, nh=47)/ \
+            gre_hdr
+
+    if inner_frame:
+        pkt = pkt / inner_frame
+        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+            pkt['GRE'].proto = 0x86DD
     else:
         pkt = pkt / scapy.IP()
         pkt = pkt/("D" * (pktlen - len(pkt)))
@@ -884,6 +975,130 @@ def simple_udpv6_packet(pktlen=100,
     pkt /= scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim)
     pkt /= scapy.UDP(sport=udp_sport, dport=udp_dport)
     pkt /= ("D" * (pktlen - len(pkt)))
+
+    return pkt
+
+def simple_ipv4ip_packet(pktlen=300,
+                         eth_dst='00:01:02:03:04:05',
+                         eth_src='00:06:07:08:09:0a',
+                         dl_vlan_enable=False,
+                         vlan_vid=0,
+                         vlan_pcp=0,
+                         dl_vlan_cfi=0,
+                         ip_src='192.168.0.1',
+                         ip_dst='192.168.0.2',
+                         ip_tos=0,
+                         ip_ttl=64,
+                         ip_id=0x0001,
+                         ip_ihl=None,
+                         ip_options=False,
+                         inner_frame=None
+                        ):
+    """
+    Return a simple dataplane IPv4 encapsulated packet
+
+    Supports a few parameters:
+    @param len Length of packet in bytes w/o CRC
+    @param eth_dst Destination MAC
+    @param eth_src Source MAC
+    @param dl_vlan_enable True if the packet is with vlan, False otherwise
+    @param vlan_vid VLAN ID
+    @param vlan_pcp VLAN priority
+    @param ip_src IP source
+    @param ip_dst IP destination
+    @param ip_tos IP ToS
+    @param ip_ttl IP TTL
+    @param ip_id IP ID
+    @param inner_frame payload of the packet
+
+    Generates a simple IPv4 encapsulated packet.
+    """
+
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    # Note Dot1Q.id is really CFI
+    if (dl_vlan_enable):
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
+            scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl)
+    else:
+        if not ip_options:
+            pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl)
+        else:
+            pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, options=ip_options)
+
+    if inner_frame:
+        pkt = pkt / inner_frame
+        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x40):
+            pkt['IP'].proto = 4
+        elif ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+            pkt['IP'].proto = 41
+    else:
+        pkt = pkt / scapy.IP()
+        pkt = pkt/("D" * (pktlen - len(pkt)))
+        pkt['IP'].proto = 41
+
+    return pkt
+
+def simple_ipv6ip_packet(pktlen=300,
+                         eth_dst='00:01:02:03:04:05',
+                         eth_src='00:06:07:08:09:0a',
+                         dl_vlan_enable=False,
+                         vlan_vid=0,
+                         vlan_pcp=0,
+                         dl_vlan_cfi=0,
+                         ipv6_src='1::2',
+                         ipv6_dst='3::4',
+                         ipv6_fl=0,
+                         ipv6_tc=0,
+                         ipv6_hlim=64,
+                         inner_frame=None
+                       ):
+    """
+    Return a simple dataplane IPv6 encapsulated packet
+
+    Supports a few parameters:
+    @param len Length of packet in bytes w/o CRC
+    @param eth_dst Destination MAC
+    @param eth_src Source MAC
+    @param dl_vlan_enable True if the packet is with vlan, False otherwise
+    @param vlan_vid VLAN ID
+    @param vlan_pcp VLAN priority
+    @param ipv6_src IPv6 source
+    @param ipv6_dst IPv6 destination
+    @param ipv6_fl IPv6 flowlabel
+    @param ipv6_tc IPv6 traffic class
+    @param ipv6_hlim IPv6 hop limit
+    @param inner_frame payload of the GRE packet
+
+    Generates a simple IPv6 encapsulated packet.
+    """
+
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    # Note Dot1Q.id is really CFI
+    if (dl_vlan_enable):
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
+            scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim)
+    else:
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim)
+
+    if inner_frame:
+        pkt = pkt / inner_frame
+        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x40):
+            pkt['IPv6'].nh = 4
+        elif ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+            pkt['IPv6'].nh = 41
+    else:
+        pkt = pkt / scapy.IP()
+        pkt = pkt/("D" * (pktlen - len(pkt)))
+        pkt['IPv6'].nh = 4
 
     return pkt
 

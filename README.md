@@ -122,6 +122,16 @@ example:
     m.set_do_not_care_scapy(IP, 'ttl')
     verify_packets(<test>, m, <port list>)
 
+## Test timeout
+
+A timeout for test cases can be specified using the `--test-case-timeout`
+command line option. This timeout must be expressed in seconds. A timeout of 0
+is the same as no timeout (the default). If the timeout expires before the test
+is done executing, an exception will be raised and the test counts as an
+error. A timeout can also be specified for each individual test case, using the
+`@testtimeout` decorator, which needs to be imported from `ptf.testutils`. This
+timeout takes precedence over the global timeout passed on the command line.
+
 ---
 
 # Configuring PTF

@@ -93,6 +93,7 @@ config_default = {
     "disable_mpls"       : False,
     "disable_nvgre"      : False,
     "qlen"               : 100,
+    "test_case_timeout"  : None,
 
     # Other configuration
     "port_map"           : {},
@@ -273,6 +274,8 @@ be subtracted from the result by prefixing them with the '^' character.  """
                        help="Disable IPv6 tests")
     group.add_argument("--qlen", type=int,
                        help="Default queue length ")
+    group.add_argument("--test-case-timeout", type=int,
+                       help="Timeout for each test case, 0 means no timeout")
 
     group.add_argument("--disable-vxlan", action="store_true",
                        help="Disable VXLAN (do not import from scapy even if supported)")
@@ -412,6 +415,8 @@ def load_test_modules(config):
                         test._nonstandard = False
                     if not hasattr(test, "_disabled"):
                         test._disabled = False
+                    if not hasattr(test, "_testtimeout"):
+                        test._testtimeout = None
 
                     # Put test in its module's test group
                     if not test._disabled:
@@ -656,12 +661,33 @@ if __name__ == "__main__":
                                          verbosity=2)
     else:
         runner = unittest.TextTestRunner(verbosity=2)
+    test_case_timeout = config["test_case_timeout"]
     run_failures = []
     run_errors = []
+    run_timeouts = []
+    from ptf.ptfutils import Timeout
     for t in test_suite:
-        result = runner.run(t)
+        if t._testtimeout is not None:
+            this_test_timeout = t._testtimeout
+        else:
+            this_test_timeout = test_case_timeout
+
+        if this_test_timeout:
+            with Timeout(this_test_timeout):
+                result = runner.run(t)
+        else:
+            result = runner.run(t)
+
         run_failures.extend(result.failures)
         run_errors.extend(result.errors)
+
+        if this_test_timeout:
+            for case in result.errors:
+                traceback_str = case[1]
+                # TODO: hacky? could not think of a better way
+                if "raise Timeout.TimeoutError()" in traceback_str:
+                    logging.info("Test case failed because of timeout")
+                    run_timeouts.append(case)
 
         if config["failfast"] and not result.wasSuccessful():
             logging.info("Test failed and failfast mode enabled, stopping")
@@ -694,6 +720,10 @@ if __name__ == "__main__":
             print
             print "The following tests errored:"
             print ", ".join([f[0].__class__.__name__ for f in run_errors])
+        if (not config["xunit"]) and run_timeouts:
+            print
+            print "The following tests errored because of a timeout:"
+            print ", ".join([f[0].__class__.__name__ for f in run_timeouts])
         print
         print "******************************************"
         # exit(1) hangs sometimes

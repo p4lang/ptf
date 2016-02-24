@@ -8,6 +8,7 @@ import time
 import os
 import fcntl
 import logging
+import signal
 
 default_timeout = None # set by ptf
 default_negative_timeout = None # set by ptf
@@ -62,3 +63,40 @@ class EventDescriptor():
 
     def fileno(self):
         return self.pipe_rd
+
+# inspired from http://stackoverflow.com/questions/8464391/what-should-i-do-if-socket-setdefaulttimeout-is-not-working
+class Timeout():
+    """Timeout class using ALARM signal"""
+
+    class TimeoutError(Exception):
+        pass
+
+    def __init__(self, sec):
+        try:
+            from signal import alarm
+            self.supported = True
+        except ImportError:
+            logging.warn("Your platform does not support alarm signals, "
+                         "the Timeout feature is therefore not supported")
+            self.supported = False
+            return
+        self.sec = sec
+        if sec > 0:
+            self.valid = True
+        else:
+            self.valid = False
+            logging.warn("Invalid timeout requested")
+
+    def __enter__(self):
+        if not self.supported or not self.valid:
+            return
+        signal.signal(signal.SIGALRM, self.raise_timeout)
+        signal.alarm(self.sec)
+
+    def __exit__(self, *args):
+        if not self.supported or not self.valid:
+            return
+        signal.alarm(0) # disable alarm
+
+    def raise_timeout(self, *args):
+        raise Timeout.TimeoutError()

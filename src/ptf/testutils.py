@@ -1610,6 +1610,15 @@ def group(name):
         return cls
     return fn
 
+def testtimeout(seconds):
+    """
+    Testcase decorator that adds a timeout to the test.
+    """
+    def fn(cls):
+        cls._testtimeout = seconds
+        return cls
+    return fn
+
 def ptf_ports(num=None):
     """
     Return a list of 'num' port ids (device_number, port_number)

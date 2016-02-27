@@ -64,7 +64,7 @@ config_default = {
     # Switch connection options
     "platform"           : "eth",
     "platform_args"      : None,
-    "platform_dir"       : None,
+    "platform_dir"       : "/etc/ptf/platforms",
     "interfaces"         : [],
     "device_sockets"     : [],  # when using nanomsg
 

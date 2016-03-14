@@ -1245,15 +1245,25 @@ def simple_arp_packet(pktlen=60,
 
     return pkt
 
-def simple_eth_packet(pktlen=60,
+def simple_eth_packet(pktlen=100,
                       eth_dst='00:01:02:03:04:05',
                       eth_src='00:06:07:08:09:0a',
-                      eth_type=0x88cc):
+                      eth_type=0x8100,
+                      dl_vlan_enable=False,
+                      vlan_vid=0,
+                      vlan_pcp=0,
+                      dl_vlan_cfi=0,
+                      vlan_type=0x88cc):
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src, type=eth_type)
+
+    if (dl_vlan_enable):
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid, type=vlan_type)
+    else:
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src, type=eth_type)
 
     pkt = pkt/("0" * (pktlen - len(pkt)))
 

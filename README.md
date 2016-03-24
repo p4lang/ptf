@@ -36,7 +36,7 @@ Root/sudo privilege is required on the host, in order to run `ptf`.
 
 ## Run PTF
 
-Once you have written tests and your switch is running, ypu can run 'ptf'. Use
+Once you have written tests and your switch is running, you can run 'ptf'. Use
 `--help` to see command line switches.
 
 For example:
@@ -51,6 +51,13 @@ option can be used to easily add directories to the Python PATH. This is useful
 if you use a Python interface to configure your data plane (as part of your
 tests). The `--interface` option (or `-i`) can be used to specify the interfaces
 on which to inject packets (along with the corresponding port number).
+
+## Install PTF
+
+PTF can be installed by running `sudo python setup.py install`. For more
+information on the different options accepted by `setup.py` (e.g. installing in
+a custom location), please refer to the [setuptools documentation]
+(https://pythonhosted.org/setuptools/setuptools.html).
 
 ---
 

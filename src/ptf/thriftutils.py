@@ -5,16 +5,31 @@ def hex_to_i16(h):
     x = int(h)
     if (x > 0x7FFF): x-= 0x10000
     return x
+def i16_to_hex(h):
+    x = int(h)
+    if (x & 0x8000): x+= 0x10000
+    return x
 def hex_to_i32(h):
     x = int(h)
     if (x > 0x7FFFFFFF): x-= 0x100000000
+    return x
+def i32_to_hex(h):
+    x = int(h)
+    if (x & 0x80000000): x+= 0x100000000
     return x
 def hex_to_byte(h):
     x = int(h)
     if (x > 0x7F): x-= 0x100
     return x
+def byte_to_hex(h):
+    x = int(h)
+    if (x & 0x80): x+= 0x100
+    return x
 def uint_to_i32(u):
     if (u > 0x7FFFFFFF): u-= 0x100000000
+    return u
+def i32_to_uint(u):
+    if (u & 0x80000000): u+= 0x100000000
     return u
 def char_to_uchar(x):
     if (x >= 0):

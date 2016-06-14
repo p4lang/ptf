@@ -190,7 +190,8 @@ def simple_udp_packet(pktlen=100,
                       udp_dport=80,
                       ip_ihl=None,
                       ip_options=False,
-                      with_udp_chksum=True
+                      with_udp_chksum=True,
+                      udp_payload=None
                       ):
     """
     Return a simple dataplane UDP packet
@@ -237,6 +238,9 @@ def simple_udp_packet(pktlen=100,
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, options=ip_options)/ \
                 udp_hdr
+
+    if udp_payload:
+        pkt = pkt/udp_payload
 
     pkt = pkt/("".join([chr(x) for x in xrange(pktlen - len(pkt))]))
 

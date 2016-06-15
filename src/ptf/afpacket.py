@@ -91,7 +91,7 @@ def recv(sk, bufsize):
 
     rv = recvmsg(sk.fileno(), byref(msghdr), 0)
     if rv < 0:
-        raise RuntimeError("recvmsg failed: rv=%d", rv)
+        raise RuntimeError("recvmsg failed: rv=%d" % rv)
 
     # The kernel only delivers control messages we ask for. We
     # only enabled PACKET_AUXDATA, so we can assume it's the

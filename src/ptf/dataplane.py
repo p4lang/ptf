@@ -173,13 +173,13 @@ class DataPlanePortLinux(DataPlanePortIface, DataPlanePacketSourceIface):
         """
         Bring the physical link down.
         """
-        os.system("ifconfig down %s" % self.interface_name)
+        os.system("ifconfig %s down" % self.interface_name)
 
     def up(self):
         """
         Bring the physical link up.
         """
-        os.system("ifconfig up %s" % self.interface_name)
+        os.system("ifconfig %s up" % self.interface_name)
 
 
 class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
@@ -371,13 +371,13 @@ class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):
         """
         Bring the physical link down.
         """
-        os.system("ifconfig down %s" % self.interface_name)
+        os.system("ifconfig %s down" % self.interface_name)
 
     def up(self):
         """
         Bring the physical link up.
         """
-        os.system("ifconfig up %s" % self.interface_name)
+        os.system("ifconfig %s up" % self.interface_name)
 
 class DataPlanePortPcap:
     """

@@ -931,6 +931,88 @@ def ipv4_erspan_pkt(pktlen=350,
 
     return pkt
 
+def ipv4_erspan_platform_pkt(pktlen=350,
+                      eth_dst='00:01:02:03:04:05',
+                      eth_src='00:06:07:08:09:0a',
+                      dl_vlan_enable=False,
+                      vlan_vid=0,
+                      vlan_pcp=0,
+                      dl_vlan_cfi=0,
+                      ip_src='192.168.0.1',
+                      ip_dst='192.168.0.2',
+                      ip_tos=0,
+                      ip_ttl=64,
+                      ip_id=0x0001,
+                      ip_ihl=None,
+                      ip_options=False,
+                      version=2,
+                      mirror_id=0x3FF,
+                      sgt_other=1,
+                      platf_id=0,
+                      info1=0,
+                      info2=0,
+                      inner_frame=None
+                      ):
+    """
+    Return a GRE ERSPAN packet with Platform Specific Subheader
+
+    Supports a few parameters:
+    @param len Length of packet in bytes w/o CRC
+    @param eth_dst Destination MAC
+    @param eth_src Source MAC
+    @param dl_vlan_enable True if the packet is with vlan, False otherwise
+    @param vlan_vid VLAN ID
+    @param vlan_pcp VLAN priority
+    @param ip_src IP source
+    @param ip_dst IP destination
+    @param ip_tos IP ToS
+    @param ip_ttl IP TTL
+    @param ip_id IP ID
+    @param erspan version
+    @param span_id (mirror_session_id)
+    @param platf_id Specific Platform Subheader Platf Id
+    @param info1 Specific Platform Subheader 26 bit field
+    @param info2 Specific Platform Subheader 32 bit field
+    @param inner_frame payload of the GRE packet
+    """
+    if scapy.GRE is None or scapy.ERSPAN is None or scapy.ERSPAN_III is None or scapy.PlatformSpecific is None:
+        logging.error("A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information")
+        return None
+
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    if version == 2:
+        erspan_hdr = scapy.GRE(proto=0x22eb)/scapy.ERSPAN_III(span_id=mirror_id, sgt_other=sgt_other)
+        if sgt_other == 1:
+            erspan_hdr = erspan_hdr/scapy.PlatformSpecific(platf_id=platf_id, info1=info1, info2=info2)
+    else:
+        erspan_hdr = scapy.GRE(proto=0x88be)/scapy.ERSPAN(span_id=mirror_id)
+
+    # Note Dot1Q.id is really CFI
+    if (dl_vlan_enable):
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
+            scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl)/ \
+            erspan_hdr
+    else:
+        if not ip_options:
+            pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl)/ \
+                erspan_hdr
+        else:
+            pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, options=ip_options)/ \
+                erspan_hdr
+
+    if inner_frame:
+        pkt = pkt / inner_frame
+    else:
+        pkt = pkt / scapy.IP()
+        pkt = pkt/("D" * (pktlen - len(pkt)))
+
+    return pkt
+
 def simple_udpv6_packet(pktlen=100,
                         eth_dst='00:01:02:03:04:05',
                         eth_src='00:06:07:08:09:0a',

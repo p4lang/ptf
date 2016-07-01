@@ -49,11 +49,13 @@ if not config["disable_vxlan"]:
 
 ERSPAN = None
 ERSPAN_III = None
+PlatformSpecific = None
 if not config["disable_erspan"]:
     try:
         scapy.main.load_contrib("erspan")
         ERSPAN = scapy.contrib.erspan.ERSPAN
         ERSPAN_III = scapy.contrib.erspan.ERSPAN_III
+        PlatformSpecific = scapy.contrib.erspan.PlatformSpecific
         logging.info("ERSPAN support found in Scapy")
     except:
         logging.warn("ERSPAN support not found in Scapy")

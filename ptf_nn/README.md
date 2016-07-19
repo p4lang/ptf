@@ -1,4 +1,4 @@
-PTF Nanomsg Agent
+# PTF Nanomsg Agent
 
 ---
 
@@ -8,7 +8,13 @@ the host running PTF).
 
 ---
 
-# Demo
+## Overview
+
+![PTF nanomsg overview](resources/ptf_nn.png)
+
+---
+
+## Demo
 
 Create the required 2 veth pairs (veth0-veth1 and veth2-veth3) with
 `./veth_setup.sh`.

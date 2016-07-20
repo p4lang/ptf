@@ -7,4 +7,6 @@ for idx in 0 1; do
         ip link set dev $intf0 up
         ip link set dev $intf1 up
     fi
+    sysctl net.ipv6.conf.$intf0.disable_ipv6=1
+    sysctl net.ipv6.conf.$intf1.disable_ipv6=1
 done

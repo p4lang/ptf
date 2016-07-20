@@ -17,10 +17,10 @@ to install the following:
   - [nanomsg](https://github.com/nanomsg/nanomsg/releases): we recommend
     installing the `1.0.0` production release.
   - [nnpy](https://github.com/nanomsg/nnpy): these are the Python bindings for
-    nanomsg. You may use the provided [install_nnpy.sh](install_nnpy.sh) script
+    nanomsg. You may use the provided (install-nnpy.sh)[install-nnpy.sh] script
     to install nnpy. It will install a version of nnpy that we have tested.
 
-We provide a [check_deps.py](check_deps.py) script that you can run to check
+We provide a [check-nnpy.py](check-nnpy.py) script that you can run to check
 that nanomsg and nnpy are running properly.
 
 ## Overview
@@ -33,8 +33,8 @@ between a set of interfaces (connected to the switch) and the PTF
 tester. Packets received on an interface (from the switch) will be tagged with
 the port number and forwarded to the PTF tester. Packets received from the PTF
 tester will be forwarded to the switch using the appropriate
-interface. Communications between the PTF tester and each agent is done over TCP
-using the nanomsg messaging library.
+interface. Communications between the PTF tester and each agent are done over
+TCP using the nanomsg messaging library.
 
 ## Demo
 

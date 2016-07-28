@@ -49,38 +49,39 @@ have_pypcap = False
 #except:
 #    pass
 
-dump_pkts_on_mismatch = False
-
-def match_exp_pkt(exp_pkt, pkt):
+def match_exp_pkt(exp_pkt, pkt, dump_on_mismatch=False):
     """
     Compare the string value of pkt with the string value of exp_pkt,
     and return True iff they are identical.  If the length of exp_pkt is
     less than the minimum Ethernet frame size (60 bytes), then padding
     bytes in pkt are ignored.
     """
-    is_match = False
+
     if isinstance(exp_pkt, mask.Mask):
         if not exp_pkt.is_valid():
             logging.debug("match_exp_pkt: exp_pkt is not valid!")
             return False
-        is_match = exp_pkt.pkt_match(pkt)
+        return exp_pkt.pkt_match(pkt)
     else:
         e = str(exp_pkt)
         p = str(pkt)
         if len(e) < 60:
             p = p[:len(e)]
-        is_match = (e == p)
+        if (e == p):
+            return True
 
-    if (dump_pkts_on_mismatch and not is_match):
-        print "################################################################"
-        print "match_exp_pkt: pkts don't match"
-        print "Dump expected pkt first, then dump received pkt"
-        print "################################################################"
-        exp_pkt.show2()
-        nrcv = exp_pkt.__class__(pkt)
-        nrcv.show2()
+        # pkts do not match
+        if (dump_on_mismatch):
+            logging.debug("###################################################")
+            logging.debug("match_exp_pkt: pkts don't match")
+            logging.debug("Dump expected pkt first, then dump received pkt")
+            exp_pkt.show2()
+            nrcv = exp_pkt.__class__(pkt)
+            nrcv.show2()
+            logging.debug("match_exp_pkt: end of packet dumps")
+            logging.debug("###################################################")
 
-    return is_match
+        return False
 
 class DataPlanePacketSourceIface:
     """
@@ -608,7 +609,7 @@ class DataPlane(Thread):
             pkt, time = queue.pop(0)
             yield (rcv_port, pkt, time)
 
-    def poll(self, device_number=0, port_number=None, timeout=-1, exp_pkt=None, filters=[]):
+    def poll(self, device_number=0, port_number=None, timeout=-1, exp_pkt=None, filters=[], dump_on_mismatch=False):
         """
         Poll one or all dataplane ports for a packet
 
@@ -649,7 +650,7 @@ class DataPlane(Thread):
                 if not filter_check(pkt):
                     self.logger.debug("Paket does not match filter, discarding")
                     continue
-                if not exp_pkt or match_exp_pkt(exp_pkt, pkt):
+                if not exp_pkt or match_exp_pkt(exp_pkt, pkt, dump_on_mismatch):
                     return (rcv_device_number, rcv_port_number, pkt, time)
             self.logger.debug("Did not find packet")
             return None

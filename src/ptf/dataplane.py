@@ -49,6 +49,8 @@ have_pypcap = False
 #except:
 #    pass
 
+dump_pkts_on_mismatch = False
+
 def match_exp_pkt(exp_pkt, pkt):
     """
     Compare the string value of pkt with the string value of exp_pkt,
@@ -56,16 +58,29 @@ def match_exp_pkt(exp_pkt, pkt):
     less than the minimum Ethernet frame size (60 bytes), then padding
     bytes in pkt are ignored.
     """
+    is_match = False
     if isinstance(exp_pkt, mask.Mask):
         if not exp_pkt.is_valid():
+            logging.debug("match_exp_pkt: exp_pkt is not valid!")
             return False
-        return exp_pkt.pkt_match(pkt)
-    e = str(exp_pkt)
-    p = str(pkt)
-    if len(e) < 60:
-        p = p[:len(e)]
-    return e == p
+        is_match = exp_pkt.pkt_match(pkt)
+    else:
+        e = str(exp_pkt)
+        p = str(pkt)
+        if len(e) < 60:
+            p = p[:len(e)]
+        is_match = (e == p)
 
+    if (dump_pkts_on_mismatch and not is_match):
+        print "################################################################"
+        print "match_exp_pkt: pkts don't match"
+        print "Dump expected pkt first, then dump received pkt"
+        print "################################################################"
+        exp_pkt.show2()
+        nrcv = exp_pkt.__class__(pkt)
+        nrcv.show2()
+
+    return is_match
 
 class DataPlanePacketSourceIface:
     """

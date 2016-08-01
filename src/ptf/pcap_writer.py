@@ -14,7 +14,7 @@ class PcapWriter(object):
         """
         Open a pcap file
         """
-        self.stream = file(filename, 'w')
+        self.stream = open(filename, 'w')
 
         self.stream.write(PcapHeader.pack(
             0xa1b2c3d4, # magic

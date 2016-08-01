@@ -1842,7 +1842,6 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
             continue
         if port in ports:
             logging.debug("Checking for pkt on device %d, port %d", device_number, port)
-            print 'verifying packet on port device', device_number, 'port', port
             (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
                 test, device_number=device, port_number=port, exp_pkt=pkt
             )

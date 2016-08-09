@@ -703,6 +703,7 @@ if __name__ == "__main__":
     logging.info("*** TEST RUN END  : " + time.asctime())
 
     # Shutdown the dataplane
+    ptf.dataplane_instance.stop_pcap()  # no-op is pcap not started
     ptf.dataplane_instance.kill()
     ptf.dataplane_instance = None
 

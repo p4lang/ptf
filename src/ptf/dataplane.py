@@ -20,6 +20,8 @@ import socket
 import time
 import select
 import logging
+import struct
+from collections import defaultdict
 from threading import Thread
 from threading import Lock
 from threading import Condition

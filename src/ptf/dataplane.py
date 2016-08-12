@@ -78,8 +78,7 @@ def match_exp_pkt(exp_pkt, pkt, dump_on_mismatch=False):
             logging.debug("match_exp_pkt: pkts don't match")
             logging.debug("Dump expected pkt first, then dump received pkt")
             exp_pkt.show2()
-            nrcv = exp_pkt.__class__(pkt)
-            nrcv.show2()
+            pkt.show2()
             logging.debug("match_exp_pkt: end of packet dumps")
             logging.debug("###################################################")
 

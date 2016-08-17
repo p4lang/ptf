@@ -1358,7 +1358,8 @@ def simple_ip_packet(pktlen=100,
                      ip_ttl=64,
                      ip_id=0x0001,
                      ip_ihl=None,
-                     ip_options=False
+                     ip_options=False,
+                     ip_proto=0
                      ):
     """
     Return a simple dataplane IP packet
@@ -1388,14 +1389,14 @@ def simple_ip_packet(pktlen=100,
     if (dl_vlan_enable):
         pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
             scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
-            scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl)
+            scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, proto=ip_proto)
     else:
         if not ip_options:
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
-                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl)
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, proto=ip_proto)
         else:
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
-                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, options=ip_options)
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, proto=ip_proto, options=ip_options)
 
     pkt = pkt/("".join([chr(x) for x in xrange(pktlen - len(pkt))]))
 

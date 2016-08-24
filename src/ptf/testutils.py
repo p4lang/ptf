@@ -242,7 +242,7 @@ def simple_udp_packet(pktlen=100,
     if udp_payload:
         pkt = pkt/udp_payload
 
-    pkt = pkt/("".join([chr(x) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
 
     return pkt
 
@@ -1398,7 +1398,7 @@ def simple_ip_packet(pktlen=100,
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, proto=ip_proto, options=ip_options)
 
-    pkt = pkt/("".join([chr(x) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
 
     return pkt
 
@@ -1444,7 +1444,7 @@ def simple_ip_only_packet(pktlen=100,
     else:
         pkt = scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, options=ip_options) / tcp_hdr
 
-    pkt = pkt/("".join([chr(x) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
 
     return pkt
 

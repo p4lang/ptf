@@ -183,6 +183,12 @@ class DataPlanePortLinux(DataPlanePortIface, DataPlanePacketSourceIface):
         """
         os.system("ifconfig %s up" % self.interface_name)
 
+    def mac(self):
+        """
+        Return mac address
+        """
+        return netutils.get_mac(self.interface_name)
+
 
 class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     """
@@ -380,6 +386,12 @@ class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):
         Bring the physical link up.
         """
         os.system("ifconfig %s up" % self.interface_name)
+
+    def mac(self):
+        """
+        Return mac address
+        """
+        return netutils.get_mac(self.interface_name)
 
 class DataPlanePortPcap:
     """
@@ -669,6 +681,10 @@ class DataPlane(Thread):
     def port_up(self, device_number, port_number):
         """Brings the specified port up"""
         self.ports[(device_number, port_number)].up()
+
+    def get_mac(self, device_number, port_number):
+        """Get the specified mac"""
+        return self.ports[(device_number, port_number)].mac()
 
     def flush(self):
         """

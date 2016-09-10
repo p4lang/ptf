@@ -1748,20 +1748,21 @@ def send(test, port_id, pkt):
     """
     return send_packet(test, port_id, pkt)
 
-def dp_poll(test, device_number=0, port_number=None, timeout=-1, exp_pkt=None):
+def dp_poll(test, device_number=0, port_number=None, timeout=-1, exp_pkt=None, dump_on_mismatch=False):
     """
     Wrapper function around dataplane.poll
     """
     t = test.dataplane.poll(
         device_number=device_number, port_number=port_number,
-        timeout=timeout, exp_pkt=exp_pkt, filters=FILTERS
+        timeout=timeout, exp_pkt=exp_pkt, filters=FILTERS,
+        dump_on_mismatch=dump_on_mismatch
     )
     (rcv_device, rcv_port, rcv_pkt, pkt_time) = t
     if rcv_pkt is not None:
         test.at_receive(rcv_pkt, device_number=rcv_device, port_number=rcv_port)
     return t
 
-def verify_packet(test, pkt, port_id):
+def verify_packet(test, pkt, port_id, dump_on_mismatch=False):
     """
     Check that an expected packet is received
     port_id can either be a single integer (port_number on default device 0)
@@ -1770,7 +1771,8 @@ def verify_packet(test, pkt, port_id):
     device, port = port_to_tuple(port_id)
     logging.debug("Checking for pkt on device %d, port %d", device, port)
     (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
-        test, device_number=device, port_number=port, timeout=2, exp_pkt=pkt
+        test, device_number=device, port_number=port, timeout=2, exp_pkt=pkt,
+        dump_on_mismatch=dump_on_mismatch
     )
     test.assertTrue(rcv_pkt != None, "Did not receive expected pkt on device %d, port %r" % (device, port))
 
@@ -1786,7 +1788,7 @@ def verify_no_packet(test, pkt, port_id, timeout=None):
     logging.debug("Negative check for pkt on device %d, port %d", device, port)
     (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
         test, device_number=device, port_number=port, exp_pkt=pkt,
-        timeout=timeout
+        timeout=timeout, dump_on_mismatch=False
     )
     test.assertTrue(rcv_pkt == None, "Received packet on device %d, port %r" % (device, port))
 
@@ -1809,7 +1811,7 @@ def verify_no_other_packets(test, device_number=0, timeout=None):
         logging.debug("Received unexpected packet on device %d, port %r: %s", device_number, rcv_port, format_packet(rcv_pkt))
     test.assertTrue(rcv_pkt == None, "Unexpected packet on device %d, port %r" % (device_number, rcv_port))
 
-def verify_packets(test, pkt, ports=[], device_number=0):
+def verify_packets(test, pkt, ports=[], device_number=0, dump_on_mismatch=False):
     """
     Check that a packet is received on each of the specified port numbers for a
     given device (default device number is 0).
@@ -1827,12 +1829,12 @@ def verify_packets(test, pkt, ports=[], device_number=0):
         if device != device_number:
             continue
         if port in ports:
-            verify_packet(test, pkt, (device, port))
+            verify_packet(test, pkt, (device, port), dump_on_mismatch)
         else:
             verify_no_packet(test, pkt, (device, port))
     verify_no_other_packets(test, device_number=device_number)
 
-def verify_packets_any(test, pkt, ports=[], device_number=0):
+def verify_packets_any(test, pkt, ports=[], device_number=0, dump_on_mismatch=False):
     """
     Check that a packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
@@ -1848,7 +1850,8 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
         if port in ports:
             logging.debug("Checking for pkt on device %d, port %d", device_number, port)
             (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
-                test, device_number=device, port_number=port, exp_pkt=pkt
+                test, device_number=device, port_number=port, exp_pkt=pkt,
+                dump_on_mismatch=dump_on_mismatch
             )
             if rcv_pkt != None:
                 received = True
@@ -1858,7 +1861,7 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
 
     test.assertTrue(received == True, "Did not receive expected pkt on any of ports %r for device %d" % (ports, device_number))
 
-def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
+def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0, dump_on_mismatch=False):
     """
     Check that _any_ of the packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
@@ -1874,7 +1877,8 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
     (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
         test,
         device_number=device_number,
-        timeout=1
+        timeout=1,
+        dump_on_mismatch=dump_on_mismatch
     )
 
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
@@ -1888,7 +1892,7 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
     test.assertTrue(received == True, "Did not receive expected pkt(s) on any of ports %r for device %d" % (ports, device_number))
     return match_index
 
-def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):
+def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0, dump_on_mismatch=False):
     """
     Check that each packet is received on corresponding port in the port list belonging to
     the given device (default device_number is 0).
@@ -1905,18 +1909,20 @@ def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):
             test,
             device_number=device_number,
             port_number=port,
-            exp_pkt=pkt
+            exp_pkt=pkt,
+            dump_on_mismatch=dump_on_mismatch
         )
         test.assertTrue(rcv_pkt != None, "Did not receive expected pkt(s) on port %d for device %d" %(port, device_number))
 
     verify_no_other_packets(test, device_number=device_number)
 
-def verify_packet_prefix(test, pkt, port, len, device_number=0):
+def verify_packet_prefix(test, pkt, port, len, device_number=0, dump_on_mismatch=False):
     """
     Check that an expected packet is received
     """
     logging.debug("Checking for pkt on port %r", port)
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=str(pkt)[:len])
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(port_number=port,
+            timeout=2, exp_pkt=str(pkt)[:len], dump_on_mismatch=dump_on_mismatch)
     test.assertTrue(rcv_pkt != None, "Did not receive expected pkt on %r" % port)
 
 

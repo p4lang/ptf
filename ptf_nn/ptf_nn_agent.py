@@ -114,8 +114,9 @@ class IfaceMgr(threading.Thread):
     def received(self, p):
         print "IfaceMgr {}-{} ({}) received a packet".format(
             self.dev, self.port, self.iface_name)
-        nano_mgr = nano_mgrs[self.dev]
-        nano_mgr.forward(str(p), self.port)
+        if self.dev in nano_mgrs:
+            nano_mgr = nano_mgrs[self.dev]
+            nano_mgr.forward(str(p), self.port)
 
     def run(self):
         while True:
@@ -156,15 +157,15 @@ class NanomsgMgr(threading.Thread):
             assert (len(msg) == length)
             print "NanomsgMgr {}-{} ({}) received a packet".format(
                 self.dev, port_number, self.socket_addr)
-            iface_mgr = iface_mgrs[(self.dev, port_number)]
-            iface_mgr.forward(msg)
+            if (self.dev, port_number) in iface_mgrs:
+                iface_mgr = iface_mgrs[(self.dev, port_number)]
+                iface_mgr.forward(msg)
 
 def main():
     for dev, port, iface in args.interfaces:
         i = IfaceMgr(dev, port, iface)
         i.start()
         iface_mgrs[(dev, port)] = i
-    time.sleep(2)
     for dev, addr in args.device_sockets:
         n = NanomsgMgr(dev, addr)
         n.start()

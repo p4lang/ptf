@@ -1858,6 +1858,37 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
 
     test.assertTrue(received == True, "Did not receive expected pkt on any of ports %r for device %d" % (ports, device_number))
 
+def verify_packet_any_port(test, pkt, ports=[], device_number=0):
+    """
+    Check that the packet is received on _any_ of the specified ports belonging to
+    the given device (default device_number is 0).
+
+    The function returns when either the expected packet is received or timeout (1 second).
+
+    Also verifies that the packet is or received on any other ports for this
+    device, and that no other packets are received on the device (unless --relax
+    is in effect).
+
+    Returns the index of the port on which the packet is recevied and the packet.
+    """
+    received = False
+    match_index = 0
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
+        test,
+        device_number=device_number,
+        exp_pkt=pkt,
+        timeout=1
+    )
+
+    logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
+    if rcv_port in ports:
+        match_index = ports.index(rcv_port)
+        received = True
+    verify_no_other_packets(test, device_number=device_number)
+
+    test.assertTrue(received == True, "Did not receive expected pkt(s) on any of ports %r for device %d" % (ports, device_number))
+    return (match_index, rcv_pkt)
+
 def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
     """
     Check that _any_ of the packet is received on _any_ of the specified ports belonging to

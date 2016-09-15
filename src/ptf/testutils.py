@@ -1860,10 +1860,12 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
 
 def verify_packet_any_port(test, pkt, ports=[], device_number=0):
     """
-    Check that _any_ of the packet is received on _any_ of the specified ports belonging to
+    Check that the packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
 
-    Also verifies that the packet is ot received on any other ports for this
+    The function returns when either the expected packet is received or timeout (1 second).
+
+    Also verifies that the packet is or received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
 

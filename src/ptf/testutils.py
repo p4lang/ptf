@@ -1837,7 +1837,7 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
     Check that a packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
 
-    Also verifies that the packet is ot received on any other ports for this
+    Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
     """
@@ -1869,7 +1869,7 @@ def verify_packet_any_port(test, pkt, ports=[], device_number=0):
     device, and that no other packets are received on the device (unless --relax
     is in effect).
 
-    Returns the index of the port on which the packet is recevied and the packet.
+    Returns the index of the port on which the packet is received and the packet.
     """
     received = False
     match_index = 0
@@ -1894,11 +1894,11 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
     Check that _any_ of the packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
 
-    Also verifies that the packet is ot received on any other ports for this
+    Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
 
-    Returns the index of the port on which the packet is recevied.
+    Returns the index of the port on which the packet is received.
     """
     received = False
     match_index = 0
@@ -1924,7 +1924,7 @@ def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):
     Check that each packet is received on corresponding port in the port list belonging to
     the given device (default device_number is 0).
 
-    Also verifies that the packet is ot received on any other ports for this
+    Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
     """

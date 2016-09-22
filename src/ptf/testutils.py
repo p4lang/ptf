@@ -1950,5 +1950,21 @@ def verify_packet_prefix(test, pkt, port, len, device_number=0):
     (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=str(pkt)[:len])
     test.assertTrue(rcv_pkt != None, "Did not receive expected pkt on %r" % port)
 
+def count_matched_packets(test, exp_packet, port, device_number=0, timeout=1):
+    """
+    Receive all packets on the port and count how many expected packets were received.
+    As soon as the packets stop arriving, the function waits for the timeout value and returns the counter
+    """
+    total_rcv_pkt_cnt = 0
+    while True:
+        (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(test, device_number=device_number, port_number=port, timeout=timeout)
+        if rcv_pkt is not None:
+            if match_exp_pkt(exp_packet, rcv_pkt):
+                total_rcv_pkt_cnt += 1
+        else:
+            break
+
+    return total_rcv_pkt_cnt
+
 
 __all__ = list(set(locals()) - _import_blacklist)

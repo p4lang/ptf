@@ -25,6 +25,7 @@ import argparse
 import time
 import struct
 import socket
+from fcntl import ioctl
 import Queue
 try:
     import nnpy
@@ -97,6 +98,8 @@ iface_mgrs = {}
 nano_mgrs = {}
 
 class IfaceMgr(threading.Thread):
+    SIOCGIFHWADDR  = 0x8927          # Get hardware address
+
     def __init__(self, dev, port, iface_name):
         threading.Thread.__init__(self)
         self.daemon = True
@@ -106,6 +109,7 @@ class IfaceMgr(threading.Thread):
         self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
                                     socket.htons(0x03))
         self.socket.bind((iface_name, 0))
+        self.mac_address = self.get_mac()
 
     def forward(self, p):
         # can that conflict with sniff?
@@ -118,6 +122,16 @@ class IfaceMgr(threading.Thread):
             nano_mgr = nano_mgrs[self.dev]
             nano_mgr.forward(str(p), self.port)
 
+    def get_mac(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        info = ioctl(s, self.SIOCGIFHWADDR, struct.pack("256s", self.iface_name[:15]))
+        s.close()
+
+        return ':'.join('%02x' % ord(ch) for ch in info[18:24])
+
+    def mac(self):
+        return self.mac_address
+
     def run(self):
         while True:
             msg = self.socket.recv(4096)
@@ -129,6 +143,7 @@ class NanomsgMgr(threading.Thread):
     MSG_TYPE_PORT_SET_STATUS = 2
     MSG_TYPE_PACKET_IN = 3
     MSG_TYPE_PACKET_OUT = 4
+    MSG_TYPE_MAC = 5
 
     def __init__(self, dev, socket_addr):
         threading.Thread.__init__(self)
@@ -145,6 +160,14 @@ class NanomsgMgr(threading.Thread):
         msg = list(msg)
         self.socket.send(msg)
 
+    def send_mac(self, port_number):
+       if (self.dev, port_number) in iface_mgrs:
+           iface_mgr = iface_mgrs[(self.dev, port_number)]
+           mac = iface_mgr.mac()
+           msg = struct.pack("<ii17s", self.MSG_TYPE_MAC, port_number, mac)
+           msg = list(msg)
+           self.socket.send(msg)
+
     def run(self):
         while True:
             msg = self.socket.recv()
@@ -152,7 +175,10 @@ class NanomsgMgr(threading.Thread):
             msg_type, port_number, length = struct.unpack_from(fmt, msg)
             hdr_size = struct.calcsize(fmt)
             msg = msg[hdr_size:]
-            if (msg_type != self.MSG_TYPE_PACKET_IN):
+            if (msg_type == self.MSG_TYPE_PORT_ADD):
+                self.send_mac(port_number)
+                continue
+            elif (msg_type != self.MSG_TYPE_PACKET_IN):
                 continue
             assert (len(msg) == length)
             print "NanomsgMgr {}-{} ({}) received a packet".format(

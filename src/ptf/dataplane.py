@@ -205,6 +205,7 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     MSG_TYPE_PORT_SET_STATUS = 2
     MSG_TYPE_PACKET_IN = 3
     MSG_TYPE_PACKET_OUT = 4
+    MSG_TYPE_MAC = 5
 
     def __init__(self, device_number, socket_addr, rcv_timeout):
         self.device_number = device_number
@@ -214,6 +215,7 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         self.rcv_timeout = rcv_timeout
         self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.RCVTIMEO, rcv_timeout)
         self.buffers = defaultdict(list)
+        self.mac_address = {}
 
     def close(self):
         # TODO(antonin): something to do?
@@ -229,8 +231,18 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         hdr = struct.pack("<iii", msg_type, port_number, more)
         self.socket.send(hdr)
 
+    def recv_mac_msg(self, exp_port_number):
+        fmt = "<ii17s"
+        while True:
+            msg = self.socket.recv()
+            msg_type, port_number, mac = struct.unpack_from(fmt, msg)
+            if msg_type == self.MSG_TYPE_MAC:
+                assert (exp_port_number == port_number)
+                return mac
+
     def port_add(self, port_number):
         self.send_port_msg(self.MSG_TYPE_PORT_ADD, port_number, 0)
+        self.mac_address[port_number] = self.recv_mac_msg(port_number)
 
     def port_remove(self, port_number):
         self.send_port_msg(self.MSG_TYPE_PORT_REMOVE, port_number, 0)
@@ -262,6 +274,11 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         # nnpy does not return the number of bytes sent
         return len(packet)
 
+    def mac(self, port_number):
+        """
+        Return mac address
+        """
+        return self.mac_address[port_number]
 
 class DataPlanePortNN(DataPlanePortIface):
     """
@@ -319,6 +336,12 @@ class DataPlanePortNN(DataPlanePortIface):
         """
         self.packet_injecters[self.device_number].port_bring_up(
             self.port_number)
+
+    def mac(self):
+        """
+        Return mac address
+        """
+        return self.packet_injecters[self.device_number].mac(self.port_number)
 
 
 class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):

@@ -295,12 +295,16 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         # nnpy does not return the number of bytes sent
         return len(packet)
 
-    def get_mac(self, port_number):
+    def get_mac(self, port_number, timeout=2):
+        # we use a timeout in case other endpoint does not reply
+        end = time.time() + timeout
         with self.cvar:
-            while port_number not in self.mac_addresses:
+            time_remaining = end - time.time()
+            while port_number not in self.mac_addresses and time_remaining > 0:
                 self.__request_mac(port_number)
-                self.cvar.wait()
-            return self.mac_addresses[port_number]
+                self.cvar.wait(time_remaining)
+                time_remaining = end - time.time()
+            return self.mac_addresses.get(port_number, None)
 
 
 class DataPlanePortNN(DataPlanePortIface):

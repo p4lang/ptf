@@ -205,6 +205,11 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     MSG_TYPE_PORT_SET_STATUS = 2
     MSG_TYPE_PACKET_IN = 3
     MSG_TYPE_PACKET_OUT = 4
+    MSG_TYPE_INFO_REQ = 5
+    MSG_TYPE_INFO_REP = 6
+
+    MSG_INFO_STATUS_SUCCESS = 0
+    MSG_INFO_STATUS_NOT_SUPPORTED = 1
 
     def __init__(self, device_number, socket_addr, rcv_timeout):
         self.device_number = device_number
@@ -214,6 +219,8 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         self.rcv_timeout = rcv_timeout
         self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.RCVTIMEO, rcv_timeout)
         self.buffers = defaultdict(list)
+        self.cvar = Condition()
+        self.mac_addresses = {}
 
     def close(self):
         # TODO(antonin): something to do?
@@ -225,32 +232,58 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         """
         return self.socket.getsockopt(nnpy.SOL_SOCKET, nnpy.RCVFD)
 
-    def send_port_msg(self, msg_type, port_number, more):
+    def __send_port_msg(self, msg_type, port_number, more):
         hdr = struct.pack("<iii", msg_type, port_number, more)
         self.socket.send(hdr)
 
+    def __send_info_req_msg(self, port_number, key, timeout = 1):
+        max_key_size = 32
+        hdr = struct.pack("<iii{}p".format(max_key_size),
+                          self.MSG_TYPE_INFO_REQ, port_number, 1, key)
+        self.socket.send(hdr)
+
+    def __request_mac(self, port_number):
+        self.__send_info_req_msg(port_number, "HWADDR")
+
     def port_add(self, port_number):
-        self.send_port_msg(self.MSG_TYPE_PORT_ADD, port_number, 0)
+        self.__send_port_msg(self.MSG_TYPE_PORT_ADD, port_number, 0)
 
     def port_remove(self, port_number):
-        self.send_port_msg(self.MSG_TYPE_PORT_REMOVE, port_number, 0)
+        self.__send_port_msg(self.MSG_TYPE_PORT_REMOVE, port_number, 0)
 
     def port_bring_up(self, port_number):
-        self.send_port_msg(self.MSG_TYPE_PORT_SET_STATUS, port_number,
-                           self.MSG_PORT_STATUS_UP)
+        self.__send_port_msg(self.MSG_TYPE_PORT_SET_STATUS, port_number,
+                             self.MSG_PORT_STATUS_UP)
 
     def port_bring_down(self, port_number):
-        self.send_port_msg(self.MSG_TYPE_PORT_SET_STATUS, port_number,
-                           self.MSG_PORT_STATUS_DOWN)
+        self.__send_port_msg(self.MSG_TYPE_PORT_SET_STATUS, port_number,
+                             self.MSG_PORT_STATUS_DOWN)
+
+    def __handle_info_rep(self, port_number, msg):
+        max_key_size = 32
+        fmt = "<{}pi".format(max_key_size)
+        recv_key, status = struct.unpack_from(fmt, msg)
+        if status != self.MSG_INFO_STATUS_SUCCESS:
+            msg = None
+        else:
+            msg = msg[struct.calcsize(fmt):]
+        if recv_key == "HWADDR":
+            with self.cvar:
+                self.mac_addresses[port_number] = msg
+                self.cvar.notify_all()
 
     def recv(self):
         msg = self.socket.recv()
         fmt = "<iii"
-        msg_type, port_number, length = struct.unpack_from(fmt, msg)
+        msg_type, port_number, more = struct.unpack_from(fmt, msg)
         hdr_size = struct.calcsize(fmt)
         msg = msg[hdr_size:]
+        if msg_type == self.MSG_TYPE_INFO_REP:
+            self.__handle_info_rep(port_number, msg)
+            # we return None (not a data packet)
+            return
         assert (msg_type == self.MSG_TYPE_PACKET_OUT)
-        assert (len(msg) == length)
+        assert (len(msg) == more)
         return (self.device_number, port_number, msg, time.time())
 
     def send(self, port_number, packet):
@@ -261,6 +294,13 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         self.socket.send(msg)
         # nnpy does not return the number of bytes sent
         return len(packet)
+
+    def get_mac(self, port_number):
+        with self.cvar:
+            while port_number not in self.mac_addresses:
+                self.__request_mac(port_number)
+                self.cvar.wait()
+            return self.mac_addresses[port_number]
 
 
 class DataPlanePortNN(DataPlanePortIface):
@@ -318,6 +358,13 @@ class DataPlanePortNN(DataPlanePortIface):
         Bring the physical link up.
         """
         self.packet_injecters[self.device_number].port_bring_up(
+            self.port_number)
+
+    def mac(self):
+        """
+        Return mac address
+        """
+        return self.packet_injecters[self.device_number].get_mac(
             self.port_number)
 
 
@@ -515,7 +562,10 @@ class DataPlane(Thread):
                         continue
                     else:
                         # Enqueue packet
-                        device_number, port_number, pkt, timestamp = sel.recv()
+                        t = sel.recv()
+                        if t is None:
+                            continue
+                        device_number, port_number, pkt, timestamp = t
                         self.logger.debug("Pkt len %d in on device %d, port %d",
                                           len(pkt), device_number, port_number)
                         if self.pcap_writer:

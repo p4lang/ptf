@@ -32,6 +32,16 @@ except ImportError:
     print "Cannot find nnpy package, please install"
     sys.exit(1)
 import threading
+import os
+
+# copied from ptf script; hack to make ptf import work even if ptf not installed
+root_dir = os.path.dirname(os.path.realpath(__file__))
+pydir = os.path.join(root_dir, os.pardir, 'src')
+if os.path.exists(os.path.join(pydir, 'ptf')):
+    # Running from source tree
+    sys.path.insert(0, pydir)
+
+import ptf.netutils
 
 # Taken from ptf parser
 class ActionInterface(argparse.Action):
@@ -118,6 +128,14 @@ class IfaceMgr(threading.Thread):
             nano_mgr = nano_mgrs[self.dev]
             nano_mgr.forward(str(p), self.port)
 
+    def get_mac(self):
+        try:
+            mac = ptf.netutils.get_mac(self.iface_name)
+            return mac
+        except:
+            # if not supported on platform
+            return None
+
     def run(self):
         while True:
             msg = self.socket.recv(4096)
@@ -129,6 +147,11 @@ class NanomsgMgr(threading.Thread):
     MSG_TYPE_PORT_SET_STATUS = 2
     MSG_TYPE_PACKET_IN = 3
     MSG_TYPE_PACKET_OUT = 4
+    MSG_TYPE_INFO_REQ = 5
+    MSG_TYPE_INFO_REP = 6
+
+    MSG_INFO_STATUS_SUCCESS = 0
+    MSG_INFO_STATUS_NOT_SUPPORTED = 1
 
     def __init__(self, dev, socket_addr):
         threading.Thread.__init__(self)
@@ -145,16 +168,46 @@ class NanomsgMgr(threading.Thread):
         msg = list(msg)
         self.socket.send(msg)
 
+    def handle_info_req(self, port_number, msg):
+        max_key_size = 32
+        fmt = "<{}p".format(max_key_size)
+        key, = struct.unpack_from(fmt, msg)
+
+        def handle_not_supported():
+            fmt = "<iii{}pi".format(max_key_size)
+            rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number, 1,
+                              key, self.MSG_INFO_STATUS_NOT_SUPPORTED)
+            self.socket.send(rep)
+
+        def handle_hwaddr():
+            if (self.dev, port_number) not in iface_mgrs:
+                handle_not_supported()
+            else:
+                iface_mgr = iface_mgrs[(self.dev, port_number)]
+                mac = iface_mgr.get_mac()
+                fmt = "<iii{}pi{}s".format(max_key_size, len(mac))
+                rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number, 1,
+                                  key, self.MSG_INFO_STATUS_SUCCESS, mac)
+                self.socket.send(rep)
+
+        handlers = {
+            "HWADDR": handle_hwaddr,
+        }
+        handlers.get(key, handle_not_supported)()
+
     def run(self):
         while True:
             msg = self.socket.recv()
             fmt = "<iii"
-            msg_type, port_number, length = struct.unpack_from(fmt, msg)
+            msg_type, port_number, more = struct.unpack_from(fmt, msg)
             hdr_size = struct.calcsize(fmt)
             msg = msg[hdr_size:]
-            if (msg_type != self.MSG_TYPE_PACKET_IN):
+            if msg_type == self.MSG_TYPE_INFO_REQ:
+                self.handle_info_req(port_number, msg)
                 continue
-            assert (len(msg) == length)
+            if msg_type != self.MSG_TYPE_PACKET_IN:
+                continue
+            assert (len(msg) == more)
             print "NanomsgMgr {}-{} ({}) received a packet".format(
                 self.dev, port_number, self.socket_addr)
             if (self.dev, port_number) in iface_mgrs:

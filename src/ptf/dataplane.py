@@ -208,6 +208,8 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     MSG_TYPE_INFO_REQ = 5
     MSG_TYPE_INFO_REP = 6
 
+    MSG_INFO_TYPE_HWADDR = 0
+
     MSG_INFO_STATUS_SUCCESS = 0
     MSG_INFO_STATUS_NOT_SUPPORTED = 1
 
@@ -236,14 +238,11 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         hdr = struct.pack("<iii", msg_type, port_number, more)
         self.socket.send(hdr)
 
-    def __send_info_req_msg(self, port_number, key, timeout = 1):
-        max_key_size = 32
-        hdr = struct.pack("<iii{}p".format(max_key_size),
-                          self.MSG_TYPE_INFO_REQ, port_number, 1, key)
-        self.socket.send(hdr)
+    def __send_info_req_msg(self, port_number, info_type):
+        self.__send_port_msg(self.MSG_TYPE_INFO_REQ, port_number, info_type)
 
     def __request_mac(self, port_number):
-        self.__send_info_req_msg(port_number, "HWADDR")
+        self.__send_info_req_msg(port_number, self.MSG_INFO_TYPE_HWADDR)
 
     def port_add(self, port_number):
         self.__send_port_msg(self.MSG_TYPE_PORT_ADD, port_number, 0)
@@ -259,15 +258,14 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         self.__send_port_msg(self.MSG_TYPE_PORT_SET_STATUS, port_number,
                              self.MSG_PORT_STATUS_DOWN)
 
-    def __handle_info_rep(self, port_number, msg):
-        max_key_size = 32
-        fmt = "<{}pi".format(max_key_size)
-        recv_key, status = struct.unpack_from(fmt, msg)
+    def __handle_info_rep(self, port_number, info_type, msg):
+        fmt = "<i"
+        status, = struct.unpack_from(fmt, msg)
         if status != self.MSG_INFO_STATUS_SUCCESS:
             msg = None
         else:
             msg = msg[struct.calcsize(fmt):]
-        if recv_key == "HWADDR":
+        if info_type == self.MSG_INFO_TYPE_HWADDR:
             with self.cvar:
                 self.mac_addresses[port_number] = msg
                 self.cvar.notify_all()
@@ -279,7 +277,7 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         hdr_size = struct.calcsize(fmt)
         msg = msg[hdr_size:]
         if msg_type == self.MSG_TYPE_INFO_REP:
-            self.__handle_info_rep(port_number, msg)
+            self.__handle_info_rep(port_number, more, msg)
             # we return None (not a data packet)
             return
         assert (msg_type == self.MSG_TYPE_PACKET_OUT)

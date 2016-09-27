@@ -162,6 +162,8 @@ class NanomsgMgr(threading.Thread):
     MSG_TYPE_INFO_REQ = 5
     MSG_TYPE_INFO_REP = 6
 
+    MSG_INFO_TYPE_HWADDR = 0
+
     MSG_INFO_STATUS_SUCCESS = 0
     MSG_INFO_STATUS_NOT_SUPPORTED = 1
 
@@ -180,15 +182,11 @@ class NanomsgMgr(threading.Thread):
         msg = list(msg)
         self.socket.send(msg)
 
-    def handle_info_req(self, port_number, msg):
-        max_key_size = 32
-        fmt = "<{}p".format(max_key_size)
-        key, = struct.unpack_from(fmt, msg)
-
+    def handle_info_req(self, port_number, info_id, msg):
         def handle_not_supported():
-            fmt = "<iii{}pi".format(max_key_size)
-            rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number, 1,
-                              key, self.MSG_INFO_STATUS_NOT_SUPPORTED)
+            fmt = "<iiii"
+            rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number, info_id,
+                              self.MSG_INFO_STATUS_NOT_SUPPORTED)
             self.socket.send(rep)
 
         def handle_hwaddr():
@@ -197,15 +195,15 @@ class NanomsgMgr(threading.Thread):
             else:
                 iface_mgr = iface_mgrs[(self.dev, port_number)]
                 mac = iface_mgr.get_mac()
-                fmt = "<iii{}pi{}s".format(max_key_size, len(mac))
-                rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number, 1,
-                                  key, self.MSG_INFO_STATUS_SUCCESS, mac)
+                fmt = "<iiii{}s".format(len(mac))
+                rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number,
+                                  info_id, self.MSG_INFO_STATUS_SUCCESS, mac)
                 self.socket.send(rep)
 
         handlers = {
-            "HWADDR": handle_hwaddr,
+            self.MSG_INFO_TYPE_HWADDR: handle_hwaddr,
         }
-        handlers.get(key, handle_not_supported)()
+        handlers.get(info_id, handle_not_supported)()
 
     def run(self):
         while True:
@@ -215,7 +213,7 @@ class NanomsgMgr(threading.Thread):
             hdr_size = struct.calcsize(fmt)
             msg = msg[hdr_size:]
             if msg_type == self.MSG_TYPE_INFO_REQ:
-                self.handle_info_req(port_number, msg)
+                self.handle_info_req(port_number, more, msg)
                 continue
             if msg_type != self.MSG_TYPE_PACKET_IN:
                 continue

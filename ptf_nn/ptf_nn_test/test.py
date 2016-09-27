@@ -33,9 +33,14 @@ class GetMacTest(DataplaneBaseTest):
         DataplaneBaseTest.__init__(self)
 
     def runTest(self):
+        def check_mac(device, port):
+            mac = self.dataplane.get_mac(device, port)
+            self.assertIsNotNone(mac)
+            self.assertEqual(mac.count(":"), 5)
+
+        check_mac(0, 1)
         pkt = "ab" * 20
-        self.assertIsNotNone(self.dataplane.get_mac(0, 1))
         testutils.send_packet(self, (0, 1), str(pkt))
         print "packet sent"
         testutils.verify_packet(self, pkt, (1, 1))
-        self.assertIsNotNone(self.dataplane.get_mac(1, 1))
+        check_mac(1, 1)

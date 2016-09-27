@@ -34,14 +34,26 @@ except ImportError:
 import threading
 import os
 
-# copied from ptf script; hack to make ptf import work even if ptf not installed
-root_dir = os.path.dirname(os.path.realpath(__file__))
-pydir = os.path.join(root_dir, os.pardir, 'src')
-if os.path.exists(os.path.join(pydir, 'ptf')):
-    # Running from source tree
-    sys.path.insert(0, pydir)
+# copied from ptf.netutils
+# From bits/ioctls.h
+SIOCGIFHWADDR  = 0x8927          # Get hardware address
+SIOCGIFINDEX   = 0x8933          # name -> if_index mapping
 
-import ptf.netutils
+def get_if(iff, cmd):
+    import socket
+    from fcntl import ioctl
+    s = socket.socket()
+    ifreq = ioctl(s, cmd, struct.pack("16s16x",iff))
+    s.close()
+    return ifreq
+
+def get_if_index(iff):
+    return int(struct.unpack("I", get_if(iff, SIOCGIFINDEX)[16:20])[0])
+
+def get_mac(iff):
+    return ':'.join(
+        ['%02x' % ord(char) for char in get_if(iff, SIOCGIFHWADDR)[18:24]])
+
 
 # Taken from ptf parser
 class ActionInterface(argparse.Action):
@@ -130,7 +142,7 @@ class IfaceMgr(threading.Thread):
 
     def get_mac(self):
         try:
-            mac = ptf.netutils.get_mac(self.iface_name)
+            mac = get_mac(self.iface_name)
             return mac
         except:
             # if not supported on platform

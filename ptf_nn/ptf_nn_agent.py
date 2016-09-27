@@ -32,6 +32,28 @@ except ImportError:
     print "Cannot find nnpy package, please install"
     sys.exit(1)
 import threading
+import os
+
+# copied from ptf.netutils
+# From bits/ioctls.h
+SIOCGIFHWADDR  = 0x8927          # Get hardware address
+SIOCGIFINDEX   = 0x8933          # name -> if_index mapping
+
+def get_if(iff, cmd):
+    import socket
+    from fcntl import ioctl
+    s = socket.socket()
+    ifreq = ioctl(s, cmd, struct.pack("16s16x",iff))
+    s.close()
+    return ifreq
+
+def get_if_index(iff):
+    return int(struct.unpack("I", get_if(iff, SIOCGIFINDEX)[16:20])[0])
+
+def get_mac(iff):
+    return ':'.join(
+        ['%02x' % ord(char) for char in get_if(iff, SIOCGIFHWADDR)[18:24]])
+
 
 # Taken from ptf parser
 class ActionInterface(argparse.Action):
@@ -118,6 +140,14 @@ class IfaceMgr(threading.Thread):
             nano_mgr = nano_mgrs[self.dev]
             nano_mgr.forward(str(p), self.port)
 
+    def get_mac(self):
+        try:
+            mac = get_mac(self.iface_name)
+            return mac
+        except:
+            # if not supported on platform
+            return None
+
     def run(self):
         while True:
             msg = self.socket.recv(4096)
@@ -129,6 +159,13 @@ class NanomsgMgr(threading.Thread):
     MSG_TYPE_PORT_SET_STATUS = 2
     MSG_TYPE_PACKET_IN = 3
     MSG_TYPE_PACKET_OUT = 4
+    MSG_TYPE_INFO_REQ = 5
+    MSG_TYPE_INFO_REP = 6
+
+    MSG_INFO_TYPE_HWADDR = 0
+
+    MSG_INFO_STATUS_SUCCESS = 0
+    MSG_INFO_STATUS_NOT_SUPPORTED = 1
 
     def __init__(self, dev, socket_addr):
         threading.Thread.__init__(self)
@@ -145,16 +182,42 @@ class NanomsgMgr(threading.Thread):
         msg = list(msg)
         self.socket.send(msg)
 
+    def handle_info_req(self, port_number, info_id, msg):
+        def handle_not_supported():
+            fmt = "<iiii"
+            rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number, info_id,
+                              self.MSG_INFO_STATUS_NOT_SUPPORTED)
+            self.socket.send(rep)
+
+        def handle_hwaddr():
+            if (self.dev, port_number) not in iface_mgrs:
+                handle_not_supported()
+            else:
+                iface_mgr = iface_mgrs[(self.dev, port_number)]
+                mac = iface_mgr.get_mac()
+                fmt = "<iiii{}s".format(len(mac))
+                rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number,
+                                  info_id, self.MSG_INFO_STATUS_SUCCESS, mac)
+                self.socket.send(rep)
+
+        handlers = {
+            self.MSG_INFO_TYPE_HWADDR: handle_hwaddr,
+        }
+        handlers.get(info_id, handle_not_supported)()
+
     def run(self):
         while True:
             msg = self.socket.recv()
             fmt = "<iii"
-            msg_type, port_number, length = struct.unpack_from(fmt, msg)
+            msg_type, port_number, more = struct.unpack_from(fmt, msg)
             hdr_size = struct.calcsize(fmt)
             msg = msg[hdr_size:]
-            if (msg_type != self.MSG_TYPE_PACKET_IN):
+            if msg_type == self.MSG_TYPE_INFO_REQ:
+                self.handle_info_req(port_number, more, msg)
                 continue
-            assert (len(msg) == length)
+            if msg_type != self.MSG_TYPE_PACKET_IN:
+                continue
+            assert (len(msg) == more)
             print "NanomsgMgr {}-{} ({}) received a packet".format(
                 self.dev, port_number, self.socket_addr)
             if (self.dev, port_number) in iface_mgrs:

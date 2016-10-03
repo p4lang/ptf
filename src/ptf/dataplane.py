@@ -209,6 +209,7 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     MSG_TYPE_INFO_REP = 6
 
     MSG_INFO_TYPE_HWADDR = 0
+    MSG_INFO_TYPE_CTRS = 1
 
     MSG_INFO_STATUS_SUCCESS = 0
     MSG_INFO_STATUS_NOT_SUPPORTED = 1
@@ -223,6 +224,7 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         self.buffers = defaultdict(list)
         self.cvar = Condition()
         self.mac_addresses = {}
+        self.counters = {}
 
     def close(self):
         # TODO(antonin): something to do?
@@ -243,6 +245,9 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
 
     def __request_mac(self, port_number):
         self.__send_info_req_msg(port_number, self.MSG_INFO_TYPE_HWADDR)
+
+    def __request_ctrs(self, port_number):
+        self.__send_info_req_msg(port_number, self.MSG_INFO_TYPE_CTRS)
 
     def port_add(self, port_number):
         self.__send_port_msg(self.MSG_TYPE_PORT_ADD, port_number, 0)
@@ -269,6 +274,10 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
             with self.cvar:
                 self.mac_addresses[port_number] = msg
                 self.cvar.notify_all()
+        elif info_type == self.MSG_INFO_TYPE_CTRS:
+            with self.cvar:
+                self.counters[port_number] = struct.unpack_from('<ii', msg)
+                self.cvar.notify_all()
 
     def recv(self):
         msg = self.socket.recv()
@@ -293,16 +302,24 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         # nnpy does not return the number of bytes sent
         return len(packet)
 
-    def get_mac(self, port_number, timeout=2):
+    def get_info(self, port_number, cache, send_request, timeout=2):
         # we use a timeout in case other endpoint does not reply
         end = time.time() + timeout
         with self.cvar:
             time_remaining = end - time.time()
-            while port_number not in self.mac_addresses and time_remaining > 0:
-                self.__request_mac(port_number)
+            while port_number not in cache and time_remaining > 0:
+                send_request(port_number)
                 self.cvar.wait(time_remaining)
                 time_remaining = end - time.time()
-            return self.mac_addresses.get(port_number, None)
+            return cache.get(port_number, None)
+
+    def get_mac(self, port_number, timeout=2):
+        return self.get_info(port_number, self.mac_addresses, self.__request_mac, timeout)
+
+    def get_counters(self, port_number, timeout=2):
+        if port_number in self.counters:
+            del self.counters[port_number]
+        return self.get_info(port_number, self.counters, self.__request_ctrs, timeout)
 
 
 class DataPlanePortNN(DataPlanePortIface):
@@ -367,6 +384,13 @@ class DataPlanePortNN(DataPlanePortIface):
         Return mac address
         """
         return self.packet_injecters[self.device_number].get_mac(
+            self.port_number)
+
+    def counters(self):
+        """
+        Return counters
+        """
+        return self.packet_injecters[self.device_number].get_counters(
             self.port_number)
 
 
@@ -737,6 +761,10 @@ class DataPlane(Thread):
     def get_mac(self, device_number, port_number):
         """Get the specified mac"""
         return self.ports[(device_number, port_number)].mac()
+
+    def get_counters(self, device_number, port_number):
+        """Get the specified port counters """
+        return self.ports[(device_number, port_number)].counters()
 
     def flush(self):
         """

@@ -1563,6 +1563,191 @@ def simple_qinq_tcp_packet(pktlen=100,
 
     return pkt
 
+def dhcp_discover_packet(eth_dst='ff:ff:ff:ff:ff:ff',
+            eth_src='00:01:02:03:04:05',
+            ip_src='0.0.0.0',
+            ip_dst='255.255.255.255',
+            src_port=68,
+            dst_port=67,
+            bootp_chaddr='00:01:02:03:04:05',
+            ):
+
+    """
+    Return a dhcp discover packet
+
+    Supports a few parameters:
+    @param eth_dst Destination MAC, should be broadcast
+    @param eth_src Source MAC
+    @param ip_src Source IP, should be 0.0.0.0
+    @param ip_dst Destination IP, should be broadcast address
+    @param src_port Source Port, 68 for DHCP Client
+    @param dst_port Destination Port, 67 for DHCP Server
+    @param bootp_chaddr MAC Address of client
+
+    """
+
+    pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+    scapy.IP(src=ip_src, dst=ip_dst)/ \
+    scapy.UDP(sport=src_port, dport=dst_port)/ \
+    scapy.BOOTP(chaddr=bootp_chaddr)/ \
+    scapy.DHCP(options=[('message-type', 'discover'), ('end')])
+    return pkt
+
+def dhcp_offer_packet(eth_dst='00:01:02:03:04:05',
+                eth_src='06:07:08:09:10:11',
+                ip_src='0.0.0.0',
+                ip_dst='255.255.255.255',
+                ip_len=308,
+                ip_tos=16,
+                ip_ttl=128,
+                ip_id=0,
+                src_port=67,
+                dst_port=68,
+                udp_len=308,
+                bootp_op=2,
+                bootp_htype=1,
+                bootp_hlen=6,
+                bootp_hops=1,
+                bootp_xid=00000000,
+                bootp_secs=0,
+                bootp_flags=0000,
+                bootp_ciaddr='0.0.0.0',
+                bootp_yiaddr='1.2.3.4',
+                bootp_siaddr='0.0.0.0',
+                bootp_chaddr='00:01:02:03:04:05',
+                bootp_giaddr='9.8.7.6',
+                dhcp_serverip='1.2.3.4',
+                dhcp_lease=256,
+                dhcp_netmask='255.255.255.0',
+                padding=None):
+
+    """
+    Return a dhcp offer packet
+
+    Supports a few parameters:
+    @param eth_dst Destination MAC, should be address of client
+    @param eth_src Source MAC, address of DHCP server or relay
+    @param ip_src Source IP, should be DHCP server IP
+    @param ip_dst Destination IP, should be client address
+    @param src_port Source Port, 67 for DHCP Server
+    @param dst_port Destination Port, 68 for DHCP Client
+    @param bootp_op Operation Code, 2 indicates reply
+    @param bootp_htype Hardware Type, 1 indicates ethernet
+    @param bootp_hlen Hardware Address Len, 6 is value for Ethernet
+    @param bootp_hops Hops, used by relay agent to forward messages
+    @param bootp_xid Transaction Identifier, 32 bit field that identifies transaction
+    @param bootp_secs Seconds, time elapsed since client started trying to boot
+    @param bootp_flags Flags, 16 bits (1 bit is broadcast flag)
+    @param bootp_ciaddr Client IP Address, if client has a current IP address otherwise set to zeros
+    @param bootp_yiaddr Your IP Address, address that server is assigning to client
+    @param bootp_siaddr Server IP Address, address of server
+    @param bootp_giaddr Gateway IP Address, address of relay agent if used
+    @param bootp_chaddr MAC Address of client
+    @param dhcp_serverip IP address of DHCP server
+    @param dhcp_lease Time in seconds of DHCP lease
+    @param dhcp_netmask Subnet mask of client
+    @param padding '\x00' padding inserted at end of packet, '\x00'*n where n is number of bytes
+    """
+
+    pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+    scapy.IP(src=ip_src, dst=ip_dst, len=ip_len, tos=ip_tos, ttl=ip_ttl, id=0)/ \
+    scapy.UDP(sport=src_port, dport=dst_port, len=udp_len)/ \
+    scapy.BOOTP(op=bootp_op, htype=bootp_htype, hlen=bootp_hlen, hops=bootp_hops, xid=bootp_xid,
+            secs=bootp_secs, flags=bootp_flags, ciaddr=bootp_ciaddr, yiaddr=bootp_yiaddr, siaddr=bootp_siaddr,
+            giaddr=bootp_giaddr, chaddr=bootp_chaddr)/ \
+    scapy.DHCP(options=[('message-type', 'offer'), ('server_id', dhcp_serverip), ('lease_time', int(dhcp_lease)),
+            ('subnet_mask', dhcp_netmask), ('end')])/ \
+    scapy.PADDING(padding)
+    return pkt
+
+
+def dhcp_request_packet(eth_dst='ff:ff:ff:ff:ff:ff',
+                    eth_src='00:01:02:03:04:05',
+                    ip_src='0.0.0.0',
+                    ip_dst='255.255.255.255',
+                    src_port=68,
+                    dst_port=67,
+                    bootp_chaddr='00:01:02:03:04:05',
+                    dhcp_request_ip='1.2.3.4'):
+
+    """
+    Return a dhcp request packet
+
+    Supports a few parameters:
+    @param eth_dst Destination MAC, should be broadcast address
+    @param eth_src Source MAC, address of client
+    @param ip_src Source IP, should be default route IP Address (0.0.0.0)
+    @param ip_dst Destination IP, should be broadcast address
+    @param src_port Source Port, 68 for DHCP Client
+    @param dst_port Destination Port, 67 for DHCP Server
+    @param bootp_chaddr MAC Address of DHCP Client
+    @param dhcp_request_ip IP Address, address of client (found in DHCP Offer)
+    """
+
+    pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+    scapy.IP(src=ip_src, dst=ip_dst)/ \
+    scapy.UDP(sport=src_port, dport=dst_port)/ \
+    scapy.BOOTP(chaddr=bootp_chaddr)/ \
+    scapy.DHCP(options=[('message-type', 'request'), ('requested_addr', dhcp_request_ip), ('end')])
+    return pkt
+
+
+def dhcp_ack_packet(eth_dst='00:01:02:03:04:05',
+                eth_src='06:07:08:09:10:11',
+                ip_src='1.2.3.4',
+                ip_dst='255.255.255.255',
+                ip_len=328,
+                ip_tos=16,
+                ip_ttl=128,
+                ip_id=0,
+                src_port=67,
+                dst_port=68,
+                udp_len=308,
+                bootp_op=2,
+                bootp_htype=1,
+                bootp_hlen=6,
+                bootp_hops=1,
+                bootp_xid=00000000,
+                bootp_secs=0,
+                bootp_flags=0000,
+                bootp_ciaddr='0.0.0.0',
+                bootp_yiaddr='1.2.3.4',
+                bootp_siaddr='0.0.0.0',
+                bootp_chaddr='00:01:02:03:04:05',
+                bootp_giaddr='9.8.7.6',
+                dhcp_serverip='1.2.3.4',
+                dhcp_lease=256,
+                dhcp_netmask='255.255.255.0',
+                padding=None):
+
+    """
+    Return a dhcp ack packet
+
+    Supports a few parameters:
+    @param eth_dst Destination MAC, should be address of client
+    @param eth_src Source MAC, address of DHCP server or relay
+    @param ip_src Source IP, should be DHCP server IP
+    @param ip_dst Destination IP, should be client address
+    @param src_port Source Port, 67 for DHCP Server
+    @param dst_port Destination Port, 68 for DHCP Client
+    @param bootp_op Operation Code, 2 indicates reply
+    @param bootp_htype Hardware Type, 1 indicates ethernet
+    @param bootp_hlen Hardware Address Len, 6 is value for Ethernet
+    @param bootp_hops Hops, used by relay agent to forward messages
+    @param bootp_xid Transaction Identifier, 32 bit field that identifies transaction
+    @param bootp_secs Seconds, time elapsed since client started trying to boot
+    @param bootp_flags Flags, 16 bits (1 bit is broadcast flag)
+    @param bootp_ciaddr Client IP Address, if client has a current IP address otherwise set to zeros
+    @param bootp_yiaddr Your IP Address, address that server is assigning to client
+    @param bootp_siaddr Server IP Address, address of server
+    @param bootp_giaddr Gateway IP Address, address of relay agent if used
+    @param bootp_chaddr MAC Address of client
+    @param dhcp_serverip IP address of DHCP server
+    @param dhcp_lease Time in seconds of DHCP lease
+    @param dhcp_netmask Subnet mask of client
+    @param padding '\x00' padding inserted at end of packet, '\x00'*n where n is number of bytes
+    """
+
 def get_egr_list(parent, ports, how_many, exclude_list=[]):
     """
     Generate a list of ports avoiding those in the exclude list

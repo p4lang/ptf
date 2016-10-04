@@ -1571,7 +1571,6 @@ def dhcp_discover_packet(eth_dst='ff:ff:ff:ff:ff:ff',
             dst_port=67,
             bootp_chaddr='00:01:02:03:04:05',
             ):
-
     """
     Return a dhcp discover packet
 
@@ -1620,7 +1619,6 @@ def dhcp_offer_packet(eth_dst='00:01:02:03:04:05',
                 dhcp_lease=256,
                 dhcp_netmask='255.255.255.0',
                 padding=None):
-
     """
     Return a dhcp offer packet
 
@@ -1660,7 +1658,6 @@ def dhcp_offer_packet(eth_dst='00:01:02:03:04:05',
     scapy.PADDING(padding)
     return pkt
 
-
 def dhcp_request_packet(eth_dst='ff:ff:ff:ff:ff:ff',
                     eth_src='00:01:02:03:04:05',
                     ip_src='0.0.0.0',
@@ -1669,7 +1666,6 @@ def dhcp_request_packet(eth_dst='ff:ff:ff:ff:ff:ff',
                     dst_port=67,
                     bootp_chaddr='00:01:02:03:04:05',
                     dhcp_request_ip='1.2.3.4'):
-
     """
     Return a dhcp request packet
 
@@ -1690,7 +1686,6 @@ def dhcp_request_packet(eth_dst='ff:ff:ff:ff:ff:ff',
     scapy.BOOTP(chaddr=bootp_chaddr)/ \
     scapy.DHCP(options=[('message-type', 'request'), ('requested_addr', dhcp_request_ip), ('end')])
     return pkt
-
 
 def dhcp_ack_packet(eth_dst='00:01:02:03:04:05',
                 eth_src='06:07:08:09:10:11',
@@ -1719,7 +1714,6 @@ def dhcp_ack_packet(eth_dst='00:01:02:03:04:05',
                 dhcp_lease=256,
                 dhcp_netmask='255.255.255.0',
                 padding=None):
-
     """
     Return a dhcp ack packet
 
@@ -1758,7 +1752,6 @@ def dhcp_ack_packet(eth_dst='00:01:02:03:04:05',
                 ('subnet_mask', dhcp_netmask), ('end')]) / \
     scapy.PADDING(padding)
     return pkt
-
 
 def get_egr_list(parent, ports, how_many, exclude_list=[]):
     """

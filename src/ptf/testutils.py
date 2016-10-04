@@ -1748,6 +1748,18 @@ def dhcp_ack_packet(eth_dst='00:01:02:03:04:05',
     @param padding '\x00' padding inserted at end of packet, '\x00'*n where n is number of bytes
     """
 
+    pkt = scapy.Ether(dst=eth_dst, src=eth_src) / \
+    scapy.IP(src=ip_src, dst=ip_dst, len=ip_len, tos=ip_tos, ttl=ip_ttl, id=ip_id) / \
+    scapy.UDP(sport=src_port, dport=dst_port, len=udp_len) / \
+    scapy.BOOTP(op=bootp_op, htype=bootp_htype, hlen=bootp_hlen, hops=bootp_hops, xid=bootp_xid,
+                flags=bootp_flags, ciaddr=bootp_ciaddr, yiaddr=bootp_yiaddr, siaddr=bootp_siaddr,
+                giaddr=bootp_giaddr, chaddr=bootp_chaddr) / \
+    scapy.DHCP(options=[('message-type', 'ack'), ('server_id', dhcp_serverip), ('lease_time', int(dhcp_lease)),
+                ('subnet_mask', dhcp_netmask), ('end')]) / \
+    scapy.PADDING(padding)
+    return pkt
+
+
 def get_egr_list(parent, ports, how_many, exclude_list=[]):
     """
     Generate a list of ports avoiding those in the exclude list

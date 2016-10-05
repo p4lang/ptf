@@ -122,8 +122,6 @@ class IfaceMgr(threading.Thread):
     def __init__(self, dev, port, iface_name):
         threading.Thread.__init__(self)
         self.daemon = True
-        self.rx_ctr = 0
-        self.tx_ctr = 0
         self.dev = dev
         self.port = port
         self.iface_name = iface_name
@@ -132,8 +130,8 @@ class IfaceMgr(threading.Thread):
         self.socket.bind((iface_name, 0))
 
     def forward(self, p):
+        # can that conflict with sniff?
         self.socket.send(p)
-        self.tx_ctr += 1
 
     def received(self, p):
         print "IfaceMgr {}-{} ({}) received a packet".format(
@@ -141,7 +139,6 @@ class IfaceMgr(threading.Thread):
         if self.dev in nano_mgrs:
             nano_mgr = nano_mgrs[self.dev]
             nano_mgr.forward(str(p), self.port)
-            self.rx_ctr += 1
 
     def get_mac(self):
         try:
@@ -150,9 +147,6 @@ class IfaceMgr(threading.Thread):
         except:
             # if not supported on platform
             return None
-
-    def get_ctrs(self):
-        return self.rx_ctr, self.tx_ctr
 
     def run(self):
         while True:
@@ -169,7 +163,6 @@ class NanomsgMgr(threading.Thread):
     MSG_TYPE_INFO_REP = 6
 
     MSG_INFO_TYPE_HWADDR = 0
-    MSG_INFO_TYPE_CTRS = 1
 
     MSG_INFO_STATUS_SUCCESS = 0
     MSG_INFO_STATUS_NOT_SUPPORTED = 1
@@ -207,20 +200,8 @@ class NanomsgMgr(threading.Thread):
                                   info_id, self.MSG_INFO_STATUS_SUCCESS, mac)
                 self.socket.send(rep)
 
-        def handle_ctrs():
-            if (self.dev, port_number) not in iface_mgrs:
-                handle_not_supported()
-            else:
-                iface_mgr = iface_mgrs[(self.dev, port_number)]
-                rx, tx = iface_mgr.get_ctrs()
-                fmt = "<iiiiii"
-                rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number,
-                                  info_id, self.MSG_INFO_STATUS_SUCCESS, rx, tx)
-                self.socket.send(rep)
-
         handlers = {
             self.MSG_INFO_TYPE_HWADDR: handle_hwaddr,
-            self.MSG_INFO_TYPE_CTRS:   handle_ctrs,
         }
         handlers.get(info_id, handle_not_supported)()
 

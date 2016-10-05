@@ -1753,6 +1753,37 @@ def dhcp_ack_packet(eth_dst='00:01:02:03:04:05',
     scapy.PADDING(padding)
     return pkt
 
+def dhcp_release_packet(eth_dst='ff:ff:ff:ff:ff:ff',
+                     eth_src='00:01:02:03:04:05',
+                     ip_src='0.0.0.0',
+                     ip_dst='255.255.255.255',
+                     src_port=68,
+                     dst_port=67,
+                     bootp_chaddr='00:01:02:03:04:05',
+                     bootp_ciaddr='1.2.3.4',
+                     dhcp_server_ip='1.2.3.4'):
+    """
+        Return a dhcp release packet
+
+        Supports a few parameters:
+        @param eth_dst Destination MAC, should be broadcast address
+        @param eth_src Source MAC, should be address of client
+        @param ip_src Source IP, should be default route IP address
+        @param ip_dst Destination IP, broadcast IP address
+        @param src_port Source Port, 68 for DHCP client
+        @param dst_port Destination Port, 67 for DHCP Server
+        @param bootp_chaddr MAC Address of client
+        @param bootp_ciaddr Client IP Address
+        @param dhcp_server_ip IP address of DHCP server
+    """
+
+    pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+    scapy.IP(src=ip_src, dst=ip_dst)/ \
+    scapy.UDP(sport=src_port, dport=dst_port)/ \
+    scapy.BOOTP(chaddr=bootp_chaddr, ciaddr=bootp_ciaddr)/ \
+    scapy.DHCP(options=[('message-type', 'release'), ('server_id', dhcp_server_ip), ('end')])
+    return pkt
+
 def get_egr_list(parent, ports, how_many, exclude_list=[]):
     """
     Generate a list of ports avoiding those in the exclude list

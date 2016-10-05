@@ -495,6 +495,12 @@ class DataPlane(Thread):
         # dict from device number, port number to list of (timestamp, packet)
         self.packet_queues = {}
 
+        # counters of received packets (may include packets which were dropped due to queue overflow)
+        self.rx_counters = defaultdict(int)
+
+        # counters of transmited packets
+        self.tx_counters = defaultdict(int)
+
         # cvar serves double duty as a regular top level lock and
         # as a condition variable
         self.cvar = Condition()
@@ -579,6 +585,7 @@ class DataPlane(Thread):
                             queue.pop(0)
                             self.logger.debug("Discarding oldest packet to make room")
                         queue.append((pkt, timestamp))
+                        self.rx_counters[(device_number, port_number)] += 1
                 self.cvar.notify_all()
 
         self.logger.info("Thread exit")
@@ -615,6 +622,7 @@ class DataPlane(Thread):
             self.pcap_writer.write(packet, time.time(),
                                    device_number, port_number)
         bytes = self.ports[(device_number, port_number)].send(packet)
+        self.tx_counters[(device_number, port_number)] += 1
         if bytes != len(packet):
             self.logger.error("Unhandled send error, length mismatch %d != %d" %
                      (bytes, len(packet)))
@@ -737,6 +745,11 @@ class DataPlane(Thread):
     def get_mac(self, device_number, port_number):
         """Get the specified mac"""
         return self.ports[(device_number, port_number)].mac()
+
+    def get_counters(self, device_number, port_number):
+        """Get the counters mac"""
+        return self.rx_counters[(device_number, port_number)], \
+               self.tx_counters[(device_number, port_number)]
 
     def flush(self):
         """

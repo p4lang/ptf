@@ -33,6 +33,7 @@ except ImportError:
     sys.exit(1)
 import threading
 import os
+import logging
 
 # copied from ptf.netutils
 # From bits/ioctls.h
@@ -113,10 +114,17 @@ parser.add_argument(
     "--interface", "-i", type=str, dest="interfaces",
     metavar="INTERFACE", action=ActionInterface, default=[],
     help="Specify a port number and the dataplane interface to use. May be given multiple times. Example: 0-1@eth2 (use eth2 as port 1 of device 0)")
+parser.add_argument(
+    "--verbose", "-v", dest="verbose", action='store_true',
+    help="Specify if you need verbose output")
+
 args = parser.parse_args()
 
 iface_mgrs = {}
 nano_mgrs = {}
+
+logging.basicConfig(format='%(message)s')
+logger = logging.getLogger('ptf_nn_agent')
 
 class IfaceMgr(threading.Thread):
     def __init__(self, dev, port, iface_name):
@@ -137,8 +145,8 @@ class IfaceMgr(threading.Thread):
         self.tx_ctr += 1
 
     def received(self, p):
-        print "IfaceMgr {}-{} ({}) received a packet".format(
-            self.dev, self.port, self.iface_name)
+        logger.debug("IfaceMgr {}-{} ({}) received a packet".format(
+            self.dev, self.port, self.iface_name))
         if self.dev in nano_mgrs:
             nano_mgr = nano_mgrs[self.dev]
             nano_mgr.forward(str(p), self.port)
@@ -238,13 +246,18 @@ class NanomsgMgr(threading.Thread):
             if msg_type != self.MSG_TYPE_PACKET_IN:
                 continue
             assert (len(msg) == more)
-            print "NanomsgMgr {}-{} ({}) received a packet".format(
-                self.dev, port_number, self.socket_addr)
+            logger.debug("NanomsgMgr {}-{} ({}) received a packet".format(
+                self.dev, port_number, self.socket_addr))
             if (self.dev, port_number) in iface_mgrs:
                 iface_mgr = iface_mgrs[(self.dev, port_number)]
                 iface_mgr.forward(msg)
 
 def main():
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
     for dev, port, iface in args.interfaces:
         i = IfaceMgr(dev, port, iface)
         i.start()
@@ -253,7 +266,7 @@ def main():
         n = NanomsgMgr(dev, addr)
         n.start()
         nano_mgrs[dev] = n
-    print "READY"
+    logger.info("READY")
     try:
         while True:
             time.sleep(1)

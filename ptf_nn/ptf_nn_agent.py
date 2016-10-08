@@ -39,9 +39,11 @@ import logging
 # From bits/ioctls.h
 SIOCGIFHWADDR  = 0x8927          # Get hardware address
 SIOCGIFINDEX   = 0x8933          # name -> if_index mapping
+SIOCGIFFLAGS   = 0x8913          # get the active flag word of the device
+SIOCSIFFLAGS   = 0x8914          # set the active flag word of the device
+IFF_UP         = 0x0001
 
 def get_if(iff, cmd):
-    import socket
     from fcntl import ioctl
     s = socket.socket()
     ifreq = ioctl(s, cmd, struct.pack("16s16x",iff))
@@ -54,6 +56,21 @@ def get_if_index(iff):
 def get_mac(iff):
     return ':'.join(
         ['%02x' % ord(char) for char in get_if(iff, SIOCGIFHWADDR)[18:24]])
+
+def set_if_status(iff, status):
+    from socket import AF_NETLINK, SOCK_DGRAM
+    from fcntl import ioctl
+    s = socket.socket()
+    ifr = struct.pack('16sh', iff, 0)
+    result = ioctl(s, SIOCGIFFLAGS, ifr)
+    flags = struct.unpack('16sh', result)[1]
+    if status:
+       flags |= IFF_UP
+    else:
+       flags &= ~IFF_UP
+    ifr = struct.pack('16sh', iff, flags)
+    ioctl(s, SIOCSIFFLAGS, ifr)
+    s.close()
 
 
 # Taken from ptf parser
@@ -163,6 +180,16 @@ class IfaceMgr(threading.Thread):
     def get_ctrs(self):
         return self.rx_ctr, self.tx_ctr
 
+    def port_up(self, status):
+        set_if_status(self.dev, True)
+        logger.debug("IfaceMgr {}-{} ({}) status changed to UP".format(
+                self.dev, self.port, self.iface_name))
+
+    def port_down(self, status):
+        set_if_status(self.dev, False)
+        logger.debug("IfaceMgr {}-{} ({}) status changed to DOWN".format(
+                self.dev, self.port, self.iface_name))
+
     def run(self):
         while True:
             msg = self.socket.recv(4096)
@@ -176,6 +203,9 @@ class NanomsgMgr(threading.Thread):
     MSG_TYPE_PACKET_OUT = 4
     MSG_TYPE_INFO_REQ = 5
     MSG_TYPE_INFO_REP = 6
+
+    MSG_PORT_STATUS_UP = 0
+    MSG_PORT_STATUS_DOWN = 1
 
     MSG_INFO_TYPE_HWADDR = 0
     MSG_INFO_TYPE_CTRS = 1
@@ -233,6 +263,15 @@ class NanomsgMgr(threading.Thread):
         }
         handlers.get(info_id, handle_not_supported)()
 
+
+    def handle_set_status_req(self, port_number, status):
+        if (self.dev, port_number) in iface_mgrs:
+            iface_mgr = iface_mgrs[(self.dev, port_number)]
+            if status == self.MSG_PORT_STATUS_UP:
+                iface_mgr.port_up()
+            elif status == self.MSG_PORT_STATUS_DOWN:
+                iface_mgr.port_down()
+
     def run(self):
         while True:
             msg = self.socket.recv()
@@ -242,6 +281,9 @@ class NanomsgMgr(threading.Thread):
             msg = msg[hdr_size:]
             if msg_type == self.MSG_TYPE_INFO_REQ:
                 self.handle_info_req(port_number, more, msg)
+                continue
+            if msg_type == self.MSG_TYPE_PORT_SET_STATUS:
+                self.handle_set_status_req(port_number, more)
                 continue
             if msg_type != self.MSG_TYPE_PACKET_IN:
                 continue

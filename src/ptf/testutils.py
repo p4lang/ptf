@@ -2180,7 +2180,7 @@ def count_matched_packets(test, exp_packet, port, device_number=0, timeout=1):
     while True:
         (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(test, device_number=device_number, port_number=port, timeout=timeout)
         if rcv_pkt is not None:
-            if match_exp_pkt(exp_packet, rcv_pkt):
+            if ptf.dataplane.match_exp_pkt(exp_packet, rcv_pkt):
                 total_rcv_pkt_cnt += 1
         else:
             break

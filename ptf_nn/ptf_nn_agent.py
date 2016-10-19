@@ -21,6 +21,7 @@
 #
 
 import sys
+import os
 import argparse
 import time
 import struct
@@ -135,6 +136,7 @@ class IfaceMgr(threading.Thread):
         self.dev = dev
         self.port = port
         self.iface_name = iface_name
+        os.system("ifconfig %s up" % self.iface_name)
         self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
                                     socket.htons(0x03))
         self.socket.bind((iface_name, 0))

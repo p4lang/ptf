@@ -26,6 +26,7 @@ import time
 import struct
 import socket
 import Queue
+import subprocess
 try:
     import nnpy
 except ImportError:
@@ -135,9 +136,18 @@ class IfaceMgr(threading.Thread):
         self.dev = dev
         self.port = port
         self.iface_name = iface_name
+        self.port_up()
         self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
                                     socket.htons(0x03))
         self.socket.bind((iface_name, 0))
+
+    def port_up(self):
+        try:
+            retcode = subprocess.call("ifconfig %s up" % self.iface_name, shell=True)
+            if retcode < 0:
+                print "ifconfig was terminated by signal", -retcode
+        except OSError as e:
+            print "Execution failed:", e
 
     def forward(self, p):
         # can that conflict with sniff?

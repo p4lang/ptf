@@ -21,6 +21,7 @@
 #
 
 import sys
+import os
 import argparse
 import time
 import struct
@@ -78,6 +79,11 @@ def get_if_status(iff):
     s.close()
     flags = struct.unpack('16sh', result)[1]
     return flags & IFF_UP > 0
+
+def if_exists(iff):
+    ifaces = os.listdir('/sys/class/net')
+
+    return iff in ifaces
 
 # Taken from ptf parser
 class ActionInterface(argparse.Action):
@@ -197,7 +203,7 @@ class IfaceMgr(threading.Thread):
         while True:
             # wait until the port goes up
             while True:
-                if get_if_status(self.iface_name):
+                if if_exists(self.iface_name) and get_if_status(self.iface_name):
                     break
                 time.sleep(1)
 

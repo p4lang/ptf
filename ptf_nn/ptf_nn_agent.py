@@ -200,6 +200,8 @@ class IfaceMgr(threading.Thread):
                      self.dev, self.port, self.iface_name))
 
     def run(self):
+        # run this loop in case the interface goes down by external action
+        # or the interface disappeares
         while True:
             # wait until the port goes up
             while True:

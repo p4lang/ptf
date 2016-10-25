@@ -208,6 +208,9 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     MSG_TYPE_INFO_REQ = 5
     MSG_TYPE_INFO_REP = 6
 
+    MSG_PORT_STATUS_UP = 0
+    MSG_PORT_STATUS_DOWN = 1
+
     MSG_INFO_TYPE_HWADDR = 0
     MSG_INFO_TYPE_CTRS = 1
 

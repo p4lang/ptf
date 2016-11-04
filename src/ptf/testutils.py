@@ -2053,6 +2053,19 @@ def verify_packets(test, pkt, ports=[], device_number=0):
             verify_no_packet(test, pkt, (device, port))
     verify_no_other_packets(test, device_number=device_number)
 
+def verify_no_packet_any(test, pkt, ports=[], device_number=0):
+    """
+    Check that a packet is NOT received on _any_ of the specified ports belonging to
+    the given device (default device_number is 0).
+    """
+    test.assertTrue(len(ports) != 0, "No port available to validate receiving packet on device %d, " % device_number)
+    for device, port in ptf_ports():
+        if device != device_number:
+            continue
+        if port in ports:
+            print 'verifying packet on port device', device_number, 'port', port
+            verify_no_packet(test, pkt, (device, port))
+
 def verify_packets_any(test, pkt, ports=[], device_number=0):
     """
     Check that a packet is received on _any_ of the specified ports belonging to

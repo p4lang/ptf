@@ -795,5 +795,7 @@ class DataPlane(Thread):
 
     def stop_pcap(self):
         if self.pcap_writer:
-            self.pcap_writer.close()
-            self.pcap_writer = None
+            with self.cvar:
+                self.pcap_writer.close()
+                self.pcap_writer = None
+                self.cvar.notify_all()

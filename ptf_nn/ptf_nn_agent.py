@@ -146,6 +146,22 @@ parser.add_argument(
 parser.add_argument(
     "--verbose", "-v", dest="verbose", action='store_true',
     help="Specify if you need verbose output")
+parser.add_argument(
+    "--set-nn-rcv-buffer", type=int, dest="nn_rcv_buf",
+    metavar="BUFFER_SIZE", default=0,
+    help="Specify a nanomsg socket receive buffer size")
+parser.add_argument(
+    "--set-nn-snd-buffer", type=int, dest="nn_snd_buf",
+    metavar="BUFFER_SIZE", default=0,
+    help="Specify a nanomsg socket send buffer size")
+parser.add_argument(
+    "--set-iface-rcv-buffer", type=int, dest="iface_rcv_buf",
+    metavar="BUFFER_SIZE", default=0,
+    help="Specify an interface socket receive buffer size")
+parser.add_argument(
+    "--set-iface-snd-buffer", type=int, dest="iface_snd_buf",
+    metavar="BUFFER_SIZE", default=0,
+    help="Specify an interface socket send buffer size")
 
 args = parser.parse_args()
 
@@ -156,7 +172,7 @@ logging.basicConfig(format='%(message)s')
 logger = logging.getLogger('ptf_nn_agent')
 
 class IfaceMgr(threading.Thread):
-    def __init__(self, dev, port, iface_name):
+    def __init__(self, dev, port, iface_name, iface_rcv_buf=0, iface_snd_buf=0):
         threading.Thread.__init__(self)
         self.daemon = True
         self.rx_ctr = 0
@@ -164,6 +180,8 @@ class IfaceMgr(threading.Thread):
         self.dev = dev
         self.port = port
         self.iface_name = iface_name
+        self.iface_rcv_buf = iface_rcv_buf
+        self.iface_snd_buf = iface_snd_buf
 
     def forward(self, p):
         # can that conflict with sniff?
@@ -214,6 +232,12 @@ class IfaceMgr(threading.Thread):
             try:
                 self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
                                             socket.htons(0x03))
+                if self.iface_rcv_buf != 0:
+                    self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.iface_rcv_buf)
+
+                if self.iface_snd_buf  != 0:
+                    self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, self.iface_snd_buf)
+
                 self.socket.bind((self.iface_name, 0))
                 logger.debug("IfaceMgr {}-{} ({}) AF_PACKET socket is open".format(
                              self.dev, self.port, self.iface_name))
@@ -244,12 +268,16 @@ class NanomsgMgr(threading.Thread):
     MSG_INFO_STATUS_SUCCESS = 0
     MSG_INFO_STATUS_NOT_SUPPORTED = 1
 
-    def __init__(self, dev, socket_addr):
+    def __init__(self, dev, socket_addr, nn_rcv_buf=0, nn_snd_buf=0):
         threading.Thread.__init__(self)
         self.daemon = True
         self.dev = dev
         self.socket_addr = socket_addr
         self.socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)
+        if nn_rcv_buf != 0:
+            self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.RCVBUF, nn_rcv_buf)
+        if nn_snd_buf != 0:
+            self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.SNDBUF, nn_snd_buf)
         self.socket.bind(socket_addr)
 
     def forward(self, p, port):
@@ -332,11 +360,11 @@ def main():
         logger.setLevel(logging.INFO)
 
     for dev, port, iface in args.interfaces:
-        i = IfaceMgr(dev, port, iface)
+        i = IfaceMgr(dev, port, iface, args.iface_rcv_buf, args.iface_snd_buf)
         i.start()
         iface_mgrs[(dev, port)] = i
     for dev, addr in args.device_sockets:
-        n = NanomsgMgr(dev, addr)
+        n = NanomsgMgr(dev, addr, args.nn_rcv_buf, args.nn_snd_buf)
         n.start()
         nano_mgrs[dev] = n
     logger.info("READY")

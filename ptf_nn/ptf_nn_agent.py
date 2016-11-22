@@ -73,11 +73,16 @@ def set_if_status(iff, status):
     s.close()
 
 def get_if_status(iff):
-    s = socket.socket()
-    ifr = struct.pack('16sh', iff, 0)
-    result = ioctl(s, SIOCGIFFLAGS, ifr)
-    s.close()
+    try:
+        s = socket.socket()
+        ifr = struct.pack('16sh', iff, 0)
+        result = ioctl(s, SIOCGIFFLAGS, ifr)
+        s.close()
+    except IOError:
+        return False
+
     flags = struct.unpack('16sh', result)[1]
+
     return flags & IFF_UP > 0
 
 def if_exists(iff):

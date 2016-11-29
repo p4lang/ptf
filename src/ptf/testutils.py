@@ -273,6 +273,50 @@ def simple_udp_packet(pktlen=100,
 
     return pkt
 
+def simple_ipv6_sr_packet(eth_dst='00:01:02:03:04:05',
+                          eth_src='00:06:07:08:09:0a',
+                          ipv6_src='2000::1',
+                          ipv6_dst='2000::2',
+                          ipv6_plen=None,
+                          ipv6_tc=0,
+                          ipv6_hlim=64,
+                          ipv6_fl=0,
+                          srh_seg_left=0,
+                          srh_first_seg=0,
+                          srh_flags=0,
+                          srh_seg_list=[],
+                          srh_nh=0,
+                          inner_frame=None):
+
+    """
+    Return a simple dataplane IPv6 segment routing packet
+
+    @param eth_dst Destination MAC
+    @param eth_src Source MAC
+    @param ipv6_src IPv6 source
+    @param ipv6_dst IPv6 destination
+    @param ipv6_tc IPv6 traffic class
+    @param ipv6_ttl IPv6 hop limit
+    @param ipv6_fl IPv6 flow label
+    @param srh_seg_left IPV6 SRH segment left
+    @param srh_first_seg IPV6 SRH first segment
+    @param srh_flags IPV6 SRH flags
+    @param srh_nh IPV6 SRH next header
+    """
+
+    pkt = scapy.Ether(dst=eth_dst, src=eth_src)
+    pkt /= scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, nh=43,
+                      hlim=ipv6_hlim, plen=ipv6_plen)
+    reserved = (srh_first_seg << 24) + (srh_flags << 8)
+    pkt /= scapy.IPv6ExtHdrRouting(nh=srh_nh, type=4, segleft=srh_seg_left,
+                                   reserved=reserved,
+                                   addresses=srh_seg_list)
+    if inner_frame is not None:
+        pkt /= inner_frame
+
+    return pkt
+
+
 def simple_geneve_packet(pktlen=300,
                         eth_dst='00:01:02:03:04:05',
                         eth_src='00:06:07:08:09:0a',

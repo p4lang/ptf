@@ -39,6 +39,7 @@ PADDING = scapy.packet.Padding
 
 if not config["disable_ipv6"]:
     IPv6 = scapy.layers.inet6.IPv6
+    IPv6ExtHdrRouting = scapy.layers.inet6.IPv6ExtHdrRouting
     ICMPv6Unknown = scapy.layers.inet6.ICMPv6Unknown
     ICMPv6EchoRequest = scapy.layers.inet6.ICMPv6EchoRequest
 

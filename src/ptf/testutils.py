@@ -53,6 +53,15 @@ def ipv6_filter(pkt_str):
 def not_ipv6_filter(pkt_str):
     return not ipv6_filter(pkt_str)
 
+def ip_make_tos(tos, ecn, dscp):
+    if ecn is not None:
+        tos = (tos & ~(0x3)) | ecn
+
+    if dscp is not None:
+        tos = (tos & ~(0xfc)) | (dscp << 2)
+
+    return tos
+
 def simple_tcp_packet(pktlen=100,
                       eth_dst='00:01:02:03:04:05',
                       eth_src='00:06:07:08:09:0a',
@@ -63,6 +72,8 @@ def simple_tcp_packet(pktlen=100,
                       ip_src='192.168.0.1',
                       ip_dst='192.168.0.2',
                       ip_tos=0,
+                      ip_ecn=None,
+                      ip_dscp=None,
                       ip_ttl=64,
                       ip_id=0x0001,
                       ip_frag=0,
@@ -86,6 +97,8 @@ def simple_tcp_packet(pktlen=100,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param tcp_dport TCP destination port
@@ -105,6 +118,8 @@ def simple_tcp_packet(pktlen=100,
         tcp_hdr = scapy.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
     else:
         tcp_hdr = scapy.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0)
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -135,6 +150,8 @@ def simple_tcpv6_packet(pktlen=100,
                         ipv6_src='2001:db8:85a3::8a2e:370:7334',
                         ipv6_dst='2001:db8:85a3::8a2e:370:7335',
                         ipv6_tc=0,
+                        ipv6_ecn=None,
+                        ipv6_dscp=None,
                         ipv6_hlim=64,
                         ipv6_fl=0,
                         tcp_sport=1234,
@@ -153,6 +170,8 @@ def simple_tcpv6_packet(pktlen=100,
     @param ipv6_src IPv6 source
     @param ipv6_dst IPv6 destination
     @param ipv6_tc IPv6 traffic class
+    @param ipv6_ecn IPv6 traffic class ECN
+    @param ipv6_dscp IPv6 traffic class DSCP
     @param ipv6_ttl IPv6 hop limit
     @param ipv6_fl IPv6 flow label
     @param tcp_dport TCP destination port
@@ -165,6 +184,8 @@ def simple_tcpv6_packet(pktlen=100,
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
+
+    ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
     pkt = scapy.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
@@ -185,6 +206,8 @@ def simple_udp_packet(pktlen=100,
                       ip_src='192.168.0.1',
                       ip_dst='192.168.0.2',
                       ip_tos=0,
+                      ip_ecn=None,
+                      ip_dscp=None,
                       ip_ttl=64,
                       udp_sport=1234,
                       udp_dport=80,
@@ -206,6 +229,8 @@ def simple_udp_packet(pktlen=100,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param udp_dport UDP destination port
     @param udp_sport UDP source port
@@ -222,6 +247,8 @@ def simple_udp_packet(pktlen=100,
         udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport)
     else:
         udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -300,6 +327,8 @@ def simple_geneve_packet(pktlen=300,
                         ip_src='192.168.0.1',
                         ip_dst='192.168.0.2',
                         ip_tos=0,
+                        ip_ecn=None,
+                        ip_dscp=None,
                         ip_ttl=64,
                         ip_id=0x0001,
                         udp_sport=1234,
@@ -325,6 +354,8 @@ def simple_geneve_packet(pktlen=300,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param udp_sport UDP source port
@@ -347,6 +378,8 @@ def simple_geneve_packet(pktlen=300,
         udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport)
     else:
         udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -383,6 +416,8 @@ def simple_nvgre_packet(pktlen=300,
                       ip_src='192.168.0.1',
                       ip_dst='192.168.0.2',
                       ip_tos=0,
+                      ip_ecn=None,
+                      ip_dscp=None,
                       ip_ttl=64,
                       ip_id=0x0001,
                       ip_ihl=None,
@@ -405,6 +440,8 @@ def simple_nvgre_packet(pktlen=300,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param nvgre_version Version
@@ -423,6 +460,8 @@ def simple_nvgre_packet(pktlen=300,
         pktlen = MINSIZE
 
     nvgre_hdr = scapy.NVGRE(vsid=nvgre_tni, flowid=nvgre_flowid)
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -458,6 +497,8 @@ def simple_vxlan_packet(pktlen=300,
                         ip_src='192.168.0.1',
                         ip_dst='192.168.0.2',
                         ip_tos=0,
+                        ip_ecn=None,
+                        ip_dscp=None,
                         ip_ttl=64,
                         ip_id=0x0001,
                         udp_sport=1234,
@@ -482,6 +523,8 @@ def simple_vxlan_packet(pktlen=300,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param udp_sport UDP source port
@@ -505,6 +548,8 @@ def simple_vxlan_packet(pktlen=300,
         udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport)
     else:
         udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -542,6 +587,8 @@ def simple_vxlanv6_packet(pktlen=300,
                           ipv6_dst='3::4',
                           ipv6_fl=0,
                           ipv6_tc=0,
+                          ipv6_ecn=None,
+                          ipv6_dscp=None,
                           ipv6_hlim=64,
                           udp_sport=1234,
                           udp_dport=4789,
@@ -564,6 +611,8 @@ def simple_vxlanv6_packet(pktlen=300,
     @param ipv6_dst IPv6 destination
     @param ipv6_fl IPv6 flowlabel
     @param ipv6_tc IPv6 traffic class
+    @param ipv6_ecn IPv6 traffic class ECN
+    @param ipv6_dscp IPv6 traffic class DSCP
     @param ipv6_hlim IPv6 hop limit
     @param udp_sport UDP source port
     @param udp_dport UDP dest port (IANA) = 4789 (VxLAN)
@@ -583,6 +632,8 @@ def simple_vxlanv6_packet(pktlen=300,
         udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport)
     else:
         udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+
+    ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -614,6 +665,8 @@ def simple_gre_packet(pktlen=300,
                       ip_src='192.168.0.1',
                       ip_dst='192.168.0.2',
                       ip_tos=0,
+                      ip_ecn=None,
+                      ip_dscp=None,
                       ip_ttl=64,
                       ip_id=0x0001,
                       ip_ihl=None,
@@ -643,6 +696,8 @@ def simple_gre_packet(pktlen=300,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param gre_chkum_present with or without checksum
@@ -673,6 +728,8 @@ def simple_gre_packet(pktlen=300,
                         flags=gre_flags, version=gre_version,
                         offset=gre_offset, key=gre_key,
                         seqence_number=gre_sequence_number) # typo in Scapy
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -711,6 +768,8 @@ def simple_grev6_packet(pktlen=300,
                         ipv6_dst='3::4',
                         ipv6_fl=0,
                         ipv6_tc=0,
+                        ipv6_ecn=None,
+                        ipv6_dscp=None,
                         ipv6_hlim=64,
                         gre_chksum_present=0,
                         gre_routing_present=0, # begin reserved0
@@ -738,6 +797,8 @@ def simple_grev6_packet(pktlen=300,
     @param ipv6_dst IPv6 destination
     @param ipv6_fl IPv6 flowlabel
     @param ipv6_tc IPv6 traffic class
+    @param ipv6_ecn IPv6 traffic class ECN
+    @param ipv6_dscp IPv6 traffic class DSCP
     @param ipv6_hlim IPv6 hop limit
     @param gre_chkum_present with or without checksum
     @param gre_routing_present
@@ -767,6 +828,8 @@ def simple_grev6_packet(pktlen=300,
                         flags=gre_flags, version=gre_version,
                         offset=gre_offset, key=gre_key,
                         seqence_number=gre_sequence_number) # typo in Scapy
+
+    ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -799,6 +862,8 @@ def simple_gre_erspan_packet(pktlen=300,
                              ip_src='192.168.0.1',
                              ip_dst='192.168.0.2',
                              ip_tos=0,
+                             ip_ecn=None,
+                             ip_dscp=None,
                              ip_ttl=64,
                              ip_id=0x0001,
                              ip_ihl=None,
@@ -834,6 +899,8 @@ def simple_gre_erspan_packet(pktlen=300,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param gre_chkum_present with or without checksum
@@ -881,6 +948,8 @@ def simple_gre_erspan_packet(pktlen=300,
                               span_id = erspan_span_id,
                               unknown7 = erspan_unknown7)
 
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
+
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
         pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
@@ -915,6 +984,8 @@ def ipv4_erspan_pkt(pktlen=350,
                       ip_src='192.168.0.1',
                       ip_dst='192.168.0.2',
                       ip_tos=0,
+                      ip_ecn=None,
+                      ip_dscp=None,
                       ip_ttl=64,
                       ip_id=0x0001,
                       ip_ihl=None,
@@ -937,6 +1008,8 @@ def ipv4_erspan_pkt(pktlen=350,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param erspan version
@@ -954,6 +1027,8 @@ def ipv4_erspan_pkt(pktlen=350,
         erspan_hdr = scapy.GRE(proto=0x22eb)/scapy.ERSPAN_III(span_id=mirror_id, sgt_other = sgt_other)
     else:
         erspan_hdr = scapy.GRE(proto=0x88be)/scapy.ERSPAN(span_id=mirror_id)
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -989,6 +1064,8 @@ def ipv4_erspan_platform_pkt(pktlen=350,
                       ip_src='192.168.0.1',
                       ip_dst='192.168.0.2',
                       ip_tos=0,
+                      ip_ecn=None,
+                      ip_dscp=None,
                       ip_ttl=64,
                       ip_id=0x0001,
                       ip_ihl=None,
@@ -1014,6 +1091,8 @@ def ipv4_erspan_platform_pkt(pktlen=350,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param erspan version
@@ -1036,6 +1115,8 @@ def ipv4_erspan_platform_pkt(pktlen=350,
             erspan_hdr = erspan_hdr/scapy.PlatformSpecific(platf_id=platf_id, info1=info1, info2=info2)
     else:
         erspan_hdr = scapy.GRE(proto=0x88be)/scapy.ERSPAN(span_id=mirror_id)
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -1070,6 +1151,8 @@ def simple_udpv6_packet(pktlen=100,
                         ipv6_src='2001:db8:85a3::8a2e:370:7334',
                         ipv6_dst='2001:db8:85a3::8a2e:370:7335',
                         ipv6_tc=0,
+                        ipv6_ecn=None,
+                        ipv6_dscp=None,
                         ipv6_hlim=64,
                         ipv6_fl=0,
                         udp_sport=1234,
@@ -1087,6 +1170,8 @@ def simple_udpv6_packet(pktlen=100,
     @param ipv6_src IPv6 source
     @param ipv6_dst IPv6 destination
     @param ipv6_tc IPv6 traffic class
+    @param ipv6_ecn IPv6 traffic class ECN
+    @param ipv6_dscp IPv6 traffic class DSCP
     @param ipv6_ttl IPv6 hop limit
     @param ipv6_fl IPv6 flow label
     @param udp_dport UDP destination port
@@ -1098,6 +1183,8 @@ def simple_udpv6_packet(pktlen=100,
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
+
+    ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
     pkt = scapy.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
@@ -1118,6 +1205,8 @@ def simple_ipv4ip_packet(pktlen=300,
                          ip_src='192.168.0.1',
                          ip_dst='192.168.0.2',
                          ip_tos=0,
+                         ip_ecn=None,
+                         ip_dscp=None,
                          ip_ttl=64,
                          ip_id=0x0001,
                          ip_ihl=None,
@@ -1137,6 +1226,8 @@ def simple_ipv4ip_packet(pktlen=300,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param inner_frame payload of the packet
@@ -1146,6 +1237,8 @@ def simple_ipv4ip_packet(pktlen=300,
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -1184,6 +1277,8 @@ def simple_ipv6ip_packet(pktlen=300,
                          ipv6_dst='3::4',
                          ipv6_fl=0,
                          ipv6_tc=0,
+                         ipv6_ecn=None,
+                         ipv6_dscp=None,
                          ipv6_hlim=64,
                          inner_frame=None
                        ):
@@ -1201,6 +1296,8 @@ def simple_ipv6ip_packet(pktlen=300,
     @param ipv6_dst IPv6 destination
     @param ipv6_fl IPv6 flowlabel
     @param ipv6_tc IPv6 traffic class
+    @param ipv6_ecn IPv6 traffic class ECN
+    @param ipv6_dscp IPv6 traffic class DSCP
     @param ipv6_hlim IPv6 hop limit
     @param inner_frame payload of the GRE packet
 
@@ -1209,6 +1306,8 @@ def simple_ipv6ip_packet(pktlen=300,
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
+
+    ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -1241,6 +1340,8 @@ def simple_icmp_packet(pktlen=60,
                       ip_src='192.168.0.1',
                       ip_dst='192.168.0.2',
                       ip_tos=0,
+                      ip_ecn=None,
+                      ip_dscp=None,
                       ip_ttl=64,
                       ip_id=1,
                       icmp_type=8,
@@ -1259,6 +1360,8 @@ def simple_icmp_packet(pktlen=60,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP Identification
     @param icmp_type ICMP type
@@ -1272,6 +1375,8 @@ def simple_icmp_packet(pktlen=60,
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     if (dl_vlan_enable):
         pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
@@ -1296,6 +1401,8 @@ def simple_icmpv6_packet(pktlen=100,
                          ipv6_src='2001:db8:85a3::8a2e:370:7334',
                          ipv6_dst='2001:db8:85a3::8a2e:370:7335',
                          ipv6_tc=0,
+                         ipv6_ecn=None,
+                         ipv6_dscp=None,
                          ipv6_hlim=64,
                          ipv6_fl=0,
                          icmp_type=8,
@@ -1313,6 +1420,8 @@ def simple_icmpv6_packet(pktlen=100,
     @param ipv6_src IPv6 source
     @param ipv6_dst IPv6 destination
     @param ipv6_tc IPv6 traffic class
+    @param ipv6_ecn IPv6 traffic class ECN
+    @param ipv6_dscp IPv6 traffic class DSCP
     @param ipv6_ttl IPv6 hop limit
     @param ipv6_fl IPv6 flow label
     @param icmp_type ICMP type
@@ -1324,6 +1433,8 @@ def simple_icmpv6_packet(pktlen=100,
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
+
+    ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
     pkt = scapy.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
@@ -1399,6 +1510,8 @@ def simple_ip_packet(pktlen=100,
                      ip_src='192.168.0.1',
                      ip_dst='192.168.0.2',
                      ip_tos=0,
+                     ip_ecn=None,
+                     ip_dscp=None,
                      ip_ttl=64,
                      ip_id=0x0001,
                      ip_ihl=None,
@@ -1418,6 +1531,8 @@ def simple_ip_packet(pktlen=100,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
 
@@ -1428,6 +1543,8 @@ def simple_ip_packet(pktlen=100,
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if (dl_vlan_enable):
@@ -1450,6 +1567,8 @@ def simple_ip_only_packet(pktlen=100,
                      ip_src='192.168.0.1',
                      ip_dst='192.168.0.2',
                      ip_tos=0,
+                     ip_ecn=None,
+                     ip_dscp=None,
                      ip_ttl=64,
                      ip_id=0x0001,
                      ip_ihl=None,
@@ -1467,6 +1586,8 @@ def simple_ip_only_packet(pktlen=100,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
 
@@ -1482,6 +1603,8 @@ def simple_ip_only_packet(pktlen=100,
         tcp_hdr = scapy.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
     else:
         tcp_hdr = scapy.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0)
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     if not ip_options:
         pkt = scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl) / tcp_hdr
@@ -1563,6 +1686,8 @@ def simple_qinq_tcp_packet(pktlen=100,
                     ip_src='192.168.0.1',
                     ip_dst='192.168.0.2',
                     ip_tos=0,
+                    ip_ecn=None,
+                    ip_dscp=None,
                     ip_ttl=64,
                     tcp_sport=1234,
                     tcp_dport=80,
@@ -1585,6 +1710,8 @@ def simple_qinq_tcp_packet(pktlen=100,
     @param ip_src IP source
     @param ip_dst IP destination
     @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
     @param tcp_dport TCP destination port
     @param ip_sport TCP source port
 
@@ -1595,6 +1722,8 @@ def simple_qinq_tcp_packet(pktlen=100,
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
@@ -1642,6 +1771,8 @@ def dhcp_offer_packet(eth_dst='00:01:02:03:04:05',
                 ip_dst='255.255.255.255',
                 ip_len=308,
                 ip_tos=16,
+                ip_ecn=None,
+                ip_dscp=None,
                 ip_ttl=128,
                 ip_id=0,
                 src_port=67,
@@ -1691,6 +1822,8 @@ def dhcp_offer_packet(eth_dst='00:01:02:03:04:05',
     @param padding '\x00' padding inserted at end of packet, '\x00'*n where n is number of bytes
     """
 
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
+
     pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
     scapy.IP(src=ip_src, dst=ip_dst, len=ip_len, tos=ip_tos, ttl=ip_ttl, id=0)/ \
     scapy.UDP(sport=src_port, dport=dst_port, len=udp_len)/ \
@@ -1737,6 +1870,8 @@ def dhcp_ack_packet(eth_dst='00:01:02:03:04:05',
                 ip_dst='255.255.255.255',
                 ip_len=328,
                 ip_tos=16,
+                ip_ecn=None,
+                ip_dscp=None,
                 ip_ttl=128,
                 ip_id=0,
                 src_port=67,
@@ -1785,6 +1920,8 @@ def dhcp_ack_packet(eth_dst='00:01:02:03:04:05',
     @param dhcp_netmask Subnet mask of client
     @param padding '\x00' padding inserted at end of packet, '\x00'*n where n is number of bytes
     """
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     pkt = scapy.Ether(dst=eth_dst, src=eth_src) / \
     scapy.IP(src=ip_src, dst=ip_dst, len=ip_len, tos=ip_tos, ttl=ip_ttl, id=ip_id) / \
@@ -1996,22 +2133,27 @@ def port_to_tuple(port):
             pass
     return None
 
-def send_packet(test, port_id, pkt):
+def send_packet(test, port_id, pkt, count=1):
     """
-    Send a packet out of port_id
+    Send a packet (or a number of packets) out of port_id
     port_id can either be a single integer (port_number on default device 0)
     or a tuple of 2 integers (device_number, port_number)
     """
-    pkt = str(pkt)
     device, port = port_to_tuple(port_id)
-    test.before_send(pkt, device_number=device, port_number=port)
-    return test.dataplane.send(device, port, pkt)
+    pkt = str(pkt)
+    sent = 0
 
-def send(test, port_id, pkt):
+    for n in range(count):
+        test.before_send(pkt, device_number=device, port_number=port)
+        sent += test.dataplane.send(device, port, pkt)
+
+    return sent
+
+def send(test, port_id, pkt, count=1):
     """
     See send_packet.
     """
-    return send_packet(test, port_id, pkt)
+    return send_packet(test, port_id, pkt, count=count)
 
 def dp_poll(test, device_number=0, port_number=None, timeout=-1, exp_pkt=None):
     """
@@ -2096,6 +2238,19 @@ def verify_packets(test, pkt, ports=[], device_number=0):
         else:
             verify_no_packet(test, pkt, (device, port))
     verify_no_other_packets(test, device_number=device_number)
+
+def verify_no_packet_any(test, pkt, ports=[], device_number=0):
+    """
+    Check that a packet is NOT received on _any_ of the specified ports belonging to
+    the given device (default device_number is 0).
+    """
+    test.assertTrue(len(ports) != 0, "No port available to validate receiving packet on device %d, " % device_number)
+    for device, port in ptf_ports():
+        if device != device_number:
+            continue
+        if port in ports:
+            print 'verifying packet on port device', device_number, 'port', port
+            verify_no_packet(test, pkt, (device, port))
 
 def verify_packets_any(test, pkt, ports=[], device_number=0):
     """

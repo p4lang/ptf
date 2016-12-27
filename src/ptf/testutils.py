@@ -1156,7 +1156,10 @@ def simple_udpv6_packet(pktlen=100,
                         ipv6_hlim=64,
                         ipv6_fl=0,
                         udp_sport=1234,
-                        udp_dport=80):
+                        udp_dport=80,
+                        with_udp_chksum=True,
+                        udp_payload=None
+                        ):
     """
     Return a simple IPv6/UDP packet
 
@@ -1185,12 +1188,16 @@ def simple_udpv6_packet(pktlen=100,
         pktlen = MINSIZE
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
-
     pkt = scapy.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
         pkt /= scapy.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
     pkt /= scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim)
-    pkt /= scapy.UDP(sport=udp_sport, dport=udp_dport)
+    if with_udp_chksum:
+        pkt /= scapy.UDP(sport=udp_sport, dport=udp_dport)
+    else:
+        pkt /= scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+    if udp_payload:
+        pkt = pkt/udp_payload
     pkt /= ("D" * (pktlen - len(pkt)))
 
     return pkt

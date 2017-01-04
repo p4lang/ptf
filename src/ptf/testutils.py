@@ -233,6 +233,7 @@ def simple_udp_packet(pktlen=100,
     @param ip_ecn IP ToS ECN
     @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
+    @param ip_id IP ID
     @param udp_dport UDP destination port
     @param udp_sport UDP source port
     @param with_udp_chksum Valid UDP checksum
@@ -1180,6 +1181,7 @@ def simple_udpv6_packet(pktlen=100,
     @param ipv6_fl IPv6 flow label
     @param udp_dport UDP destination port
     @param udp_sport UDP source port
+    @param with_udp_chksum Valid UDP checksum
 
     Generates a simple UDP request. Users shouldn't assume anything about this
     packet other than that it is a valid ethernet/IPv6/UDP frame.

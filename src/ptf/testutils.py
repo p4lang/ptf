@@ -213,6 +213,7 @@ def simple_udp_packet(pktlen=100,
                       udp_dport=80,
                       ip_ihl=None,
                       ip_options=False,
+                      ip_id=1,
                       with_udp_chksum=True,
                       udp_payload=None
                       ):
@@ -232,6 +233,7 @@ def simple_udp_packet(pktlen=100,
     @param ip_ecn IP ToS ECN
     @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
+    @param ip_id IP ID
     @param udp_dport UDP destination port
     @param udp_sport UDP source port
     @param with_udp_chksum Valid UDP checksum
@@ -254,16 +256,16 @@ def simple_udp_packet(pktlen=100,
     if (dl_vlan_enable):
         pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
             scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
-            scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl)/ \
+            scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, id=ip_id)/ \
             udp_hdr
     else:
         if not ip_options:
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
-                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, id=ip_id)/ \
                 udp_hdr
         else:
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
-                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, options=ip_options)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, options=ip_options, id=ip_id)/ \
                 udp_hdr
 
     if udp_payload:
@@ -1156,7 +1158,10 @@ def simple_udpv6_packet(pktlen=100,
                         ipv6_hlim=64,
                         ipv6_fl=0,
                         udp_sport=1234,
-                        udp_dport=80):
+                        udp_dport=80,
+                        with_udp_chksum=True,
+                        udp_payload=None
+                        ):
     """
     Return a simple IPv6/UDP packet
 
@@ -1176,6 +1181,7 @@ def simple_udpv6_packet(pktlen=100,
     @param ipv6_fl IPv6 flow label
     @param udp_dport UDP destination port
     @param udp_sport UDP source port
+    @param with_udp_chksum Valid UDP checksum
 
     Generates a simple UDP request. Users shouldn't assume anything about this
     packet other than that it is a valid ethernet/IPv6/UDP frame.
@@ -1185,12 +1191,16 @@ def simple_udpv6_packet(pktlen=100,
         pktlen = MINSIZE
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
-
     pkt = scapy.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
         pkt /= scapy.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
     pkt /= scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim)
-    pkt /= scapy.UDP(sport=udp_sport, dport=udp_dport)
+    if with_udp_chksum:
+        pkt /= scapy.UDP(sport=udp_sport, dport=udp_dport)
+    else:
+        pkt /= scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+    if udp_payload:
+        pkt = pkt/udp_payload
     pkt /= ("D" * (pktlen - len(pkt)))
 
     return pkt

@@ -2396,5 +2396,27 @@ def count_matched_packets(test, exp_packet, port, device_number=0, timeout=1):
 
     return total_rcv_pkt_cnt
 
+def count_matched_packets_all_ports(test, exp_packet, ports=[], device_number=0, timeout=1):
+    """
+    Receive all packets on all specified ports and count how many expected packets were received.
+    As soon as the packets stop arriving, the function waits for the timeout value and returns the
+    cumulative counter
+    """
+    last_good_packet_time = time.time()
+    total_rcv_pkt_cnt = 0
+    while True:
+        if (timeout >= 0) and ((time.time() - last_good_packet_time) > timeout):
+            break
+
+        (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(test, device_number=device_number, timeout=timeout)
+        if rcv_pkt is not None:
+            if rcv_port in ports and ptf.dataplane.match_exp_pkt(exp_packet, rcv_pkt):
+                total_rcv_pkt_cnt += 1
+                last_good_packet_time = time.time()
+        else:
+            break
+
+    return total_rcv_pkt_cnt
+
 
 __all__ = list(set(locals()) - _import_blacklist)

@@ -1746,32 +1746,26 @@ def simple_qinq_tcp_packet(pktlen=100,
 
     return pkt
 
-def dhcp_discover_packet(eth_dst='ff:ff:ff:ff:ff:ff',
-            eth_src='00:01:02:03:04:05',
-            ip_src='0.0.0.0',
-            ip_dst='255.255.255.255',
-            src_port=68,
-            dst_port=67,
-            bootp_chaddr='00:01:02:03:04:05',
-            ):
+def dhcp_discover_packet(eth_src='00:01:02:03:04:05'):
     """
-    Return a dhcp discover packet
+    Return a DHCPDISCOVER packet
 
-    Supports a few parameters:
-    @param eth_dst Destination MAC, should be broadcast
+    Supported parameters:
     @param eth_src Source MAC
-    @param ip_src Source IP, should be 0.0.0.0
-    @param ip_dst Destination IP, should be broadcast address
-    @param src_port Source Port, 68 for DHCP Client
-    @param dst_port Destination Port, 67 for DHCP Server
-    @param bootp_chaddr MAC Address of client
+
+
+    Destination MAC is always broadcast
+    Source IP is always 0.0.0.0
+    Destination IP is always broadcast
+    Source port is always 68 (DHCP client)
+    Destination port is always 67 (DHCP server)
 
     """
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
-    scapy.IP(src=ip_src, dst=ip_dst)/ \
-    scapy.UDP(sport=src_port, dport=dst_port)/ \
-    scapy.BOOTP(chaddr=bootp_chaddr)/ \
+    pkt = scapy.Ether(dst='ff:ff:ff:ff:ff:ff', src=eth_src)/ \
+    scapy.IP(src='0.0.0.0', dst='255.255.255.255')/ \
+    scapy.UDP(sport=68, dport=67)/ \
+    scapy.BOOTP(chaddr=eth_src)/ \
     scapy.DHCP(options=[('message-type', 'discover'), ('end')])
     return pkt
 
@@ -2295,7 +2289,7 @@ def verify_packet_any_port(test, pkt, ports=[], device_number=0):
 
     The function returns when either the expected packet is received or timeout (1 second).
 
-    Also verifies that the packet is or received on any other ports for this
+    Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
 

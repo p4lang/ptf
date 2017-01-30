@@ -1751,7 +1751,7 @@ def dhcp_discover_packet(eth_src='00:01:02:03:04:05'):
     Return a DHCPDISCOVER packet
 
     Supported parameters:
-    @param eth_src Source MAC
+    @param eth_src Source (client) MAC
 
 
     Destination MAC is always broadcast
@@ -1822,32 +1822,27 @@ def dhcp_offer_packet(eth_dst='00:01:02:03:04:05',
     scapy.PADDING('\x00' * padding_bytes)
     return pkt
 
-def dhcp_request_packet(eth_dst='ff:ff:ff:ff:ff:ff',
-                    eth_src='00:01:02:03:04:05',
-                    ip_src='0.0.0.0',
-                    ip_dst='255.255.255.255',
-                    src_port=68,
-                    dst_port=67,
-                    bootp_chaddr='00:01:02:03:04:05',
-                    dhcp_request_ip='1.2.3.4'):
+def dhcp_request_packet(eth_src='00:01:02:03:04:05', dhcp_request_ip='1.2.3.4'):
     """
-    Return a dhcp request packet
+    Return a DHCPREQUEST packet
 
-    Supports a few parameters:
-    @param eth_dst Destination MAC, should be broadcast address
-    @param eth_src Source MAC, address of client
-    @param ip_src Source IP, should be default route IP Address (0.0.0.0)
-    @param ip_dst Destination IP, should be broadcast address
-    @param src_port Source Port, 68 for DHCP Client
-    @param dst_port Destination Port, 67 for DHCP Server
-    @param bootp_chaddr MAC Address of DHCP Client
-    @param dhcp_request_ip IP Address, address of client (found in DHCP Offer)
+    Supported parameters:
+    @param eth_src Source (client) MAC
+    @param dhcp_request_ip IP Address offered to client (found in DHCPOFFER message)
+
+
+    Destination MAC is always broadcast
+    Source IP is always 0.0.0.0
+    Destination IP is always broadcast (255.255.255.255)
+    Source port is always 68 (DHCP client port)
+    Destination port is always 67 (DHCP server port)
+
     """
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
-    scapy.IP(src=ip_src, dst=ip_dst)/ \
-    scapy.UDP(sport=src_port, dport=dst_port)/ \
-    scapy.BOOTP(op=1, chaddr=bootp_chaddr)/ \
+    pkt = scapy.Ether(dst='ff:ff:ff:ff:ff:ff', src=eth_src)/ \
+    scapy.IP(src='0.0.0.0', dst='255.255.255.255')/ \
+    scapy.UDP(sport=68, dport=67)/ \
+    scapy.BOOTP(op=1, chaddr=eth_src)/ \
     scapy.DHCP(options=[('message-type', 'request'), ('requested_addr', dhcp_request_ip), ('end')])
     return pkt
 

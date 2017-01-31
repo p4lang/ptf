@@ -1889,13 +1889,13 @@ def dhcp_ack_packet(eth_client='00:01:02:03:04:05',
 
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
-    pkt = scapy.Ether(dst=eth_client, src=eth_server) / \
-    scapy.IP(src=ip_server, dst='255.255.255.255', len=328, tos=ip_tos, ttl=128, id=0) / \
-    scapy.UDP(sport=67, dport=68, len=308) / \
+    pkt = scapy.Ether(dst=eth_client, src=eth_server)/ \
+    scapy.IP(src=ip_server, dst='255.255.255.255', len=328, tos=ip_tos, ttl=128, id=0)/ \
+    scapy.UDP(sport=67, dport=68, len=308)/ \
     scapy.BOOTP(op=2, htype=1, hlen=6, hops=1, xid=0, secs=0, flags=0, ciaddr='0.0.0.0',
-                yiaddr=ip_offered, siaddr=ip_server, giaddr=ip_gateway, chaddr=eth_client) / \
+                yiaddr=ip_offered, siaddr=ip_server, giaddr=ip_gateway, chaddr=eth_client)/ \
     scapy.DHCP(options=[('message-type', 'ack'), ('server_id', ip_server), ('lease_time', int(dhcp_lease)),
-                ('subnet_mask', netmask_client), ('end')]) / \
+                ('subnet_mask', netmask_client), ('end')])/ \
     scapy.PADDING('\x00' * padding_bytes)
     return pkt
 

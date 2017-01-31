@@ -1775,6 +1775,8 @@ def dhcp_discover_packet(eth_client='00:01:02:03:04:05'):
 
     """
 
+    my_chaddr=''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
+
     pkt = scapy.Ether(dst='ff:ff:ff:ff:ff:ff', src=eth_client, type=0x0800)/ \
     scapy.IP(src='0.0.0.0', dst='255.255.255.255')/ \
     scapy.UDP(sport=68, dport=67)/ \
@@ -1789,7 +1791,7 @@ def dhcp_discover_packet(eth_client='00:01:02:03:04:05'):
                 yiaddr='0.0.0.0',
                 siaddr='0.0.0.0',
                 giaddr='0.0.0.0',
-                chaddr=eth_client)/ \
+                chaddr=my_chaddr)/ \
     scapy.DHCP(options=[('message-type', 'discover'), ('end')])
     return pkt
 
@@ -1834,6 +1836,8 @@ def dhcp_offer_packet(eth_client='00:01:02:03:04:05',
 
     """
 
+    my_chaddr=''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
+
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
     pkt = scapy.Ether(dst=eth_client, src=eth_server, type=0x0800)/ \
@@ -1850,7 +1854,7 @@ def dhcp_offer_packet(eth_client='00:01:02:03:04:05',
                 yiaddr=ip_offered,
                 siaddr=ip_server,
                 giaddr=ip_gateway,
-                chaddr=eth_client)/ \
+                chaddr=my_chaddr)/ \
     scapy.DHCP(options=[('message-type', 'offer'),
                 ('server_id', ip_server),
                 ('lease_time', int(dhcp_lease)),
@@ -1881,6 +1885,8 @@ def dhcp_request_packet(eth_client='00:01:02:03:04:05',
 
     """
 
+    my_chaddr=''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
+
     pkt = scapy.Ether(dst='ff:ff:ff:ff:ff:ff', src=eth_client, type=0x0800)/ \
     scapy.IP(src='0.0.0.0', dst='255.255.255.255')/ \
     scapy.UDP(sport=68, dport=67)/ \
@@ -1895,7 +1901,7 @@ def dhcp_request_packet(eth_client='00:01:02:03:04:05',
                 yiaddr='0.0.0.0',
                 siaddr=ip_server,
                 giaddr=ip_gateway,
-                chaddr=eth_client)/ \
+                chaddr=my_chaddr)/ \
     scapy.DHCP(options=[('message-type', 'request'), ('requested_addr', ip_requested), ('end')])
     return pkt
 
@@ -1940,6 +1946,8 @@ def dhcp_ack_packet(eth_client='00:01:02:03:04:05',
 
     """
 
+    my_chaddr=''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
+
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
     pkt = scapy.Ether(dst=eth_client, src=eth_server, type=0x0800)/ \
@@ -1956,7 +1964,7 @@ def dhcp_ack_packet(eth_client='00:01:02:03:04:05',
                 yiaddr=ip_offered,
                 siaddr=ip_server,
                 giaddr=ip_gateway,
-                chaddr=eth_client)/ \
+                chaddr=my_chaddr)/ \
     scapy.DHCP(options=[('message-type', 'ack'),
                 ('server_id', ip_server),
                 ('lease_time', int(dhcp_lease)),
@@ -1985,10 +1993,12 @@ def dhcp_release_packet(eth_client='00:01:02:03:04:05',
 
     """
 
+    my_chaddr=''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
+
     pkt = scapy.Ether(dst='ff:ff:ff:ff:ff:ff', src=eth_client, type=0x0800)/ \
     scapy.IP(src='0.0.0.0', dst='255.255.255.255')/ \
     scapy.UDP(sport=68, dport=67)/ \
-    scapy.BOOTP(chaddr=eth_client, ciaddr=ip_client)/ \
+    scapy.BOOTP(ciaddr=ip_client, chaddr=my_chaddr)/ \
     scapy.DHCP(options=[('message-type', 'release'), ('server_id', ip_server), ('end')])
     return pkt
 

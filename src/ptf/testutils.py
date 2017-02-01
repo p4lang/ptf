@@ -1782,6 +1782,17 @@ DHCP_BOOTP_HTYPE_ETHERNET = 1
 DHCP_BOOTP_HLEN_ETHERNET = 6
 DHCP_BOOTP_FLAGS_BROADCAST_REPLY = 0x8000
 
+def __dhcp_mac_to_chaddr(mac_addr='00:01:02:03:04:05'):
+    """
+    Private helper function to convert a 6-byte MAC address of form:
+      '00:01:02:03:04:05'
+    into a 16-byte chaddr byte string of form:
+      '\x00\x01\x02\x03\x04\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+
+    """
+    chaddr = ''.join([chr(int(octet, 16)) for octet in mac_addr.split(':')])
+    chaddr += '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    return chaddr
 
 def dhcp_discover_packet(eth_client='00:01:02:03:04:05'):
     """
@@ -1799,8 +1810,6 @@ def dhcp_discover_packet(eth_client='00:01:02:03:04:05'):
 
     """
 
-    my_chaddr = ''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
-
     pkt = scapy.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
     pkt /= scapy.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
     pkt /= scapy.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
@@ -1815,7 +1824,7 @@ def dhcp_discover_packet(eth_client='00:01:02:03:04:05'):
                 yiaddr=DHCP_IP_DEFAULT_ROUTE,
                 siaddr=DHCP_IP_DEFAULT_ROUTE,
                 giaddr=DHCP_IP_DEFAULT_ROUTE,
-                chaddr=my_chaddr)
+                chaddr=__dhcp_mac_to_chaddr(eth_client))
     pkt /= scapy.DHCP(options=[('message-type', 'discover'), ('end')])
     return pkt
 
@@ -1847,8 +1856,6 @@ def dhcp_offer_packet(eth_client='00:01:02:03:04:05',
 
     """
 
-    my_chaddr = ''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
-
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
     pkt = scapy.Ether(dst=eth_client, src=eth_server, type=DHCP_ETHER_TYPE_IP)
@@ -1865,7 +1872,7 @@ def dhcp_offer_packet(eth_client='00:01:02:03:04:05',
                 yiaddr=ip_offered,
                 siaddr=ip_server,
                 giaddr=ip_gateway,
-                chaddr=my_chaddr)
+                chaddr=__dhcp_mac_to_chaddr(eth_client))
     pkt /= scapy.DHCP(options=[('message-type', 'offer'),
                 ('server_id', ip_server),
                 ('lease_time', int(dhcp_lease)),
@@ -1894,8 +1901,6 @@ def dhcp_request_packet(eth_client='00:01:02:03:04:05',
 
     """
 
-    my_chaddr = ''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
-
     pkt = scapy.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
     pkt /= scapy.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
     pkt /= scapy.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
@@ -1910,7 +1915,7 @@ def dhcp_request_packet(eth_client='00:01:02:03:04:05',
                 yiaddr=DHCP_IP_DEFAULT_ROUTE,
                 siaddr=DHCP_IP_DEFAULT_ROUTE,
                 giaddr=DHCP_IP_DEFAULT_ROUTE,
-                chaddr=my_chaddr)
+                chaddr=__dhcp_mac_to_chaddr(eth_client))
     pkt /= scapy.DHCP(options=[('message-type', 'request'),
                 ('requested_addr', ip_requested),
                 ('server_id', ip_server),
@@ -1945,8 +1950,6 @@ def dhcp_ack_packet(eth_client='00:01:02:03:04:05',
 
     """
 
-    my_chaddr = ''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
-
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
     pkt = scapy.Ether(dst=eth_client, src=eth_server, type=DHCP_ETHER_TYPE_IP)
@@ -1963,7 +1966,7 @@ def dhcp_ack_packet(eth_client='00:01:02:03:04:05',
                 yiaddr=ip_offered,
                 siaddr=ip_server,
                 giaddr=ip_gateway,
-                chaddr=my_chaddr)
+                chaddr=__dhcp_mac_to_chaddr(eth_client))
     pkt /= scapy.DHCP(options=[('message-type', 'ack'),
                 ('server_id', ip_server),
                 ('lease_time', int(dhcp_lease)),
@@ -1992,12 +1995,10 @@ def dhcp_release_packet(eth_client='00:01:02:03:04:05',
 
     """
 
-    my_chaddr = ''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
-
     pkt = scapy.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
     pkt /= scapy.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
     pkt /= scapy.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
-    pkt /= scapy.BOOTP(ciaddr=ip_client, chaddr=my_chaddr)
+    pkt /= scapy.BOOTP(ciaddr=ip_client, chaddr=__dhcp_mac_to_chaddr(eth_client))
     pkt /= scapy.DHCP(options=[('message-type', 'release'), ('server_id', ip_server), ('end')])
     return pkt
 

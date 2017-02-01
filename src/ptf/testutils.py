@@ -1775,7 +1775,7 @@ def dhcp_discover_packet(eth_client='00:01:02:03:04:05'):
 
     """
 
-    my_chaddr=''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
+    my_chaddr = ''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
 
     pkt = scapy.Ether(dst='ff:ff:ff:ff:ff:ff', src=eth_client, type=0x0800)/ \
     scapy.IP(src='0.0.0.0', dst='255.255.255.255')/ \
@@ -1836,7 +1836,7 @@ def dhcp_offer_packet(eth_client='00:01:02:03:04:05',
 
     """
 
-    my_chaddr=''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
+    my_chaddr = ''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
 
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
@@ -1885,7 +1885,7 @@ def dhcp_request_packet(eth_client='00:01:02:03:04:05',
 
     """
 
-    my_chaddr=''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
+    my_chaddr = ''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
 
     pkt = scapy.Ether(dst='ff:ff:ff:ff:ff:ff', src=eth_client, type=0x0800)/ \
     scapy.IP(src='0.0.0.0', dst='255.255.255.255')/ \
@@ -1946,7 +1946,7 @@ def dhcp_ack_packet(eth_client='00:01:02:03:04:05',
 
     """
 
-    my_chaddr=''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
+    my_chaddr = ''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
 
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
@@ -1993,7 +1993,7 @@ def dhcp_release_packet(eth_client='00:01:02:03:04:05',
 
     """
 
-    my_chaddr=''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
+    my_chaddr = ''.join([chr(int(octet, 16)) for octet in eth_client.split(':')])
 
     pkt = scapy.Ether(dst='ff:ff:ff:ff:ff:ff', src=eth_client, type=0x0800)/ \
     scapy.IP(src='0.0.0.0', dst='255.255.255.255')/ \

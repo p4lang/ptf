@@ -1865,7 +1865,6 @@ def dhcp_offer_packet(eth_client='00:01:02:03:04:05',
 
 def dhcp_request_packet(eth_client='00:01:02:03:04:05',
                 ip_server='0.1.2.3',
-                ip_gateway='0.0.0.0',
                 ip_requested='4.5.6.7'):
     """
     Return a DHCPREQUEST packet
@@ -1873,7 +1872,6 @@ def dhcp_request_packet(eth_client='00:01:02:03:04:05',
     Supported parameters:
     @param eth_client MAC address of DHCP client
     @param ip_server IP address of DHCP server
-    @param ip_gateway Gateway IP Address, address of relay agent if encountered
     @param ip_requested IP Address offered to client ('Your IP Address' from DHCPOFFER message)
 
 
@@ -1899,10 +1897,13 @@ def dhcp_request_packet(eth_client='00:01:02:03:04:05',
                 flags=0x8000,
                 ciaddr='0.0.0.0',
                 yiaddr='0.0.0.0',
-                siaddr=ip_server,
-                giaddr=ip_gateway,
+                siaddr='0.0.0.0',
+                giaddr='0.0.0.0',
                 chaddr=my_chaddr)/ \
-    scapy.DHCP(options=[('message-type', 'request'), ('requested_addr', ip_requested), ('end')])
+    scapy.DHCP(options=[('message-type', 'request'),
+                ('requested_addr', ip_requested),
+                ('server_id', ip_server),
+                ('end')])
     return pkt
 
 def dhcp_ack_packet(eth_client='00:01:02:03:04:05',

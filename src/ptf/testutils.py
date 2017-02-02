@@ -2437,17 +2437,17 @@ def count_matched_packets_all_ports(test, exp_packet, ports=[], device_number=0,
     As soon as the packets stop arriving, the function waits for the timeout value and returns the
     cumulative counter
     """
-    last_good_packet_time = time.time()
+    last_matched_packet_time = time.time()
     total_rcv_pkt_cnt = 0
     while True:
-        if (timeout >= 0) and ((time.time() - last_good_packet_time) > timeout):
+        if (timeout >= 0) and ((time.time() - last_matched_packet_time) > timeout):
             break
 
         (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(test, device_number=device_number, timeout=timeout)
         if rcv_pkt is not None:
             if rcv_port in ports and ptf.dataplane.match_exp_pkt(exp_packet, rcv_pkt):
                 total_rcv_pkt_cnt += 1
-                last_good_packet_time = time.time()
+                last_matched_packet_time = time.time()
         else:
             break
 

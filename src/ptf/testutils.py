@@ -1791,7 +1791,7 @@ def __dhcp_mac_to_chaddr(mac_addr='00:01:02:03:04:05'):
 
     """
     chaddr = ''.join([chr(int(octet, 16)) for octet in mac_addr.split(':')])
-    chaddr += '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    chaddr += '\x00' * 10
     return chaddr
 
 def dhcp_discover_packet(eth_client='00:01:02:03:04:05'):
@@ -2418,8 +2418,12 @@ def verify_packet_prefix(test, pkt, port, len, device_number=0):
 def count_matched_packets(test, exp_packet, port, device_number=0, timeout=1):
     """
     Receive all packets on the port and count how many expected packets were received.
-    As soon as the packets stop arriving, the function waits for the timeout value and returns the counter
+    As soon as the packets stop arriving, the function waits for the timeout value and
+    returns the counter. Therefore, this function requires a positive timeout value.
     """
+    if timeout <= 0:
+        raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
+
     total_rcv_pkt_cnt = 0
     while True:
         (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(test, device_number=device_number, port_number=port, timeout=timeout)
@@ -2434,13 +2438,17 @@ def count_matched_packets(test, exp_packet, port, device_number=0, timeout=1):
 def count_matched_packets_all_ports(test, exp_packet, ports=[], device_number=0, timeout=1):
     """
     Receive all packets on all specified ports and count how many expected packets were received.
-    As soon as the packets stop arriving, the function waits for the timeout value and returns the
-    cumulative counter
+    This function will return the cumulative count of matched packets received once it stops
+    receiving matched packets for the specified timeout duration. Therefore, this function
+    requires a positive timeout value.
     """
+    if timeout <= 0:
+        raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
+
     last_matched_packet_time = time.time()
     total_rcv_pkt_cnt = 0
     while True:
-        if (timeout >= 0) and ((time.time() - last_matched_packet_time) > timeout):
+        if (time.time() - last_matched_packet_time) > timeout:
             break
 
         (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(test, device_number=device_number, timeout=timeout)

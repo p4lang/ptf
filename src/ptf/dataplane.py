@@ -125,6 +125,7 @@ class DataPlanePortLinux(DataPlanePortIface, DataPlanePacketSourceIface):
     RCV_SIZE_DEFAULT = 4096
     ETH_P_ALL = 0x03
     RCV_TIMEOUT = 10000
+    RCV_BUF_SIZE = 10485760
 
     def __init__(self, interface_name, device_number, port_number):
         """
@@ -138,6 +139,7 @@ class DataPlanePortLinux(DataPlanePortIface, DataPlanePacketSourceIface):
         self.socket.bind((interface_name, self.ETH_P_ALL))
         netutils.set_promisc(self.socket, interface_name)
         self.socket.settimeout(self.RCV_TIMEOUT)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.RCV_BUF_SIZE)
 
     def __del__(self):
         if self.socket:
@@ -405,6 +407,7 @@ class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):
     RCV_SIZE_DEFAULT = 4096
     ETH_P_ALL = 0x03
     RCV_TIMEOUT = 10000
+    RCV_BUF_SIZE = 10485760
 
     def __init__(self, interface_name, device_number, port_number):
         """
@@ -418,6 +421,7 @@ class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):
         self.socket.bind((interface_name, 0))
         netutils.set_promisc(self.socket, interface_name)
         self.socket.settimeout(self.RCV_TIMEOUT)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.RCV_BUF_SIZE)
 
     def __del__(self):
         if self.socket:

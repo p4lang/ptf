@@ -1113,7 +1113,7 @@ def ipv4_erspan_platform_pkt(pktlen=350,
 
     if version == 2:
         erspan_hdr = scapy.GRE(proto=0x22eb)/scapy.ERSPAN_III(span_id=mirror_id, sgt_other=sgt_other)
-        if sgt_other == 1:
+        if sgt_other & 0x01 == 1:
             erspan_hdr = erspan_hdr/scapy.PlatformSpecific(platf_id=platf_id, info1=info1, info2=info2)
     else:
         erspan_hdr = scapy.GRE(proto=0x88be)/scapy.ERSPAN(span_id=mirror_id)

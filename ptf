@@ -95,6 +95,9 @@ config_default = {
     "qlen"               : 100,
     "test_case_timeout"  : None,
 
+    # Socket options
+    "socket_recv_size"   : 4096,
+
     # Other configuration
     "port_map"           : {},
 }
@@ -287,6 +290,10 @@ be subtracted from the result by prefixing them with the '^' character.  """
                        help="Disable MPLS (do not import from scapy even if supported)")
     group.add_argument("--disable-nvgre", action="store_true",
                        help="Disable NVGRE (do not import from scapy even if supported)")
+
+    group = parser.add_argument_group("Socket options")
+    group.add_argument("--socket-recv-size", type=int,
+                       help="When using raw sockets, specify the size of the buffer used to receive packets with socket.recv.")
 
     # Might need this if other parsers want command line
     # parser.allow_interspersed_args = False

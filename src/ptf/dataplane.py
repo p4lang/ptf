@@ -126,7 +126,7 @@ class DataPlanePortLinux(DataPlanePortIface, DataPlanePacketSourceIface):
     ETH_P_ALL = 0x03
     RCV_TIMEOUT = 10000
 
-    def __init__(self, interface_name, device_number, port_number):
+    def __init__(self, interface_name, device_number, port_number, config={}):
         """
         @param interface_name The name of the physical interface like eth1
         """
@@ -138,6 +138,7 @@ class DataPlanePortLinux(DataPlanePortIface, DataPlanePacketSourceIface):
         self.socket.bind((interface_name, self.ETH_P_ALL))
         netutils.set_promisc(self.socket, interface_name)
         self.socket.settimeout(self.RCV_TIMEOUT)
+        self.recv_size = config.get("socket_recv_size", self.RCV_SIZE_DEFAULT)
 
     def __del__(self):
         if self.socket:
@@ -154,7 +155,7 @@ class DataPlanePortLinux(DataPlanePortIface, DataPlanePacketSourceIface):
         Receive a packet from this port.
         @retval (device, port, packet data, timestamp)
         """
-        pkt = afpacket.recv(self.socket, self.RCV_SIZE_DEFAULT)
+        pkt = afpacket.recv(self.socket, self.recv_size)
         return (self.device_number, self.port_number, pkt, time.time())
 
     def get_packet_source(self):
@@ -335,7 +336,7 @@ class DataPlanePortNN(DataPlanePortIface):
     # indexed by device_number, maps to a PacketInjectNN instance
     packet_injecters = {}
 
-    def __init__(self, interface_name, device_number, port_number):
+    def __init__(self, interface_name, device_number, port_number, config={}):
         """
         @param interface_name The addr of the socket (like ipc://<path to file>
         or tcp://<iface>:<port>)
@@ -406,7 +407,7 @@ class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):
     ETH_P_ALL = 0x03
     RCV_TIMEOUT = 10000
 
-    def __init__(self, interface_name, device_number, port_number):
+    def __init__(self, interface_name, device_number, port_number, config={}):
         """
         @param interface_name The name of the physical interface like eth1
         """
@@ -418,6 +419,7 @@ class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):
         self.socket.bind((interface_name, 0))
         netutils.set_promisc(self.socket, interface_name)
         self.socket.settimeout(self.RCV_TIMEOUT)
+        self.recv_size = config.get("socket_recv_size", self.RCV_SIZE_DEFAULT)
 
     def __del__(self):
         if self.socket:
@@ -434,7 +436,7 @@ class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):
         Receive a packet from this port.
         @retval (device, port, packet data, timestamp)
         """
-        pkt = self.socket.recv(self.RCV_SIZE_DEFAULT)
+        pkt = self.socket.recv(self.recv_size)
         return (self.device_number, self.port_number, pkt, time.time())
 
     def get_packet_source(self):
@@ -477,7 +479,7 @@ class DataPlanePortPcap:
     socket. libpcap understands how to read the VLAN tag from the kernel.
     """
 
-    def __init__(self, interface_name, device_number, port_number):
+    def __init__(self, interface_name, device_number, port_number, config={}):
         self.device_number = device_number
         self.port_number = port_number
         self.pcap = pcap.pcap(interface_name)
@@ -629,8 +631,8 @@ class DataPlane(Thread):
         Stashes the port number on the created port object.
         """
         port_id = (device_number, port_number)
-        self.ports[port_id] = self.dppclass(interface_name,
-                                            device_number, port_number)
+        self.ports[port_id] = self.dppclass(
+            interface_name, device_number, port_number, self.config)
         self.ports[port_id]._port_number = port_number
         self.ports[port_id]._device_number = device_number
         self.packet_queues[port_id] = []

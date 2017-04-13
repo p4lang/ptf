@@ -2204,14 +2204,13 @@ def dp_poll(test, device_number=0, port_number=None, timeout=-1, exp_pkt=None):
     """
     Wrapper function around dataplane.poll
     """
-    t = test.dataplane.poll(
+    result = test.dataplane.poll(
         device_number=device_number, port_number=port_number,
         timeout=timeout, exp_pkt=exp_pkt, filters=FILTERS
     )
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = t
-    if rcv_pkt is not None:
-        test.at_receive(rcv_pkt, device_number=rcv_device, port_number=rcv_port)
-    return t
+    if isinstance(result, test.dataplane.PollSuccess):
+        test.at_receive(result.packet, device_number=result.device, port_number=result.port)
+    return result
 
 def verify_packet(test, pkt, port_id):
     """
@@ -2221,10 +2220,10 @@ def verify_packet(test, pkt, port_id):
     """
     device, port = port_to_tuple(port_id)
     logging.debug("Checking for pkt on device %d, port %d", device, port)
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
-        test, device_number=device, port_number=port, timeout=2, exp_pkt=pkt
-    )
-    test.assertTrue(rcv_pkt != None, "Did not receive expected pkt on device %d, port %r" % (device, port))
+    result = dp_poll(test, device_number=device, port_number=port, timeout=2, exp_pkt=pkt)
+    if isinstance(result, test.dataplane.PollFailure):
+        test.fail("Expected packet was not received on device %d, port %r.\n%s"
+                    % (device, port, result.format()))
 
 def verify_no_packet(test, pkt, port_id, timeout=None):
     """
@@ -2236,11 +2235,12 @@ def verify_no_packet(test, pkt, port_id, timeout=None):
         timeout = ptf.ptfutils.default_negative_timeout
     device, port = port_to_tuple(port_id)
     logging.debug("Negative check for pkt on device %d, port %d", device, port)
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
-        test, device_number=device, port_number=port, exp_pkt=pkt,
-        timeout=timeout
+    result = dp_poll(
+        test, device_number=device, port_number=port, exp_pkt=pkt, timeout=timeout
     )
-    test.assertTrue(rcv_pkt == None, "Received packet on device %d, port %r" % (device, port))
+    if isinstance(result, test.dataplane.PollSuccess):
+        test.fail("Received packet that we expected not to receive on device %d, "
+                  "port %r.\n%s" % (device, port, result.format()))
 
 def verify_no_other_packets(test, device_number=0, timeout=None):
     """
@@ -2253,13 +2253,10 @@ def verify_no_other_packets(test, device_number=0, timeout=None):
     if timeout is None:
         timeout = ptf.ptfutils.default_negative_timeout
     logging.debug("Checking for unexpected packets on all ports of device %d" % device_number)
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
-        test, device_number=device_number,
-        timeout=timeout
-    )
-    if rcv_pkt != None:
-        logging.debug("Received unexpected packet on device %d, port %r: %s", device_number, rcv_port, format_packet(rcv_pkt))
-    test.assertTrue(rcv_pkt == None, "Unexpected packet on device %d, port %r" % (device_number, rcv_port))
+    result = dp_poll(test, device_number=device_number, timeout=timeout)
+    if isinstance(result, test.dataplane.PollSuccess):
+        test.fail("A packet was received on device %d, port %r, but we expected no "
+                  "packets.\n%s" % (result.device, result.port, result.format()))
 
 def verify_packets(test, pkt, ports=[], device_number=0):
     """
@@ -2307,21 +2304,27 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
     is in effect).
     """
     received = False
+    failures = []
     for device, port in ptf_ports():
         if device != device_number:
             continue
         if port in ports:
             logging.debug("Checking for pkt on device %d, port %d", device_number, port)
-            (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
-                test, device_number=device, port_number=port, exp_pkt=pkt
-            )
-            if rcv_pkt != None:
+            result = dp_poll(test, device_number=device, port_number=port, exp_pkt=pkt)
+            if isinstance(result, test.dataplane.PollSuccess):
                 received = True
+            else:
+                failures.append((port, result))
         else:
             verify_no_packet(test, pkt, (device, port))
     verify_no_other_packets(test)
 
-    test.assertTrue(received == True, "Did not receive expected pkt on any of ports %r for device %d" % (ports, device_number))
+    if not received:
+        def format_failure(port, failure):
+            return "On port %d:\n%s" % (port, failure.format())
+        failure_report = "\n".join([format_failure(f) for f in failures])
+        test.fail("Did not receive expected packet on any of ports %r for device %d.\n%s"
+                    % (ports, device_number, failure_report))
 
 def verify_packet_any_port(test, pkt, ports=[], device_number=0):
     """
@@ -2336,23 +2339,23 @@ def verify_packet_any_port(test, pkt, ports=[], device_number=0):
 
     Returns the index of the port on which the packet is received and the packet.
     """
-    received = False
-    match_index = 0
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
-        test,
-        device_number=device_number,
-        exp_pkt=pkt,
-        timeout=1
-    )
-
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
-    if rcv_port in ports:
-        match_index = ports.index(rcv_port)
-        received = True
+    result = dp_poll(test, device_number=device_number, exp_pkt=pkt, timeout=1)
     verify_no_other_packets(test, device_number=device_number)
 
-    test.assertTrue(received == True, "Did not receive expected pkt(s) on any of ports %r for device %d" % (ports, device_number))
-    return (match_index, rcv_pkt)
+    if isinstance(result, test.dataplane.PollSuccess):
+        if result.port in ports:
+            return (ports.index(result.port), result.packet)
+        else:
+            test.fail("Received expected packet on port %r for device %d, but "
+                      "it should have arrived on one of these ports: %r.\n%s"
+                        % (result.port, device_number, ports, result.format()))
+            return (0, None)
+
+    assert(isinstance(result, test.dataplane.PollFailure))
+    test.fail("Did not receive expected packet on any of ports %r for device %d.\n%s"
+                % (ports, device_number, result.format()))
+    return (0, None)
 
 def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
     """
@@ -2367,21 +2370,20 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
     """
     received = False
     match_index = 0
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
-        test,
-        device_number=device_number,
-        timeout=1
-    )
-
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
-    if rcv_port in ports:
+    result = dp_poll(test, device_number=device_number, timeout=1)
+
+    if isinstance(result, test.dataplane.PollSuccess) and result.port in ports:
+        received_packet = str(result.packet)
         for pkt in pkts:
-            if str(pkt) == str(rcv_pkt):
-                match_index = ports.index(rcv_port)
+            if str(pkt) == received_packet:
+                match_index = ports.index(result.port)
                 received = True
     verify_no_other_packets(test, device_number=device_number)
 
-    test.assertTrue(received == True, "Did not receive expected pkt(s) on any of ports %r for device %d" % (ports, device_number))
+    if isinstance(result, test.dataplane.PollFailure):
+        test.fail("Did not receive any expected packet on any of ports %r for "
+                  "device %d.\n%s" % (ports, device_number, result.format()))
     return match_index
 
 def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):
@@ -2397,13 +2399,10 @@ def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):
     test.assertTrue(len(pkts) == len(ports), "packet list count does not match port list count")
     for port, pkt in zip(ports, pkts):
         logging.debug("Checking for pkt on device %d, port %d", device_number, port)
-        (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(
-            test,
-            device_number=device_number,
-            port_number=port,
-            exp_pkt=pkt
-        )
-        test.assertTrue(rcv_pkt != None, "Did not receive expected pkt(s) on port %d for device %d" %(port, device_number))
+        result = dp_poll(test, device_number=device_number, port_number=port, exp_pkt=pkt)
+        if isinstance(result, test.dataplane.PollFailure):
+            test.fail("Did not receive expected packets on port %d for device %d.\n%s"
+                        % (port, device_number, result.format()))
 
     verify_no_other_packets(test, device_number=device_number)
 
@@ -2412,8 +2411,10 @@ def verify_packet_prefix(test, pkt, port, len, device_number=0):
     Check that an expected packet is received
     """
     logging.debug("Checking for pkt on port %r", port)
-    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=str(pkt)[:len])
-    test.assertTrue(rcv_pkt != None, "Did not receive expected pkt on %r" % port)
+    result = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=str(pkt)[:len])
+    if isinstance(result, test.dataplane.PollFailure):
+        test.fail("Did not receive expected packet on port %r\n.%s"
+                    % (port, result.format()))
 
 def count_matched_packets(test, exp_packet, port, device_number=0, timeout=1):
     """
@@ -2426,9 +2427,9 @@ def count_matched_packets(test, exp_packet, port, device_number=0, timeout=1):
 
     total_rcv_pkt_cnt = 0
     while True:
-        (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(test, device_number=device_number, port_number=port, timeout=timeout)
-        if rcv_pkt is not None:
-            if ptf.dataplane.match_exp_pkt(exp_packet, rcv_pkt):
+        result = dp_poll(test, device_number=device_number, port_number=port, timeout=timeout)
+        if isinstance(result, test.dataplane.PollSuccess):
+            if ptf.dataplane.match_exp_pkt(exp_packet, result.packet):
                 total_rcv_pkt_cnt += 1
         else:
             break
@@ -2451,9 +2452,10 @@ def count_matched_packets_all_ports(test, exp_packet, ports=[], device_number=0,
         if (time.time() - last_matched_packet_time) > timeout:
             break
 
-        (rcv_device, rcv_port, rcv_pkt, pkt_time) = dp_poll(test, device_number=device_number, timeout=timeout)
-        if rcv_pkt is not None:
-            if rcv_port in ports and ptf.dataplane.match_exp_pkt(exp_packet, rcv_pkt):
+        result = dp_poll(test, device_number=device_number, timeout=timeout)
+        if isinstance(result, test.dataplane.PollSuccess):
+            if (result.port in ports and
+                  ptf.dataplane.match_exp_pkt(exp_packet, result.packet)):
                 total_rcv_pkt_cnt += 1
                 last_matched_packet_time = time.time()
         else:

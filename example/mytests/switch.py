@@ -34,7 +34,7 @@ table_attr_list = []
 
 def verify_packet_list_any(test, pkt_list,  ofport_list):
     logging.debug("Checking for packet on given ports")
-    (rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(timeout=1)
+    (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(timeout=1)
     test.assertTrue(rcv_pkt != None, "No packet received")
 
     i = 0

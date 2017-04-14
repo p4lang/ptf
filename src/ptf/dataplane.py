@@ -22,13 +22,18 @@ import select
 import logging
 import struct
 from collections import defaultdict
+from collections import deque
+from collections import namedtuple
 from threading import Thread
 from threading import Lock
 from threading import Condition
 import ptfutils
 import netutils
 import mask
+import scapy.packet
+import scapy.utils
 from pcap_writer import PcapWriter
+from StringIO import StringIO
 
 try:
     import nnpy
@@ -515,6 +520,10 @@ class DataPlane(Thread):
 
     MAX_QUEUE_LEN = 100
 
+    # When poll() fails to find a matching packet and reports the error, it
+    # includes up to this many recent packets as context.
+    POLL_MAX_RECENT_PACKETS = 3
+
     def __init__(self, config=None):
         Thread.__init__(self)
 
@@ -696,6 +705,113 @@ class DataPlane(Thread):
             pkt, time = queue.pop(0)
             yield (rcv_port, pkt, time)
 
+    PollResult = namedtuple('PollResult', ['device', 'port', 'packet', 'time'])
+    """
+    A base class used for the result of poll(). No matter what kind of
+    additional information subclasses include, for backwards compatibility
+    callers must be able to unpack them as if they were a tuple with this
+    format. The pair of the @device number and the @port number indicate where
+    the packet was received, @packet is the packet itself, and @time is the time
+    it was received.
+    """
+
+    # On success, poll() returns a PollSuccess object which contains the device
+    # number and port number on which a matching packet was found, the packet
+    # itself, and the time at which it was received.
+    class PollSuccess(PollResult):
+        """ Returned by poll() when it successfully finds a matching packet. """
+        def __new__(cls, device, port, packet, expected_packet, time):
+            """ Initialize. (We're an immutable tuple, so we can't use __init__.) """
+            self = super(DataPlane.PollSuccess, cls).__new__(cls, device, port, packet, time)
+            self.expected_packet = expected_packet
+            return self
+
+        def format(self):
+            """
+            Returns a string containing a nice (but verbose) representation of
+            this packet. If the expected packet is a scapy packet, it's used to
+            include detailed information about the fields in the packet.
+            """
+            try:
+                # The scapy packet dissection methods print directly to stdout,
+                # so we have to redirect stdout to a string.
+                sys.stdout = StringIO()
+
+                print "========== RECEIVED =========="
+                if isinstance(self.expected_packet, scapy.packet.Packet):
+                    # Dissect this packet as if it were an instance of
+                    # the expected packet's class.
+                    scapy.packet.ls(self.expected_packet.__class__(self.packet))
+                    print '--'
+                scapy.utils.hexdump(self.packet)
+                print "=============================="
+
+                return sys.stdout.getvalue()
+            finally:
+                sys.stdout.close()
+                sys.stdout = sys.__stdout__  # Restore the original stdout.
+
+    class PollFailure(PollResult):
+        """
+        Returned by poll() when it fails to match any packets. Contains metadata
+        which can be used to diagnose the failure; callers will often want to
+        include the result of format() in assertion failure messages.
+
+        For backwards compatibility, when a PollFailure is treated as a tuple
+        and unpacked, all PollResult fields are 'None'.
+        """
+        def __new__(cls, expected_packet, recent_packets, packet_count):
+            """ Initialize. (We're an immutable tuple, so we can't use __init__.) """
+            self = super(DataPlane.PollFailure, cls).__new__(cls, None, None, None, None)
+            self.expected_packet = expected_packet
+            self.recent_packets = recent_packets
+            self.packet_count = packet_count
+            return self
+
+        def format(self):
+            """
+            Returns a string containing a nice (but verbose) error report based
+            on this PollFailure. If there was an expected packet, it's included
+            in the output. If the expected packet is a scapy packet object, the
+            output will include information about the fields in the packet.
+            """
+            try:
+                # The scapy packet dissection methods print directly to stdout,
+                # so we have to redirect stdout to a string.
+                sys.stdout = StringIO()
+
+                if self.expected_packet is not None:
+                    print "========== EXPECTED =========="
+                    if isinstance(self.expected_packet, scapy.packet.Packet):
+                        scapy.packet.ls(self.expected_packet)
+                        print '--'
+                        scapy.utils.hexdump(self.expected_packet)
+                    elif isinstance(self.expected_packet, mask.Mask):
+                        print 'Mask:', str(self.expected_packet)
+                    else:
+                        scapy.utils.hexdump(self.expected_packet)
+
+                print "========== RECEIVED =========="
+                if self.recent_packets:
+                    print "%d total packets. Displaying most recent %d packets:" \
+                            % (self.packet_count, len(self.recent_packets))
+                    for packet in self.recent_packets:
+                        print "------------------------------"
+                        if isinstance(self.expected_packet, scapy.packet.Packet):
+                            # Dissect this packet as if it were an instance of
+                            # the expected packet's class.
+                            scapy.packet.ls(self.expected_packet.__class__(packet))
+                            print '--'
+                        scapy.utils.hexdump(packet)
+                else:
+                    print "%d total packets." % self.packet_count
+                print "=============================="
+
+                return sys.stdout.getvalue()
+            finally:
+                sys.stdout.close()
+                sys.stdout = sys.__stdout__  # Restore the original stdout.
+
     def poll(self, device_number=0, port_number=None, timeout=-1, exp_pkt=None, filters=[]):
         """
         Poll one or all dataplane ports for a packet
@@ -714,9 +830,9 @@ class DataPlane(Thread):
         @param exp_pkt If not None, look for this packet and ignore any
         others received.  Note that if port_number is None, all packets
         from all ports will be discarded until the exp_pkt is found
-        @return The tuple device_number, port_number, packet, pkt_time where
-        packet is received from device_number, port_number at time pkt_time.  If
-        a timeout occurs, return None, None, None, None
+
+        @return A PollSuccess object on success, or a PollFailure object on
+        failure. See the definitions of those classes for more details.
         """
 
         def filter_check(pkt):
@@ -727,30 +843,46 @@ class DataPlane(Thread):
         if exp_pkt and (port_number is None):
             self.logger.warn("Dataplane poll with exp_pkt but no port number")
 
+        # A nested function can't assign to variables in its enclosing function
+        # in Python 2, so the conventional hack is to put them in a dict.
+        grab_log = {
+            # A ring buffer to hold recent non-matching packets.
+            'recent_packets': collections.deque(maxlen=DataPlane.POLL_MAX_RECENT_PACKETS),
+
+            # A count of the total packets received. Since 'recent_packets' is a
+            # ring buffer, we can't simply check its length.
+            'packet_count': 0
+        }
+
         # Retrieve the packet. Returns (device number, port number, packet, time).
         def grab():
             self.logger.debug("Grabbing packet")
             for (rcv_port_number, pkt, time) in self.packets(device_number, port_number):
                 rcv_device_number = device_number
+                grab_log['recent_packets'].append(pkt)
+                grab_log['packet_count'] += 1
                 self.logger.debug("Checking packet from device %d, port %d",
                                   rcv_device_number, rcv_port_number)
                 if not filter_check(pkt):
                     self.logger.debug("Paket does not match filter, discarding")
                     continue
                 if not exp_pkt or match_exp_pkt(exp_pkt, pkt):
-                    return (rcv_device_number, rcv_port_number, pkt, time)
+                    return DataPlane.PollSuccess(rcv_device_number, rcv_port_number,
+                                                 pkt, exp_pkt, time)
+
             self.logger.debug("Did not find packet")
             return None
 
         with self.cvar:
             ret = ptfutils.timed_wait(self.cvar, grab, timeout=timeout)
 
-        if ret != None:
-            return ret
-        else:
-            self.logger.debug("Poll time out, no packet from device %d, port %r",
+        if ret is None:
+            self.logger.debug("Poll timeout, no packet from device %d, port %r",
                               device_number, port_number)
-            return (None, None, None, None)
+            return DataPlane.PollFailure(exp_pkt, grab_log['recent_packets'],
+                                                  grab_log['packet_count'])
+
+        return ret
 
     def kill(self):
         """

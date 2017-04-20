@@ -12,23 +12,23 @@ basics of running tests and to provide examples of how to add tests.
 
 Most of the code was taken from the [OFTest
 framework](https://github.com/floodlight/oftest). However, PTF focuses on the
-dataplane and is independent of OpenFlow. We also made a few additions to
-oftest.
+dataplane and is independent of OpenFlow. We also added several
+[new features](#New-features).
 
 ---
 
 # Longer Start
 
-## Configure Pre-requisites
+## Dependencies
 
-The following software is required to run OFTest:
+The following software is required to run PTF:
 
  * Python 2.7
  * Scapy
  * pypcap (optional - VLAN tests will fail without this)
  * tcpdump (optional - Scapy will complain if it's missing)
 
-We recommend that you install your extension of Scapy, which you can obtain
+We recommend that you install our extension of Scapy, which you can obtain
 [here](https://github.com/p4lang/scapy-vxlan). It adds support for additional
 header types: `VXLAN`, `ERSPAN`, `GENEVE`, `MPLS` and `NVGRE`.
 

@@ -847,7 +847,7 @@ class DataPlane(Thread):
         # in Python 2, so the conventional hack is to put them in a dict.
         grab_log = {
             # A ring buffer to hold recent non-matching packets.
-            'recent_packets': collections.deque(maxlen=DataPlane.POLL_MAX_RECENT_PACKETS),
+            'recent_packets': deque(maxlen=DataPlane.POLL_MAX_RECENT_PACKETS),
 
             # A count of the total packets received. Since 'recent_packets' is a
             # ring buffer, we can't simply check its length.

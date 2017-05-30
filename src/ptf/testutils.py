@@ -337,10 +337,10 @@ def simple_geneve_packet(pktlen=300,
                         with_udp_chksum=True,
                         ip_ihl=None,
                         ip_options=False,
-			            geneve_ver=0x0,
+                        geneve_ver=0x0,
                         geneve_reserved = 0x0,
                         geneve_vni=0x1234,
-			            geneve_reserved2=0x0,
+                        geneve_reserved2=0x0,
                         geneve_proto=0x6558,
                         inner_frame = None):
     """
@@ -508,9 +508,9 @@ def simple_vxlan_packet(pktlen=300,
                         with_udp_chksum=True,
                         ip_ihl=None,
                         ip_options=False,
-			vxlan_reserved1=0x000000,
+                        vxlan_reserved1=0x000000,
                         vxlan_vni = 0xaba,
-			vxlan_reserved2=0x00,
+                        vxlan_reserved2=0x00,
                         inner_frame = None):
     """
     Return a simple dataplane VXLAN packet
@@ -1794,7 +1794,8 @@ def __dhcp_mac_to_chaddr(mac_addr='00:01:02:03:04:05'):
     chaddr += '\x00' * 10
     return chaddr
 
-def dhcp_discover_packet(eth_client='00:01:02:03:04:05'):
+def dhcp_discover_packet(eth_client='00:01:02:03:04:05',
+                         set_broadcast_bit=False):
     """
     Return a DHCPDISCOVER packet
 
@@ -1819,7 +1820,7 @@ def dhcp_discover_packet(eth_client='00:01:02:03:04:05'):
                 hops=0,
                 xid=0,
                 secs=0,
-                flags=DHCP_BOOTP_FLAGS_BROADCAST_REPLY,
+                flags=DHCP_BOOTP_FLAGS_BROADCAST_REPLY if set_broadcast_bit else 0,
                 ciaddr=DHCP_IP_DEFAULT_ROUTE,
                 yiaddr=DHCP_IP_DEFAULT_ROUTE,
                 siaddr=DHCP_IP_DEFAULT_ROUTE,
@@ -1828,46 +1829,53 @@ def dhcp_discover_packet(eth_client='00:01:02:03:04:05'):
     pkt /= scapy.DHCP(options=[('message-type', 'discover'), ('end')])
     return pkt
 
-def dhcp_offer_packet(eth_client='00:01:02:03:04:05',
-                eth_server='06:07:08:09:10:11',
+def dhcp_offer_packet(eth_server='00:01:02:03:04:05',
+                eth_dst='06:07:08:09:10:11',
+                eth_client='12:13:14:15:16:17',
                 ip_server='0.1.2.3',
-                ip_offered='4.5.6.7',
+                ip_dst='255.255.255.255',
+                ip_offered='8.9.10.11',
+                port_dst=DHCP_PORT_CLIENT,
                 netmask_client='255.255.255.0',
                 ip_gateway=DHCP_IP_DEFAULT_ROUTE,
                 dhcp_lease=256,
-                padding_bytes=0):
+                padding_bytes=0,
+                set_broadcast_bit=False):
     """
     Return a DHCPOFFER packet
 
     Supports a few parameters:
-    @param eth_client MAC address of DHCP client
     @param eth_server MAC address of DHCP server
+    @param eth_dst MAC address of destination (DHCP Client, Relay agent) or broadcast (ff:ff:ff:ff:ff:ff)
+    @param eth_client MAC address of DHCP client
     @param ip_server IP address of DHCP server
+    @param ip_dst IP address of destination (DHCP Client, Relay agent) or broadcast (255.255.255.255)
     @param ip_offered IP address that server is assigning to client
-    @param netmask_client Subnet mask of client
     @param ip_gateway Gateway IP Address, address of relay agent if encountered
+    @param port_dst Destination port of packet (default: DHCP_PORT_CLIENT)
+    @param netmask_client Subnet mask of client
     @param dhcp_lease Time in seconds of DHCP lease
     @param padding_bytes Number of '\x00' bytes to append to end of packet
 
 
-    Destination IP is always broadcast (255.255.255.255)
+    Destination IP can be unicast or broadcast (255.255.255.255)
     Source port is always 67 (DHCP server port)
-    Destination port is always 68 (DHCP client port)
+    Destination port by default is 68 (DHCP client port), but can be also be 67 (DHCP server port) if being sent to a DHCP relay agent
 
     """
 
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
-    pkt = scapy.Ether(dst=eth_client, src=eth_server, type=DHCP_ETHER_TYPE_IP)
-    pkt /= scapy.IP(src=ip_server, dst=DHCP_IP_BROADCAST, len=308, tos=ip_tos, ttl=128, id=0)
-    pkt /= scapy.UDP(sport=DHCP_PORT_SERVER, dport=DHCP_PORT_CLIENT, len=308)
+    pkt = scapy.Ether(dst=eth_dst, src=eth_server, type=DHCP_ETHER_TYPE_IP)
+    pkt /= scapy.IP(src=ip_server, dst=ip_dst, tos=ip_tos, ttl=128, id=0)
+    pkt /= scapy.UDP(sport=DHCP_PORT_SERVER, dport=port_dst)
     pkt /= scapy.BOOTP(op=DHCP_BOOTP_OP_REPLY,
                 htype=DHCP_BOOTP_HTYPE_ETHERNET,
                 hlen=DHCP_BOOTP_HLEN_ETHERNET,
                 hops=0,
                 xid=0,
                 secs=0,
-                flags=0,
+                flags=DHCP_BOOTP_FLAGS_BROADCAST_REPLY if set_broadcast_bit else 0,
                 ciaddr=DHCP_IP_DEFAULT_ROUTE,
                 yiaddr=ip_offered,
                 siaddr=ip_server,
@@ -1883,7 +1891,8 @@ def dhcp_offer_packet(eth_client='00:01:02:03:04:05',
 
 def dhcp_request_packet(eth_client='00:01:02:03:04:05',
                 ip_server='0.1.2.3',
-                ip_requested='4.5.6.7'):
+                ip_requested='4.5.6.7',
+                set_broadcast_bit=False):
     """
     Return a DHCPREQUEST packet
 
@@ -1910,7 +1919,7 @@ def dhcp_request_packet(eth_client='00:01:02:03:04:05',
                 hops=0,
                 xid=0,
                 secs=0,
-                flags=DHCP_BOOTP_FLAGS_BROADCAST_REPLY,
+                flags=DHCP_BOOTP_FLAGS_BROADCAST_REPLY if set_broadcast_bit else 0,
                 ciaddr=DHCP_IP_DEFAULT_ROUTE,
                 yiaddr=DHCP_IP_DEFAULT_ROUTE,
                 siaddr=DHCP_IP_DEFAULT_ROUTE,
@@ -1922,46 +1931,53 @@ def dhcp_request_packet(eth_client='00:01:02:03:04:05',
                 ('end')])
     return pkt
 
-def dhcp_ack_packet(eth_client='00:01:02:03:04:05',
-                eth_server='06:07:08:09:10:11',
+def dhcp_ack_packet(eth_server='00:01:02:03:04:05',
+                eth_dst='06:07:08:09:10:11',
+                eth_client='12:13:14:15:16:17',
                 ip_server='0.1.2.3',
-                ip_offered='4.5.6.7',
+                ip_dst='255.255.255.255',
+                ip_offered='8.9.10.11',
+                port_dst=DHCP_PORT_CLIENT,
                 netmask_client='255.255.255.0',
                 ip_gateway=DHCP_IP_DEFAULT_ROUTE,
                 dhcp_lease=256,
-                padding_bytes=0):
+                padding_bytes=0,
+                set_broadcast_bit=False):
     """
     Return a DHCPACK packet
 
     Supports a few parameters:
-    @param eth_client MAC address of DHCP client
     @param eth_server MAC address of DHCP server
+    @param eth_dst MAC address of destination (DHCP Client, Relay agent) or broadcast (ff:ff:ff:ff:ff:ff)
+    @param eth_client MAC address of DHCP client
     @param ip_server IP address of DHCP server
+    @param ip_dst IP address of destination (DHCP Client, Relay agent) or broadcast (255.255.255.255)
     @param ip_offered IP address that server is assigning to client
-    @param netmask_client Subnet mask of client
     @param ip_gateway Gateway IP Address, address of relay agent if encountered
+    @param port_dst Destination port of packet (default: DHCP_PORT_CLIENT)
+    @param netmask_client Subnet mask of client
     @param dhcp_lease Time in seconds of DHCP lease
     @param padding_bytes Number of '\x00' bytes to append to end of packet
 
 
-    Destination IP is always broadcast (255.255.255.255)
+    Destination IP can be unicast or broadcast (255.255.255.255)
     Source port is always 67 (DHCP server port)
-    Destination port is always 68 (DHCP client port)
+    Destination port by default is 68 (DHCP client port), but can be also be 67 (DHCP server port) if being sent to a DHCP relay agent
 
     """
 
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
-    pkt = scapy.Ether(dst=eth_client, src=eth_server, type=DHCP_ETHER_TYPE_IP)
-    pkt /= scapy.IP(src=ip_server, dst=DHCP_IP_BROADCAST, len=328, tos=ip_tos, ttl=128, id=0)
-    pkt /= scapy.UDP(sport=DHCP_PORT_SERVER, dport=DHCP_PORT_CLIENT, len=308)
+    pkt = scapy.Ether(dst=eth_dst, src=eth_server, type=DHCP_ETHER_TYPE_IP)
+    pkt /= scapy.IP(src=ip_server, dst=ip_dst, tos=ip_tos, ttl=128, id=0)
+    pkt /= scapy.UDP(sport=DHCP_PORT_SERVER, dport=port_dst)
     pkt /= scapy.BOOTP(op=DHCP_BOOTP_OP_REPLY,
                 htype=DHCP_BOOTP_HTYPE_ETHERNET,
                 hlen=DHCP_BOOTP_HLEN_ETHERNET,
                 hops=0,
                 xid=0,
                 secs=0,
-                flags=0,
+                flags=DHCP_BOOTP_FLAGS_BROADCAST_REPLY if set_broadcast_bit else 0,
                 ciaddr=DHCP_IP_DEFAULT_ROUTE,
                 yiaddr=ip_offered,
                 siaddr=ip_server,
@@ -1982,8 +1998,8 @@ def dhcp_release_packet(eth_client='00:01:02:03:04:05',
     Return a DHCPRELEASE packet
 
     Supports a few parameters:
-    @param eth_client Should be MAC address of DHCP client requesting release
-    @param ip_client Should be IP address of DHCP client requesting release
+    @param eth_client MAC address of DHCP client requesting release
+    @param ip_client IP address of DHCP client requesting release
     @param ip_server IP address of DHCP server
 
 

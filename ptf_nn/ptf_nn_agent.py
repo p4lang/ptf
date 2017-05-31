@@ -386,8 +386,11 @@ def main():
 
     # Wait until all interfaces are up and ready
     for iface in iface_mgrs.values():
-        if not iface.is_ready():
-            time.sleep(1)
+        while True:
+          if iface.is_ready():
+              break
+          else:
+              time.sleep(1)
 
     for dev, addr in args.device_sockets:
         n = NanomsgMgr(dev, addr, args.nn_rcv_buf, args.nn_snd_buf)

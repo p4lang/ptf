@@ -187,6 +187,7 @@ class IfaceMgr(threading.Thread):
         self.iface_name = iface_name
         self.iface_rcv_buf = iface_rcv_buf
         self.iface_snd_buf = iface_snd_buf
+        self.ready = False
 
     def forward(self, p):
         # can that conflict with sniff?
@@ -222,18 +223,32 @@ class IfaceMgr(threading.Thread):
         logger.debug("IfaceMgr {}-{} ({}) status set to DOWN".format(
                      self.dev, self.port, self.iface_name))
 
+    def wait_if_ready(self):
+        """
+        Wait until the interface is up
+        """
+        if self.ready:
+            return
+
+        while True:
+            if if_exists(self.iface_name) and get_if_status(self.iface_name):
+                self.ready = True
+                break
+            logger.debug("IfaceMgr {}-{} ({}) status is DOWN".format(
+                     self.dev, self.port, self.iface_name))
+            time.sleep(1)
+
+        logger.debug("IfaceMgr {}-{} ({}) status changed to UP".format(
+                     self.dev, self.port, self.iface_name))
+
+    def is_ready(self):
+        return self.ready
+
     def run(self):
         # run this loop in case the interface goes down by external action
         # or the interface disappears
         while True:
-            # wait until the port goes up
-            while True:
-                if if_exists(self.iface_name) and get_if_status(self.iface_name):
-                    break
-                time.sleep(1)
-
-            logger.debug("IfaceMgr {}-{} ({}) status changed to UP".format(
-                         self.dev, self.port, self.iface_name))
+            self.wait_if_ready()
             try:
                 self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
                                             socket.htons(0x03))
@@ -368,6 +383,12 @@ def main():
         i = IfaceMgr(dev, port, iface, args.iface_rcv_buf, args.iface_snd_buf)
         i.start()
         iface_mgrs[(dev, port)] = i
+
+    # Wait until all interfaces are up and ready
+    for iface in iface_mgrs.values():
+        if not iface.is_ready():
+            time.sleep(1)
+
     for dev, addr in args.device_sockets:
         n = NanomsgMgr(dev, addr, args.nn_rcv_buf, args.nn_snd_buf)
         n.start()

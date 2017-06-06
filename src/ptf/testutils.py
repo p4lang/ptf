@@ -2356,7 +2356,7 @@ def verify_packet_any_port(test, pkt, ports=[], device_number=0):
     Returns the index of the port on which the packet is received and the packet.
     """
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
-    result = dp_poll(test, device_number=device_number, exp_pkt=pkt, timeout=1)
+    result = dp_poll(test, device_number=device_number, exp_pkt=pkt, timeout=1, port_number= ports)
     verify_no_other_packets(test, device_number=device_number)
 
     if isinstance(result, test.dataplane.PollSuccess):

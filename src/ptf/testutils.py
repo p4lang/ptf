@@ -2400,6 +2400,11 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
     if isinstance(result, test.dataplane.PollFailure):
         test.fail("Did not receive any expected packet on any of ports %r for "
                   "device %d.\n%s" % (ports, device_number, result.format()))
+
+    if result.port not in ports:
+        test.fail("One of the expected packets was received on device %d on an "
+                  "unexpected port: %d\n%s" % (device_number, result.port, result.format()))
+
     return match_index
 
 def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):

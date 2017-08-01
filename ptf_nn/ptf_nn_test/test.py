@@ -75,3 +75,23 @@ class GetCountersTest(DataplaneBaseTest):
         print " (1, 1) %d:%d" % counters_11_e
         self.assertTrue(counters_01_e[1] > counters_01_b[1])
         self.assertTrue(counters_11_e[0] > counters_11_b[0])
+
+class VerifyAnyPacketAnyPort(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pkt = "ab" * 20
+
+        testutils.send_packet(self, (0, 1), str(pkt))
+        print "packet sent"
+        testutils.verify_any_packet_any_port(
+            self, pkts=[pkt], ports=[3, 1], device_number=1)
+
+        # negative test: if the packet is indeed received, but not on one of the
+        # expected ports, the test should fail
+        with self.assertRaises(AssertionError):
+            testutils.send_packet(self, (0, 1), str(pkt))
+            print "packet sent"
+            testutils.verify_any_packet_any_port(
+                self, pkts=[pkt], ports=[0, 2, 3], device_number=1)

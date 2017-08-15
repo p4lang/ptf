@@ -95,3 +95,36 @@ class VerifyAnyPacketAnyPort(DataplaneBaseTest):
             print "packet sent"
             testutils.verify_any_packet_any_port(
                 self, pkts=[pkt], ports=[0, 2, 3], device_number=1)
+
+class RemovePort(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pkt = "ab" * 20
+
+        testutils.send_packet(self, (0, 1), str(pkt))
+        print "packet sent"
+        testutils.verify_packet(self, pkt, (1, 1))
+
+        # We remove a port to test port_remove, but in order to execute
+        # subsequent tests, we need to make sure we re-add the port
+        # afterwards. In order to re-add the port, we need the interface name,
+        # which is what this method is for. This is a little hacky but fine for
+        # testing. In practice, you would not be removing ports which are part
+        # of the original ptf config.
+        def find_ifname(device_number, port_number):
+            for port_id, ifname in config["port_map"].items():
+                if (device_number, port_number) == port_id:
+                    return ifname
+
+        ifname = find_ifname(1, 1)
+        self.assertTrue(self.dataplane.port_remove(1, 1))
+        testutils.send_packet(self, (0, 1), str(pkt))
+        print "packet sent"
+        testutils.verify_no_other_packets(self, device_number=1)
+
+        self.dataplane.port_add(ifname, 1, 1)
+        testutils.send_packet(self, (0, 1), str(pkt))
+        print "packet sent"
+        testutils.verify_packet(self, pkt, (1, 1))

@@ -234,6 +234,7 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         self.cvar = Condition()
         self.mac_addresses = {}
         self.nn_counters = {}
+        self.ports = set()
 
     def close(self):
         # TODO(antonin): something to do?
@@ -259,9 +260,11 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         self.__send_info_req_msg(port_number, self.MSG_INFO_TYPE_CTRS)
 
     def port_add(self, port_number):
+        self.ports.add(port_number)
         self.__send_port_msg(self.MSG_TYPE_PORT_ADD, port_number, 0)
 
     def port_remove(self, port_number):
+        self.ports.remove(port_number)
         self.__send_port_msg(self.MSG_TYPE_PORT_REMOVE, port_number, 0)
 
     def port_bring_up(self, port_number):
@@ -292,6 +295,8 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         msg = self.socket.recv()
         fmt = "<iii"
         msg_type, port_number, more = struct.unpack_from(fmt, msg)
+        if port_number not in self.ports:
+            return None
         hdr_size = struct.calcsize(fmt)
         msg = msg[hdr_size:]
         if msg_type == self.MSG_TYPE_INFO_REP:
@@ -640,13 +645,29 @@ class DataPlane(Thread):
         Stashes the port number on the created port object.
         """
         port_id = (device_number, port_number)
-        self.ports[port_id] = self.dppclass(
-            interface_name, device_number, port_number, self.config)
-        self.ports[port_id]._port_number = port_number
-        self.ports[port_id]._device_number = device_number
-        self.packet_queues[port_id] = []
-        # Need to wake up event loop to change the sockets being selected on.
+        with self.cvar:
+            self.ports[port_id] = self.dppclass(
+                interface_name, device_number, port_number, self.config)
+            self.ports[port_id]._port_number = port_number
+            self.ports[port_id]._device_number = device_number
+            self.packet_queues[port_id] = []
+            # Need to wake up event loop to change the sockets being selected
+            # on.
         self.waker.notify()
+
+    # Returns true if success
+    def port_remove(self, device_number, port_number):
+        port_id = (device_number, port_number)
+        with self.cvar:
+            if port_id not in self.ports:
+                self.logger.warn(
+                    "Invalid port_remove: no port {} for device {}".format(
+                        port_number, device_number))
+                return False
+            del self.ports[port_id]
+            del self.packet_queues[port_id]
+        self.waker.notify()
+        return True
 
     def send(self, device_number, port_number, packet):
         """

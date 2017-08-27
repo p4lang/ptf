@@ -675,8 +675,14 @@ class DataPlane(Thread):
         @param device_number, port_number The port to send the data to
         @param packet Raw packet data to send to port
         """
+        if (device_number, port_number) not in self.ports:
+            self.logger.error("send: no port %d for device %d", port_number, device_number)
+            return 0
         self.logger.debug("Sending %d bytes to device %d, port %d" %
                           (len(packet), device_number, port_number))
+        if len(packet) < 15 and sys.platform.startswith('linux'):
+            self.logger.warn("The %s kernel may not send packets smaller than 15 bytes",
+                             sys.platform)
         if self.pcap_writer:
             self.pcap_writer.write(packet, time.time(),
                                    device_number, port_number)

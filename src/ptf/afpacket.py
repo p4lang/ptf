@@ -16,6 +16,7 @@ ETH_P_8021Q = 0x8100
 SOL_PACKET = 263
 PACKET_AUXDATA = 8
 TP_STATUS_VLAN_VALID = 1 << 4
+TP_STATUS_VLAN_TPID_VALID = 1 << 6
 
 class struct_iovec(Structure):
     _fields_ = [
@@ -49,7 +50,7 @@ class struct_tpacket_auxdata(Structure):
         ("tp_mac", c_ushort),
         ("tp_net", c_ushort),
         ("tp_vlan_tci", c_ushort),
-        ("tp_padding", c_ushort),
+        ("tp_vlan_tpid", c_ushort),
     ]
 
 libc = CDLL("libc.so.6")
@@ -106,7 +107,8 @@ def recv(sk, bufsize):
 
     if auxdata.tp_vlan_tci != 0 or auxdata.tp_status & TP_STATUS_VLAN_VALID:
         # Insert VLAN tag
-        tag = struct.pack("!HH", ETH_P_8021Q, auxdata.tp_vlan_tci)
+        tpid = auxdata.tp_vlan_tpid if auxdata.tp_vlan_tpid or auxdata.tp_status & TP_STATUS_VLAN_TPID_VALID else ETH_P_8021Q
+        tag = struct.pack("!HH", tpid, auxdata.tp_vlan_tci)
         return buf.raw[:12] + tag + buf.raw[12:rv]
     else:
         return buf.raw[:rv]

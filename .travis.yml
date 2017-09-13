@@ -2,18 +2,6 @@
 
 sudo: required
 
-# workaround for a travis Python issue
-# see https://github.com/travis-ci/travis-ci/issues/4948
-language: generic
-
-dist: trusty
-
-# New travis trusty images give me Python import errors for nnpy, forcing use of
-# the old ones for now. These will be deprecated in September. Either this issue
-# will be resolved before then or I will have to run the tests in a docker
-# image.
-group: deprecated-2017Q3
-
 # My very smart trick to force inclusion of the veth kernel module
 # (even though we do not use docker at all her)
 services:

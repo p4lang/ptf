@@ -23,6 +23,19 @@ def platform_config_update(config):
             (0, 1): 'veth3',
             (0, 2): 'veth5',
             (0, 3): 'veth7',
+            (0, 4): 'veth9',
+            (0, 5): 'veth11',
+            (0, 6): 'veth13',
+            (0, 7): 'veth15',
+            (0, 8): 'veth17',
+            (0, 9): 'veth19',
+            (0, 10): 'veth21',
+            (0, 11): 'veth23',
+            (0, 12): 'veth25',
+            (0, 13): 'veth27',
+            (0, 14): 'veth29',
+            (0, 15): 'veth31',
+            (0, 16): 'veth33',
         }
 
     config['port_map'] = port_map

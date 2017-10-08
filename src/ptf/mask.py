@@ -1,3 +1,6 @@
+from cStringIO import StringIO
+import sys
+from scapy.utils import hexdump
 import packet as scapy
 
 class Mask:
@@ -6,6 +9,7 @@ class Mask:
         self.size = len(str(exp_pkt))
         self.valid = True
         self.mask = [0xff] * self.size
+
 
     def set_do_not_care(self, offset, bitwidth):
         # a very naive but simple method
@@ -46,7 +50,9 @@ class Mask:
     def pkt_match(self, pkt):
         # just to be on the safe side
         pkt = str(pkt)
-        if len(pkt) != self.size:
+        # we compare up to the expected size, and fail if we haven't
+        # received enough bits
+        if len(pkt) < self.size:
             return False
         exp_pkt = str(self.exp_pkt)
         for i in xrange(self.size):
@@ -56,8 +62,16 @@ class Mask:
 
     def __str__(self):
         assert(self.valid)
-        return ''.join([chr(b) for b in self.mask])
-
+        sys.stdout = buffer = StringIO()
+        hexdump(self.exp_pkt)
+        print 'mask =',
+        for i in range(0, len(self.mask), 16):
+            if i > 0: print '%04x  ' % i,
+            print ' '.join('%02x' % (x) for x in self.mask[i : i+8]),
+            print ' ',
+            print ' '.join('%02x' % (x) for x in self.mask[i+8 : i+16])
+        sys.stdout = sys.__stdout__
+        return buffer.getvalue()
 def utest():
     p = scapy.Ether() / scapy.IP() / scapy.TCP()
     m = Mask(p)

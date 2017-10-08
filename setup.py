@@ -5,7 +5,7 @@ with open('README.md') as readme_file:
 
 setup(
     name='ptf',
-    version='0.9',
+    version='0.9.1',
     description='PTF is a Python based dataplane test framework.',
     long_description=readme,
     author='Antonin Bas',

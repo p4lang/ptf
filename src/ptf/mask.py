@@ -62,6 +62,7 @@ class Mask:
 
     def __str__(self):
         assert(self.valid)
+        old_stdout = sys.stdout
         sys.stdout = buffer = StringIO()
         hexdump(self.exp_pkt)
         print 'mask =',
@@ -70,7 +71,7 @@ class Mask:
             print ' '.join('%02x' % (x) for x in self.mask[i : i+8]),
             print ' ',
             print ' '.join('%02x' % (x) for x in self.mask[i+8 : i+16])
-        sys.stdout = sys.__stdout__
+        sys.stdout = old_stdout
         return buffer.getvalue()
 def utest():
     p = scapy.Ether() / scapy.IP() / scapy.TCP()

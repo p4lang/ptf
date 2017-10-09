@@ -16,7 +16,7 @@ try:
     import scapy.layers.dhcp
     import scapy.packet
     import scapy.main
-    if not config.has_key("disable_ipv6"):
+    if "disable_ipv6" not in config:
         import scapy.route6
         import scapy.layers.inet6
 except ImportError:
@@ -37,14 +37,14 @@ DHCP = scapy.layers.dhcp.DHCP
 BOOTP = scapy.layers.dhcp.BOOTP
 PADDING = scapy.packet.Padding
 
-if not config.has_key("disable_ipv6"):
+if "disable_ipv6" not in config:
     IPv6 = scapy.layers.inet6.IPv6
     IPv6ExtHdrRouting = scapy.layers.inet6.IPv6ExtHdrRouting
     ICMPv6Unknown = scapy.layers.inet6.ICMPv6Unknown
     ICMPv6EchoRequest = scapy.layers.inet6.ICMPv6EchoRequest
 
 VXLAN = None
-if not config.has_key("disable_vxlan"):
+if "disable_vxlan" not in config:
     try:
         scapy.main.load_contrib("vxlan")
         VXLAN = scapy.contrib.vxlan.VXLAN
@@ -56,7 +56,7 @@ if not config.has_key("disable_vxlan"):
 ERSPAN = None
 ERSPAN_III = None
 PlatformSpecific = None
-if not config.has_key("disable_erspan"):
+if "disable_erspan" not in config:
     try:
         scapy.main.load_contrib("erspan")
         ERSPAN = scapy.contrib.erspan.ERSPAN
@@ -68,7 +68,7 @@ if not config.has_key("disable_erspan"):
         pass
 
 GENEVE = None
-if not config.has_key("disable_geneve"):
+if "disable_geneve" not in config:
     try:
         scapy.main.load_contrib("geneve")
         GENEVE = scapy.contrib.geneve.GENEVE
@@ -78,7 +78,7 @@ if not config.has_key("disable_geneve"):
         pass
 
 MPLS = None
-if not config.has_key("disable_mpls"):
+if "disable_mpls" not in config:
     try:
         scapy.main.load_contrib("mpls")
         MPLS = scapy.contrib.mpls.MPLS
@@ -88,7 +88,7 @@ if not config.has_key("disable_mpls"):
         pass
 
 NVGRE = None
-if not config.has_key("disable_nvgre"):
+if "disable_nvgre" not in config:
     try:
         scapy.main.load_contrib("nvgre")
         NVGRE = scapy.contrib.nvgre.NVGRE

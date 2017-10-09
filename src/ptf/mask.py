@@ -4,11 +4,12 @@ from scapy.utils import hexdump
 import packet as scapy
 
 class Mask:
-    def __init__(self, exp_pkt):
+    def __init__(self, exp_pkt, ignore_extra_bytes=False):
         self.exp_pkt = exp_pkt
         self.size = len(str(exp_pkt))
         self.valid = True
         self.mask = [0xff] * self.size
+        self.ignore_extra_bytes = ignore_extra_bytes
 
 
     def set_do_not_care(self, offset, bitwidth):
@@ -44,15 +45,19 @@ class Mask:
                 offset += bits
         self.set_do_not_care(hdr_offset * 8 + offset, bitwidth)
 
+    def set_ignore_extra_bytes():
+        self.ignore_extra_bytes = True
+
     def is_valid(self):
         return self.valid
 
     def pkt_match(self, pkt):
         # just to be on the safe side
         pkt = str(pkt)
-        # we compare up to the expected size, and fail if we haven't
-        # received enough bits
-        if len(pkt) < self.size:
+        # we fail if we don't match on sizes, or if ignore_extra_bytes is set,
+        # fail if we have not received at least size bytes
+        if len(pkt) != self.size or \
+           (self.ignore_extra_bytes and len(pkt) < self.size):
             return False
         exp_pkt = str(self.exp_pkt)
         for i in xrange(self.size):

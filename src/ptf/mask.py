@@ -78,6 +78,7 @@ class Mask:
             print ' '.join('%02x' % (x) for x in self.mask[i+8 : i+16])
         sys.stdout = old_stdout
         return buffer.getvalue()
+
 def utest():
     p = scapy.Ether() / scapy.IP() / scapy.TCP()
     m = Mask(p)

@@ -56,8 +56,8 @@ class Mask:
         pkt = str(pkt)
         # we fail if we don't match on sizes, or if ignore_extra_bytes is set,
         # fail if we have not received at least size bytes
-        if len(pkt) != self.size or \
-           (self.ignore_extra_bytes and len(pkt) < self.size):
+        if (not self.ignore_extra_bytes and len(pkt) != self.size) or \
+           len(pkt) < self.size:
             return False
         exp_pkt = str(self.exp_pkt)
         for i in xrange(self.size):
@@ -89,5 +89,10 @@ def utest():
     assert(not m.pkt_match(p1))
     m.set_do_not_care_scapy(scapy.TCP, "chksum")
     assert(m.pkt_match(p1))
+    exp_pkt = "\x01\x02\x03\x04\x05\x06"
+    pkt     = "\x01\x00\x00\x04\x05\x06\x07\x08"
+    m1 = Mask(exp_pkt, ignore_extra_bytes=True)
+    m1.set_do_not_care(8, 16)
+    assert(m1.pkt_match(pkt))
 
 utest()

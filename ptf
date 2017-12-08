@@ -395,8 +395,15 @@ def load_test_modules(config):
     result = OrderedDict()
 
     for root, dirs, filenames in os.walk(config["test_dir"]):
+        pyfiles = fnmatch.filter(filenames, '[!.]*.py')
+        if len(pyfiles) == 0:
+            continue;
+
+        # Allow tests to import each other
+        sys.path.append(root)
+
         # Iterate over each python file
-        for filename in fnmatch.filter(filenames, '[!.]*.py'):
+        for filename in pyfiles:
             modname = os.path.splitext(os.path.basename(filename))[0]
 
             try:
@@ -500,9 +507,6 @@ ptf.config.update(new_config)
 logging_setup(config)
 xunit_setup(config)
 logging.info("++++++++ " + time.asctime() + " ++++++++")
-
-# Allow tests to import each other
-sys.path.append(config["test_dir"])
 
 test_specs = args.test_specs
 if config["test_file"] != None:

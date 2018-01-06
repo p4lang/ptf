@@ -1768,7 +1768,7 @@ def simple_qinq_tcp_packet(pktlen=100,
    DHCP Packet Creation functions
 
     BOOTP params explained:
-    op:     Operation Code, 1 = request (client), 2 = reply (server) 
+    op:     Operation Code, 1 = request (client), 2 = reply (server)
     htype:  Hardware Type, 1 = Ethernet
     hlen:   Hardware Address Length, 6 bytes for Ethernet
     hops:   Incremented by relay agent when forwarding messages.
@@ -2390,7 +2390,7 @@ def verify_packet_any_port(test, pkt, ports=[], device_number=0):
                 % (ports, device_number, result.format()))
     return (0, None)
 
-def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
+def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0, timeout=1):
     """
     Check that _any_ of the packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
@@ -2401,10 +2401,13 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0):
 
     Returns the index of the port on which the packet is received.
     """
+    if timeout <= 0:
+        raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
+
     received = False
     match_index = 0
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
-    result = dp_poll(test, device_number=device_number, timeout=1)
+    result = dp_poll(test, device_number=device_number, timeout=timeout)
 
     if isinstance(result, test.dataplane.PollSuccess) and result.port in ports:
         received_packet = str(result.packet)

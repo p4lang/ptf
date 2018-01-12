@@ -2359,7 +2359,7 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
         test.fail("Did not receive expected packet on any of ports %r for device %d.\n%s"
                     % (ports, device_number, failure_report))
 
-def verify_packet_any_port(test, pkt, ports=[], device_number=0):
+def verify_packet_any_port(test, pkt, ports=[], device_number=0, timeout=1):
     """
     Check that the packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
@@ -2373,7 +2373,7 @@ def verify_packet_any_port(test, pkt, ports=[], device_number=0):
     Returns the index of the port on which the packet is received and the packet.
     """
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
-    result = dp_poll(test, device_number=device_number, exp_pkt=pkt, timeout=1)
+    result = dp_poll(test, device_number=device_number, exp_pkt=pkt, timeout=timeout)
     verify_no_other_packets(test, device_number=device_number)
 
     if isinstance(result, test.dataplane.PollSuccess):

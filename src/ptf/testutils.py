@@ -2275,7 +2275,7 @@ def verify_no_packet(test, pkt, port_id, timeout=None):
         test.fail("Received packet that we expected not to receive on device %d, "
                   "port %r.\n%s" % (device, port, result.format()))
 
-def verify_no_other_packets(test, device_number=0, timeout=None):
+def verify_no_other_packets(test, device_number=0, timeout=1):
     """
     Check that no unexpected packets are received on specified device
 

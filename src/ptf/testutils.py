@@ -2425,6 +2425,10 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0, timeout
         test.fail("One of the expected packets was received on device %d on an "
                   "unexpected port: %d\n%s" % (device_number, result.port, result.format()))
 
+    if not received:
+        test.fail("Did not receive expected packet on any of ports for device %d.\n%s"
+                  % (device_number, result.format()))
+
     return match_index
 
 def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):

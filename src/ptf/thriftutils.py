@@ -1,3 +1,4 @@
+import socket
 import struct
 
 # thrift does not support unsigned integers
@@ -58,7 +59,15 @@ def stringify_macAddr(addr):
     return ':'.join('%02x' % char_to_uchar(x) for x in addr)
 
 def i32_to_ipv4Addr(addr):
-    return socket.inet_ntoa(struct.pack("!I", addr))
+    return socket.inet_ntoa(struct.pack("!i", addr))
 
 def ipv6Addr_to_string(addr):
     return (str(socket.inet_pton(socket.AF_INET6, addr)))
+
+
+def main():
+    ip_addr = "255.255.255.255"
+    assert(i32_to_ipv4Addr(ipv4Addr_to_i32(ip_addr)) == ip_addr)
+
+if __name__ == "__main__":
+    main()

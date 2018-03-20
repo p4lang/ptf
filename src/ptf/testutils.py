@@ -2253,7 +2253,7 @@ def verify_packet(test, pkt, port_id):
     """
     device, port = port_to_tuple(port_id)
     logging.debug("Checking for pkt on device %d, port %d", device, port)
-    result = dp_poll(test, device_number=device, port_number=port, timeout=2, exp_pkt=pkt)
+    result = dp_poll(test, device_number=device, port_number=port, timeout=4, exp_pkt=pkt)
     if isinstance(result, test.dataplane.PollFailure):
         test.fail("Expected packet was not received on device %d, port %r.\n%s"
                     % (device, port, result.format()))

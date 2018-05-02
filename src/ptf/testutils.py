@@ -2303,6 +2303,8 @@ def verify_packets(test, pkt, ports=[], device_number=0, timeout=None):
     device, and that no other packets are received on the device (unless --relax
     is in effect).
 
+    The parameter timeout will be passed as is for each individual verify calls.
+
     This covers the common and simplest cases for checking dataplane outputs.
     For more complex usage, like multiple different packets being output, or
     multiple packets on the same port, use the primitive verify_packet,

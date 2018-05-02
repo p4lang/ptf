@@ -2245,15 +2245,18 @@ def dp_poll(test, device_number=0, port_number=None, timeout=-1, exp_pkt=None):
         test.at_receive(result.packet, device_number=result.device, port_number=result.port)
     return result
 
-def verify_packet(test, pkt, port_id):
+def verify_packet(test, pkt, port_id, timeout=2):
     """
     Check that an expected packet is received
     port_id can either be a single integer (port_number on default device 0)
     or a tuple of 2 integers (device_number, port_number)
     """
+    if timeout==None:
+        timeout=2
     device, port = port_to_tuple(port_id)
     logging.debug("Checking for pkt on device %d, port %d", device, port)
-    result = dp_poll(test, device_number=device, port_number=port, timeout=2, exp_pkt=pkt)
+    result = dp_poll(test, device_number=device, port_number=port,
+                     timeout=timeout, exp_pkt=pkt)
     if isinstance(result, test.dataplane.PollFailure):
         test.fail("Expected packet was not received on device %d, port %r.\n%s"
                     % (device, port, result.format()))
@@ -2291,7 +2294,7 @@ def verify_no_other_packets(test, device_number=0, timeout=None):
         test.fail("A packet was received on device %d, port %r, but we expected no "
                   "packets.\n%s" % (result.device, result.port, result.format()))
 
-def verify_packets(test, pkt, ports=[], device_number=0):
+def verify_packets(test, pkt, ports=[], device_number=0, timeout=None):
     """
     Check that a packet is received on each of the specified port numbers for a
     given device (default device number is 0).
@@ -2299,6 +2302,8 @@ def verify_packets(test, pkt, ports=[], device_number=0):
     Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
+
+    The parameter timeout will be passed as is for each individual verify calls.
 
     This covers the common and simplest cases for checking dataplane outputs.
     For more complex usage, like multiple different packets being output, or
@@ -2309,10 +2314,10 @@ def verify_packets(test, pkt, ports=[], device_number=0):
         if device != device_number:
             continue
         if port in ports:
-            verify_packet(test, pkt, (device, port))
+            verify_packet(test, pkt, (device, port), timeout=timeout)
         else:
-            verify_no_packet(test, pkt, (device, port))
-    verify_no_other_packets(test, device_number=device_number)
+            verify_no_packet(test, pkt, (device, port), timeout=timeout)
+    verify_no_other_packets(test, device_number=device_number, timeout=timeout)
 
 def verify_no_packet_any(test, pkt, ports=[], device_number=0):
     """

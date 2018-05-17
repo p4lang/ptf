@@ -776,7 +776,8 @@ class DataPlane(Thread):
                 return sys.stdout.getvalue()
             finally:
                 sys.stdout.close()
-                sys.stdout = sys.__stdout__  # Restore the original stdout.
+                #sys.stdout = sys.__stdout__  # Restore the original stdout.
+                sys.stdout = stdout_save  # Restore the original stdout.
 
     class PollFailure(PollResult):
         """
@@ -803,6 +804,7 @@ class DataPlane(Thread):
             output will include information about the fields in the packet.
             """
             try:
+                stdout_save = sys.stdout
                 # The scapy packet dissection methods print directly to stdout,
                 # so we have to redirect stdout to a string.
                 sys.stdout = StringIO()
@@ -837,7 +839,8 @@ class DataPlane(Thread):
                 return sys.stdout.getvalue()
             finally:
                 sys.stdout.close()
-                sys.stdout = sys.__stdout__  # Restore the original stdout.
+                sys.stdout = stdout_save  # Restore the original stdout.
+                #sys.stdout = sys.__stdout__  # Restore the original stdout.
 
     def poll(self, device_number=0, port_number=None, timeout=-1, exp_pkt=None, filters=[]):
         """

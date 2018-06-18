@@ -45,7 +45,7 @@ class Mask:
                 offset += bits
         self.set_do_not_care(hdr_offset * 8 + offset, bitwidth)
 
-    def set_ignore_extra_bytes():
+    def set_ignore_extra_bytes(self):
         self.ignore_extra_bytes = True
 
     def is_valid(self):

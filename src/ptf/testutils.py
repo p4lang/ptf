@@ -2200,7 +2200,7 @@ def ptf_ports(num=None):
     return ports[:num]
 
 def port_to_tuple(port):
-    if type(port) is int:
+    if type(port) is int or type(port) is long:
         return 0, port
     if type(port) is tuple:
         return port

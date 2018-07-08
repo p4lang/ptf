@@ -74,7 +74,7 @@ class Mask:
         for i in range(0, len(self.mask), 16):
             if i > 0: print '%04x  ' % i,
             print ' '.join('%02x' % (x) for x in self.mask[i : i+8]),
-            print ' ',
+            print '',
             print ' '.join('%02x' % (x) for x in self.mask[i+8 : i+16])
         sys.stdout = old_stdout
         return buffer.getvalue()

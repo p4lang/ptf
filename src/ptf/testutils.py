@@ -62,6 +62,35 @@ def ip_make_tos(tos, ecn, dscp):
 
     return tos
 
+def simple_dot1q_packet(pktlen=100,
+                      eth_dst='00:01:02:03:04:05',
+                      eth_src='00:06:07:08:09:0a',
+                      vlan_vid=0,
+                      vlan_pcp=0,
+                      dl_vlan_cfi=0,
+                      eth_type=0x88cc):
+    """
+    Return a simple dataplane dot1q Eth packet
+
+    Supports a few parameters:
+    @param eth_dst Destinatino MAC
+    @param eth_src Source MAC
+    @param vlan_vid VLAN ID
+    @param vlan_pcp VLAN priority
+    @param dl_vlan_cif Drop eligible indicator
+    @param eth_type Ethernet type
+
+    """
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+	scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid, type=eth_type)
+
+    pkt = pkt/("0" * (pktlen - len(pkt)))
+
+    return pkt
+
 def simple_tcp_packet(pktlen=100,
                       eth_dst='00:01:02:03:04:05',
                       eth_src='00:06:07:08:09:0a',

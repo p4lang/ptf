@@ -29,7 +29,11 @@ Dot1Q = scapy.layers.l2.Dot1Q
 GRE = scapy.layers.l2.GRE
 IP = scapy.layers.inet.IP
 IPOption = scapy.layers.inet.IPOption
-ARP = scapy.layers.inet.ARP
+try:
+    ARP = scapy.layers.inet.ARP
+except AttributeError:
+    # Works with more recent versions of Scapy
+    ARP = scapy.layers.l2.ARP
 TCP = scapy.layers.inet.TCP
 UDP = scapy.layers.inet.UDP
 ICMP = scapy.layers.inet.ICMP

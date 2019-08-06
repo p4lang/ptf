@@ -1,5 +1,7 @@
 # Config file for automatic testing at travis-ci.org
 
+dist: xenial
+
 sudo: required
 
 # My very smart trick to force inclusion of the veth kernel module
@@ -14,15 +16,17 @@ addons:
       - python-pip
       - cmake
       - libffi-dev
+      - python3-dev
+      - python3-pip
 
 before_install:
   - sudo apt-get install ethtool
-  - sudo pip install --upgrade pip
   - sudo apt-get remove python-scapy
   - git clone https://github.com/p4lang/scapy-vxlan.git && cd scapy-vxlan && sudo python setup.py install && cd ..
   - bash CI/travis/install-nanomsg.sh
   - sudo ldconfig
   - bash CI/travis/install-nnpy.sh
+  - sudo pip3 install nose2
 
 install:
   - sudo python setup.py install
@@ -33,3 +37,4 @@ before_script:
 script:
   - python CI/travis/check-nnpy.py
   - ./CI/travis/run_tests.sh
+  - sudo python3 /usr/local/bin/nose2 utests.tests

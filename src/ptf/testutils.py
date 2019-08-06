@@ -22,6 +22,7 @@ TCP_PROTOCOL = 0x6
 UDP_PROTOCOL = 0x11
 
 MINSIZE = 0
+TEST_PARAMS = None
 
 _import_blacklist.add('FILTERS')
 FILTERS = []
@@ -2214,24 +2215,16 @@ def test_params_get(default={}):
     """
     Return all the values passed via test-params if present
 
-    @param default Default dictionary to use if no valid params found
+    @param default Default dictionary to use if no params were provided or if
+    the provided string could not be "exec'd".
 
     WARNING: TEST PARAMETERS MUST BE PYTHON IDENTIFIERS;
     AND CANNOT START WITH "__";
     eg egr_count, not egr-count.
     """
-    test_params = ptf.config["test_params"]
-    params_str = "class _TestParams:\n    " + test_params
-    try:
-        exec params_str
-    except:
+    if TEST_PARAMS is None:
         return default
-
-    params = {}
-    for k, v in vars(_TestParams).items():
-        if k[:2] != "__":
-            params[k] = v
-    return params
+    return TEST_PARAMS
 
 def test_param_get(key, default=None):
     """

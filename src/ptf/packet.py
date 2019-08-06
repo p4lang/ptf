@@ -4,6 +4,7 @@
 """
 Wrap scapy to satisfy pylint
 """
+import ptf
 from ptf import config
 import sys
 import logging
@@ -50,10 +51,13 @@ if not config.get("disable_ipv6", False):
 VXLAN = None
 if not config.get("disable_vxlan", False):
     try:
+        ptf.disable_logging()
         scapy.main.load_contrib("vxlan")
         VXLAN = scapy.contrib.vxlan.VXLAN
+        ptf.enable_logging()
         logging.info("VXLAN support found in Scapy")
     except:
+        ptf.enable_logging()
         logging.warn("VXLAN support not found in Scapy")
         pass
 
@@ -62,41 +66,53 @@ ERSPAN_III = None
 PlatformSpecific = None
 if not config.get("disable_erspan", False):
     try:
+        ptf.disable_logging()
         scapy.main.load_contrib("erspan")
         ERSPAN = scapy.contrib.erspan.ERSPAN
         ERSPAN_III = scapy.contrib.erspan.ERSPAN_III
         PlatformSpecific = scapy.contrib.erspan.PlatformSpecific
+        ptf.enable_logging()
         logging.info("ERSPAN support found in Scapy")
     except:
+        ptf.enable_logging()
         logging.warn("ERSPAN support not found in Scapy")
         pass
 
 GENEVE = None
 if not config.get("disable_geneve", False):
     try:
+        ptf.disable_logging()
         scapy.main.load_contrib("geneve")
         GENEVE = scapy.contrib.geneve.GENEVE
+        ptf.enable_logging()
         logging.info("GENEVE support found in Scapy")
     except:
+        ptf.enable_logging()
         logging.warn("GENEVE support not found in Scapy")
         pass
 
 MPLS = None
 if not config.get("disable_mpls", False):
     try:
+        ptf.disable_logging()
         scapy.main.load_contrib("mpls")
         MPLS = scapy.contrib.mpls.MPLS
+        ptf.enable_logging()
         logging.info("MPLS support found in Scapy")
     except:
+        ptf.enable_logging()
         logging.warn("MPLS support not found in Scapy")
         pass
 
 NVGRE = None
 if not config.get("disable_nvgre", False):
     try:
+        ptf.disable_logging()
         scapy.main.load_contrib("nvgre")
         NVGRE = scapy.contrib.nvgre.NVGRE
+        ptf.enable_logging()
         logging.info("NVGRE support found in Scapy")
     except:
+        ptf.enable_logging()
         logging.warn("NVGRE support not found in Scapy")
         pass

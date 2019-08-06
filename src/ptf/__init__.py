@@ -34,7 +34,29 @@ def open_logfile(name):
         logger.removeHandler(handler)
         handler.close()
 
+    formatter = logging.Formatter(_format, _datefmt)
+
     # Add a new handler
     handler = logging.FileHandler(filename, mode='a')
-    handler.setFormatter(logging.Formatter(_format, _datefmt))
+    handler.setFormatter(formatter)
     logger.addHandler(handler)
+
+    # We log all ERROR and CRITICAL messages to stdout as well as to the
+    # logfile.
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.ERROR)
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+
+def disable_logging():
+    """
+    Temporarily disable all logging by setting the global log level to
+    CRITICAL, which is the highest log level in use.
+    """
+    logging.disable(logging.CRITICAL)
+
+def enable_logging():
+    """
+    Turn logging back on after a call to disable_logging().
+    """
+    logging.disable(logging.NOTSET)

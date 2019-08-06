@@ -79,7 +79,7 @@ config_default = {
 
     # Test behavior options
     "relax"              : False,
-    "test_params"        : "None",
+    "test_params"        : None,
     "failfast"           : False,
     "fail_skipped"       : False,
     "default_timeout"    : 2.0,
@@ -99,7 +99,7 @@ config_default = {
     "socket_recv_size"   : 4096,
 
     # Other configuration
-    "port_map"           : {},
+    "port_map"           : None,
 }
 
 def config_setup():
@@ -260,7 +260,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
                       help="Relax packet match checks allowing other packets")
     group.add_argument("--failfast", action="store_true",
                       help="Stop running tests as soon as one fails")
-    test_params_help = """Set test parameters: key=val;... (see --list)
+    test_params_help = """Set test parameters: [key=val]*;key=val
     """
     group.add_argument("-t", "--test-params", help=test_params_help)
     group.add_argument("--fail-skipped", action="store_true",
@@ -482,7 +482,6 @@ def prune_tests(test_specs, test_modules):
     return result
 
 def die(msg, exit_val=1):
-    print msg
     logging.critical(msg)
     sys.exit(exit_val)
 
@@ -496,6 +495,33 @@ def _space_to(n, str):
         return " " * spaces
     return " "
 
+def test_params_parse(config):
+    test_params = config["test_params"]
+    if test_params is None:
+        logging.debug(
+            "No test params were provided with '--test-params' / '-t'")
+        return None
+    params_str = "class _TestParams:\n    " + test_params
+    try:
+        exec params_str
+    except:
+        logging.error(
+            "Error when parsing test params "
+            "(provided with '--test-params' / '-t'). "
+            "Make sure you used the correct syntax: "
+            "--test-params=\"[k=v;]*k=v\"")
+        return None
+    params = {}
+    logging.debug("Parsed test parameters:")
+    for k, v in vars(_TestParams).items():
+        if k[:2] != "__":
+            params[k] = v
+            logging.debug("\t*{}={}".format(k, v))
+    logging.debug(
+        "If something is missing, make sure you used the correct syntax: "
+        "--test-params=\"[k=v;]*k=v\"")
+    return params
+
 #
 # Main script
 #
@@ -507,6 +533,10 @@ ptf.config.update(new_config)
 logging_setup(config)
 xunit_setup(config)
 logging.info("++++++++ " + time.asctime() + " ++++++++")
+
+# import after logging is configured so that scapy error logs (from importing
+# packet.py) are silenced and our own warnings are logged properly.
+import ptf.testutils
 
 test_specs = args.test_specs
 if config["test_file"] != None:
@@ -621,7 +651,7 @@ except:
     logging.warn("Could not run platform host configuration")
     raise
 
-if not config["port_map"]:
+if config["port_map"] is None:
     die("Interface port map was not defined by the platform. Exiting.")
 
 logging.debug("Configuration: " + str(config))
@@ -630,11 +660,11 @@ logging.info("port map: " + str(config["port_map"]))
 ptf.ptfutils.default_timeout = config["default_timeout"]
 ptf.ptfutils.default_negative_timeout = config["default_negative_timeout"]
 ptf.testutils.MINSIZE = config['minsize']
+# Try parsing test params and log them
+ptf.testutils.TEST_PARAMS = test_params_parse(config)
 
 if os.getuid() != 0 and not config["allow_user"] and platform_name != "nn":
-    print "ERROR: Super-user privileges required. Please re-run with " \
-          "sudo or as root."
-    sys.exit(1)
+    die("Super-user privileges required. Please re-run with sudo or as root.")
 
 if config["random_seed"] is not None:
     logging.info("Random seed: %d" % config["random_seed"])

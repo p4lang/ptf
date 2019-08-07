@@ -538,6 +538,11 @@ logging.info("++++++++ " + time.asctime() + " ++++++++")
 # packet.py) are silenced and our own warnings are logged properly.
 import ptf.testutils
 
+# Try parsing test params and log them
+# We do this before importing the test modules in case test parameters are being
+# accessed at test import time.
+ptf.testutils.TEST_PARAMS = test_params_parse(config)
+
 test_specs = args.test_specs
 if config["test_file"] != None:
     with open(config["test_file"], 'r') as f:
@@ -660,8 +665,6 @@ logging.info("port map: " + str(config["port_map"]))
 ptf.ptfutils.default_timeout = config["default_timeout"]
 ptf.ptfutils.default_negative_timeout = config["default_negative_timeout"]
 ptf.testutils.MINSIZE = config['minsize']
-# Try parsing test params and log them
-ptf.testutils.TEST_PARAMS = test_params_parse(config)
 
 if os.getuid() != 0 and not config["allow_user"] and platform_name != "nn":
     die("Super-user privileges required. Please re-run with sudo or as root.")

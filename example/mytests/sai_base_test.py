@@ -4,7 +4,7 @@ Base classes for test cases
 Tests will usually inherit from one of these classes to have the controller
 and/or dataplane automatically set up.
 """
-
+import six
 import ptf
 from ptf.base_tests import BaseTest
 from ptf import config
@@ -29,10 +29,10 @@ class SAIThriftTest(BaseTest):
         BaseTest.setUp(self)
 
         test_params = testutils.test_params_get()
-        print
-        print "You specified the following test-params when invoking ptf:"
-        for k, v in test_params.items():
-            print k, ":\t\t\t", v
+        six.print_()
+        six.print_("You specified the following test-params when invoking ptf:")
+        for k, v in six.iteritems(test_params):
+            six.print_(k, ":\t\t\t", v)
 
         # Set up thrift client and contact server
         self.transport = TSocket.TSocket('localhost', 9092)

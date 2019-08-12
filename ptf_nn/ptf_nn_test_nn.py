@@ -19,7 +19,7 @@
 # Antonin Bas (antonin@barefootnetworks.com)
 #
 #
-
+import six
 import nnpy
 import struct
 import argparse
@@ -46,7 +46,7 @@ def receive(socket):
         msg = msg[hdr_size:]
         assert (msg_type == MSG_TYPE_PACKET_OUT)
         assert (len(msg) == length)
-        print "Received:", msg
+        six.print_("Received:", msg)
 
 def main():
     socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)

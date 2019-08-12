@@ -44,7 +44,7 @@ SOL_PACKET = 263
 
 def get_if(iff,cmd):
   s=socket.socket()
-  ifreq = ioctl(s, cmd, struct.pack("16s16x",iff))
+  ifreq = ioctl(s, cmd, struct.pack("16s16x", bytes(iff,'utf-8')))
   s.close()
   return ifreq
 
@@ -55,7 +55,7 @@ def get_mac(iff):
   return ':'.join(['%02x' % ord(char) for char in get_if(iff, SIOCGIFHWADDR)[18:24]])
 
 def set_promisc(s,iff,val=1):
-  mreq = struct.pack("IHH8s", get_if_index(iff), PACKET_MR_PROMISC, 0, "")
+  mreq = struct.pack("IHH8s", get_if_index(iff), PACKET_MR_PROMISC, 0,  "".encode('utf-8'))
   if val:
       cmd = PACKET_ADD_MEMBERSHIP
   else:

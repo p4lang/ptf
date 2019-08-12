@@ -24,6 +24,7 @@ import argparse
 import threading
 import scapy.all as sc
 import time
+import six
 
 parser = argparse.ArgumentParser(description='PTF Nanomsg tester bridge')
 parser.add_argument("-ifrom", type=str)
@@ -41,7 +42,7 @@ class Forwarder(threading.Thread):
         forwarders[iface_name] = self
 
     def forward(self, p):
-        print "forwarding", p, "---", self.other, "->", self.iface_name
+        six.print_("forwarding", p, "---", self.other, "->", self.iface_name)
         sc.sendp(p, iface=self.iface_name, verbose=0)
 
     def run(self):
@@ -53,7 +54,7 @@ def main():
     f2 = Forwarder(args.ito, args.ifrom)
     time.sleep(2)
     f1.start()
-    print "READY"
+    six.print_("READY")
     try:
         while True:
             time.sleep(1)

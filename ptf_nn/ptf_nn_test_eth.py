@@ -20,6 +20,7 @@
 #
 #
 
+import six
 import argparse
 import scapy.all as sc
 
@@ -32,7 +33,7 @@ args = parser.parse_args()
 
 def receive(interface):
     def printp(p):
-        print "Received:", str(p)
+        six.print_("Received:", str(p))
     sc.sniff(iface=interface, prn=lambda x: printp(x))
 
 def main():

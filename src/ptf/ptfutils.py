@@ -54,7 +54,7 @@ class EventDescriptor():
 
     def notify(self):
         try:
-            os.write(self.pipe_wr, "x")
+            os.write(self.pipe_wr, "x".encode('utf-8'))
         except OSError as e:
             logging.warn("Failed to notify EventDescriptor: %s", e)
 

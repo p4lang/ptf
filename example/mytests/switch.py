@@ -15,7 +15,7 @@
 """
 Thrift SAI interface basic tests
 """
-
+import six
 import time
 import logging
 
@@ -57,12 +57,12 @@ def switch_init(client):
     attr_list = switch_attr_list.attr_list
     for attribute in attr_list:
         if attribute.id == 0:
-            print "max ports: " + attribute.value.u32
+            six.print_("max ports: " + attribute.value.u32)
         elif attribute.id == 1:
             for x in attribute.value.objlist.object_id_list:
                 port_list.append(x)
         else:
-            print "unknown switch attribute"
+            six.print_("unknown switch attribute")
 
     attr_value = sai_thrift_attribute_value_t(mac='00:77:66:55:44:33')
     attr = sai_thrift_attribute_t(id=22, value=attr_value)
@@ -259,8 +259,8 @@ def sai_thrift_create_hostif(client, rif_or_port_id, intf_name):
 
 class L2AccessToAccessVlanTest(sai_base_test.SAIThriftDataplaneTest):
     def runTest(self):
-        print
-        print "Sending L2 packet port 1 -> port 2 [access vlan=10])"
+        six.print_()
+        six.print_("Sending L2 packet port 1 -> port 2 [access vlan=10])")
         switch_init(self.client)
         vlan_id = 10
         port1 = port_list[1]
@@ -304,7 +304,7 @@ class L2AccessToAccessVlanTest(sai_base_test.SAIThriftDataplaneTest):
 @disabled
 class L2AccessToTrunkVlanTest(sai_base_test.SAIThriftDataplaneTest):
     def runTest(self):
-        print "Sending L2 packet - port 1 -> port 2 [trunk vlan=10])"
+        six.print_("Sending L2 packet - port 1 -> port 2 [trunk vlan=10])")
         switch_init(self.client)
         vlan_id = 10
         port1 = port_list[1]
@@ -347,7 +347,7 @@ class L2AccessToTrunkVlanTest(sai_base_test.SAIThriftDataplaneTest):
 @group("group_1")
 class L2AccessToTrunkVlanTest_Mask(sai_base_test.SAIThriftDataplaneTest):
     def runTest(self):
-        print "Sending L2 packet - port 1 -> port 2 [trunk vlan=10])"
+        six.print_("Sending L2 packet - port 1 -> port 2 [trunk vlan=10])")
         switch_init(self.client)
         vlan_id = 10
         port1 = port_list[1]
@@ -395,8 +395,8 @@ class L2AccessToTrunkVlanTest_Mask(sai_base_test.SAIThriftDataplaneTest):
 @group("group_2")
 class L2TrunkToAccessVlanTest(sai_base_test.SAIThriftDataplaneTest):
     def runTest(self):
-        print
-        print "Sending L2 packet - port 1 -> port 2 [trunk vlan=10])"
+        six.print_()
+        six.print_("Sending L2 packet - port 1 -> port 2 [trunk vlan=10])")
         switch_init(self.client)
         vlan_id = 10
         port1 = port_list[1]

@@ -19,18 +19,18 @@
 # Antonin Bas (antonin@barefootnetworks.com)
 #
 #
-
+import six
 import sys
 import os
 import argparse
 import time
 import struct
 import socket
-import Queue
+import queue
 try:
     import nnpy
 except ImportError:
-    print "Cannot find nnpy package, please install"
+    six.print_("Cannot find nnpy package, please install")
     sys.exit(1)
 import threading
 import os
@@ -385,7 +385,7 @@ def main():
         iface_mgrs[(dev, port)] = i
 
     # Wait until all interfaces are up and ready
-    for iface in iface_mgrs.values():
+    for iface in six.itervalues(iface_mgrs):
         while True:
           if iface.is_ready():
               break

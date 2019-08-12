@@ -13,7 +13,7 @@ configuration.
 @todo Add "filters" for matching packets.  Actions supported
 for filters should include a callback or a counter
 """
-
+import six
 import sys
 import os
 import socket
@@ -27,13 +27,13 @@ from collections import namedtuple
 from threading import Thread
 from threading import Lock
 from threading import Condition
-import ptfutils
-import netutils
-import mask
+from . import ptfutils
+from . import netutils
+from . import mask
 import scapy.packet
 import scapy.utils
-from pcap_writer import PcapWriter
-from StringIO import StringIO
+from .pcap_writer import PcapWriter
+from io import StringIO
 
 try:
     import nnpy
@@ -42,7 +42,7 @@ except ImportError:
     with_nnpy = False
 
 if "linux" in sys.platform:
-    import afpacket
+    from . import afpacket
 else:
     import pcap
 
@@ -597,12 +597,12 @@ class DataPlane(Thread):
         Activity function for class
         """
         while not self.killed:
-            sockets = set([p.get_packet_source() for p in self.ports.values()])
+            sockets = set([p.get_packet_source() for p in  six.itervalues(self.ports)])
             sockets.add(self.waker)
             try:
                 sel_in, sel_out, sel_err = select.select(sockets, [], [], 1)
             except:
-                print sys.exc_info()
+                six.print_(sys.exc_info())
                 self.logger.error("Select error, exiting")
                 break
 
@@ -700,7 +700,7 @@ class DataPlane(Thread):
         """
         min_port_number = None
         min_time = float('inf')
-        for (port_id, queue) in self.packet_queues.items():
+        for (port_id, queue) in six.iteritems(self.packet_queues):
             if port_id[0] != device:
                 continue
             if queue and queue[0][1] < min_time:
@@ -765,14 +765,14 @@ class DataPlane(Thread):
                 # so we have to redirect stdout to a string.
                 sys.stdout = StringIO()
 
-                print "========== RECEIVED =========="
+                six.print_("========== RECEIVED ==========")
                 if isinstance(self.expected_packet, scapy.packet.Packet):
                     # Dissect this packet as if it were an instance of
                     # the expected packet's class.
                     scapy.packet.ls(self.expected_packet.__class__(self.packet))
-                    print '--'
+                    six.print_('--')
                 scapy.utils.hexdump(self.packet)
-                print "=============================="
+                six.print_("==============================")
 
                 return sys.stdout.getvalue()
             finally:
@@ -810,31 +810,31 @@ class DataPlane(Thread):
                 sys.stdout = StringIO()
 
                 if self.expected_packet is not None:
-                    print "========== EXPECTED =========="
+                    six.print_("========== EXPECTED ==========")
                     if isinstance(self.expected_packet, scapy.packet.Packet):
                         scapy.packet.ls(self.expected_packet)
-                        print '--'
+                        six.print_('--')
                         scapy.utils.hexdump(self.expected_packet)
                     elif isinstance(self.expected_packet, mask.Mask):
-                        print 'Mask:\n', str(self.expected_packet)
+                        six.print_('Mask:\n', str(self.expected_packet))
                     else:
                         scapy.utils.hexdump(self.expected_packet)
 
-                print "========== RECEIVED =========="
+                six.print_("========== RECEIVED ==========")
                 if self.recent_packets:
-                    print "%d total packets. Displaying most recent %d packets:" \
-                            % (self.packet_count, len(self.recent_packets))
+                    six.print_("%d total packets. Displaying most recent %d packets:" \
+                            % (self.packet_count, len(self.recent_packets)))
                     for packet in self.recent_packets:
-                        print "------------------------------"
+                        six.print_("------------------------------")
                         if isinstance(self.expected_packet, scapy.packet.Packet):
                             # Dissect this packet as if it were an instance of
                             # the expected packet's class.
                             scapy.packet.ls(self.expected_packet.__class__(packet))
-                            print '--'
+                            six.print_('--')
                         scapy.utils.hexdump(packet)
                 else:
-                    print "%d total packets." % self.packet_count
-                print "=============================="
+                    six.print_("%d total packets." % self.packet_count)
+                six.print_("==============================")
 
                 return sys.stdout.getvalue()
             finally:
@@ -949,7 +949,7 @@ class DataPlane(Thread):
         """
         Drop any queued packets.
         """
-        for port_id in self.packet_queues.keys():
+        for port_id in six.iterkeys(self.packet_queues):
             self.packet_queues[port_id] = []
 
     def start_pcap(self, filename):

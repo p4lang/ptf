@@ -1945,7 +1945,8 @@ def simple_igmp_packet(pktlen=300,
     @param ip_ttl IP TTL
     @param ip_id IP ID
     @param igmp_type IGMP type
-    @param igmp_gaddr IGMP gaddr
+    @param igmp_gaddr IGMP group addr
+    @param igmp_mrtime IGMP maximum response time
     @param inner_frame The inner Ethernet frame
 
     Generates a simple IGMP packet. Users shouldn't assume anything about

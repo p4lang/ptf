@@ -116,3 +116,16 @@ if not config.get("disable_nvgre", False):
         ptf.enable_logging()
         logging.warn("NVGRE support not found in Scapy")
         pass
+
+IGMP = None
+if not config.get("disable_igmp", False):
+    try:
+        ptf.disable_logging()
+        scapy.main.load_contrib("igmp")
+        IGMP = scapy.contrib.igmp.IGMP
+        ptf.enable_logging()
+        logging.info("IGMP support found in Scapy")
+    except:
+        ptf.enable_logging()
+        logging.warn("IGMP support not found in Scapy")
+        pass

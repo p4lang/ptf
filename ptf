@@ -92,6 +92,7 @@ config_default = {
     "disable_geneve"     : False,
     "disable_mpls"       : False,
     "disable_nvgre"      : False,
+    "disable_igmp"       : False,
     "qlen"               : 100,
     "test_case_timeout"  : None,
 
@@ -290,7 +291,9 @@ be subtracted from the result by prefixing them with the '^' character.  """
                        help="Disable MPLS (do not import from scapy even if supported)")
     group.add_argument("--disable-nvgre", action="store_true",
                        help="Disable NVGRE (do not import from scapy even if supported)")
-
+    group.add_argument("--disable-igmp", action="store_true",
+                       help="Disable IGMP (do not import from scapy even if supported)")
+                       
     group = parser.add_argument_group("Socket options")
     group.add_argument("--socket-recv-size", type=int,
                        help="When using raw sockets, specify the size of the buffer used to receive packets with socket.recv.")

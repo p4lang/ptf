@@ -1571,6 +1571,75 @@ def simple_icmpv6_packet(pktlen=100,
 
     return pkt
 
+def simple_ipv6_mld_packet(pktlen=300,
+                           eth_dst='00:01:02:03:04:05',
+                           eth_src='00:06:07:08:09:0a',
+                           dl_vlan_enable=False,
+                           vlan_vid=0,
+                           vlan_pcp=0,
+                           dl_vlan_cfi=0,
+                           ipv6_src='1::2',
+                           ipv6_dst='3::4',
+                           ipv6_fl=0,
+                           ipv6_tc=0,
+                           ipv6_ecn=None,
+                           ipv6_dscp=None,
+                           ipv6_hlim=64,
+                           mld_type=130,
+                           mld_mladdr='ff02::16',
+                           mld_mrd=64,
+                           inner_frame = None):
+    """
+    Return a simple dataplane IPv6 MLD packet
+
+    Supports a few parameters:
+    @param len Length of packet in bytes w/o CRC
+    @param eth_dst Destination MAC
+    @param eth_src Source MAC
+    @param dl_vlan_enable True if the packet is with vlan, False otherwise
+    @param vlan_vid VLAN ID
+    @param vlan_pcp VLAN priority
+    @param ipv6_src IPv6 source
+    @param ipv6_dst IPv6 destination
+    @param ipv6_fl IPv6 flowlabel
+    @param ipv6_tc IPv6 traffic class
+    @param ipv6_ecn IPv6 traffic class ECN
+    @param ipv6_dscp IPv6 traffic class DSCP
+    @param ipv6_hlim IPv6 hop limit
+    @param mld_type IPv6 MLD type
+    @param mld_mladdr IPv6 MLD multicast address
+    @param mld_mrd IPv6 MLD maximum response delay
+    @param inner_frame The inner Ethernet frame
+
+    Generates a simple IPv6 MLD packet. Users shouldn't assume anything about
+    this packet other than that it is a valid ethernet/IPv6/MLD frame.
+    """
+
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
+    # Next header should be 58 for IPv6 MLD
+    next_header = 58
+
+    # Note Dot1Q.id is really CFI
+    if (dl_vlan_enable):
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
+            scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim, nh=next_header)
+    else:
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+              scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim, nh=next_header)
+
+    pkt = pkt / ICMPv6MLReport(type=mld_type, mladdr=mld_mladdr, mrd=mld_mrd)
+
+    if inner_frame:
+        pkt = pkt / inner_frame
+    else:
+        pkt = pkt / simple_tcp_packet(pktlen = pktlen - len(pkt))
+
+    return pkt
+
 def simple_arp_packet(pktlen=60,
                       eth_dst='ff:ff:ff:ff:ff:ff',
                       eth_src='00:06:07:08:09:0a',

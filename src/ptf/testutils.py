@@ -859,7 +859,8 @@ def simple_gre_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+        inner_frame_bytes = bytearray(bytes(inner_fram))
+        if ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['GRE'].proto = 0x86DD
     else:
         pkt = pkt / scapy.IP()
@@ -954,7 +955,8 @@ def simple_grev6_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+        inner_frame_bytes = bytearray(bytes(inner_fram))
+        if ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['GRE'].proto = 0x86DD
     else:
         pkt = pkt / scapy.IP()
@@ -1381,9 +1383,10 @@ def simple_ipv4ip_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x40):
+        inner_frame_bytes = bytearray(bytes(inner_fram))
+        if ((inner_frame_bytes[0] & 0xF0) == 0x40):
             pkt['IP'].proto = 4
-        elif ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+        elif ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['IP'].proto = 41
     else:
         pkt = pkt / scapy.IP()
@@ -1446,9 +1449,10 @@ def simple_ipv6ip_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x40):
+        inner_frame_bytes = bytearray(bytes(inner_fram))
+        if ((inner_frame_bytes[0] & 0xF0) == 0x40):
             pkt['IPv6'].nh = 4
-        elif ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+        elif ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['IPv6'].nh = 41
     else:
         pkt = pkt / scapy.IP()
@@ -2408,8 +2412,8 @@ def hex_dump_buffer(src, length=16):
     return ''.join(result)
 
 def format_packet(pkt):
-    return "Packet length %d \n%s" % (len(str(pkt)),
-                                      hex_dump_buffer(str(pkt)))
+    return "Packet length %d \n%s" % (len(bytes(pkt)),
+                                      hex_dump_buffer(bytes(pkt)))
 
 def inspect_packet(pkt):
     """
@@ -2498,7 +2502,7 @@ def send_packet(test, port_id, pkt, count=1):
     or a tuple of 2 integers (device_number, port_number)
     """
     device, port = port_to_tuple(port_id)
-    pkt = str(pkt)
+    pkt = bytes(pkt)
     sent = 0
 
     for n in range(count):
@@ -2741,7 +2745,7 @@ def verify_packet_prefix(test, pkt, port, len, device_number=0):
     Check that an expected packet is received
     """
     logging.debug("Checking for pkt on port %r", port)
-    result = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=str(pkt)[:len])
+    result = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=bytes(pkt)[:len])
     if isinstance(result, test.dataplane.PollFailure):
         test.fail("Did not receive expected packet on port %r\n.%s"
                     % (port, result.format()))

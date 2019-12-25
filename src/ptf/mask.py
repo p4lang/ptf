@@ -6,7 +6,7 @@ from . import packet as scapy
 class Mask:
     def __init__(self, exp_pkt, ignore_extra_bytes=False):
         self.exp_pkt = exp_pkt
-        self.size = len(str(exp_pkt))
+        self.size = len(exp_pkt)
         self.valid = True
         self.mask = [0xff] * self.size
         self.ignore_extra_bytes = ignore_extra_bytes
@@ -16,7 +16,7 @@ class Mask:
         # a very naive but simple method
         # we do it bit by bit :)
         for idx in range(offset, offset + bitwidth):
-            offsetB = idx / 8
+            offsetB = idx // 8
             offsetb = idx % 8
             self.mask[offsetB] = self.mask[offsetB] & (~(1 << (7 - offsetb)))
 
@@ -53,15 +53,15 @@ class Mask:
 
     def pkt_match(self, pkt):
         # just to be on the safe side
-        pkt = str(pkt)
+        pkt = bytearray(bytes(pkt))
         # we fail if we don't match on sizes, or if ignore_extra_bytes is set,
         # fail if we have not received at least size bytes
         if (not self.ignore_extra_bytes and len(pkt) != self.size) or \
            len(pkt) < self.size:
             return False
-        exp_pkt = str(self.exp_pkt)
+        exp_pkt = bytearray(bytes(self.exp_pkt))
         for i in range(self.size):
-            if (ord(exp_pkt[i]) & self.mask[i]) != (ord(pkt[i]) & self.mask[i]):
+            if (exp_pkt[i] & self.mask[i]) != (pkt[i] & self.mask[i]):
                 return False
         return True
 
@@ -91,8 +91,8 @@ def utest():
     assert(m.pkt_match(p1))
     exp_pkt = "\x01\x02\x03\x04\x05\x06"
     pkt     = "\x01\x00\x00\x04\x05\x06\x07\x08"
-    m1 = Mask(exp_pkt, ignore_extra_bytes=True)
+    m1 = Mask(exp_pkt.encode(), ignore_extra_bytes=True)
     m1.set_do_not_care(8, 16)
-    assert(m1.pkt_match(pkt))
+    assert(m1.pkt_match(pkt.encode()))
 
 utest()

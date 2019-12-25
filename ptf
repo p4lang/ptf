@@ -198,8 +198,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
                 parser.error("invalid value for --test-dir: directory %s does not exist" % values)
             setattr(namespace, self.dest, values)
 
-    parser = argparse.ArgumentParser(version="ptf 0.1",
-                                     usage=usage,
+    parser = argparse.ArgumentParser(usage=usage,
                                      description=description)
 
     # Set up default values
@@ -505,8 +504,9 @@ def test_params_parse(config):
             "No test params were provided with '--test-params' / '-t'")
         return None
     params_str = "class _TestParams:\n    " + test_params
+    namespace = {}
     try:
-        exec(params_str)
+        exec(params_str, namespace)
     except:
         logging.error(
             "Error when parsing test params "
@@ -516,7 +516,7 @@ def test_params_parse(config):
         return None
     params = {}
     logging.debug("Parsed test parameters:")
-    for k, v in list(vars(_TestParams).items()):
+    for k, v in list(vars(namespace['_TestParams']).items()):
         if k[:2] != "__":
             params[k] = v
             logging.debug("\t*{}={}".format(k, v))

@@ -67,8 +67,8 @@ def match_exp_pkt(exp_pkt, pkt):
         if not exp_pkt.is_valid():
             return False
         return exp_pkt.pkt_match(pkt)
-    e = str(exp_pkt)
-    p = str(pkt)
+    e = bytes(exp_pkt)
+    p = bytes(pkt)
     if len(e) < 60:
         p = p[:len(e)]
     return e == p
@@ -816,7 +816,7 @@ class DataPlane(Thread):
                         print('--')
                         scapy.utils.hexdump(self.expected_packet)
                     elif isinstance(self.expected_packet, mask.Mask):
-                        print('Mask:\n', str(self.expected_packet))
+                        print('Mask:\n', bytes(self.expected_packet))
                     else:
                         scapy.utils.hexdump(self.expected_packet)
 

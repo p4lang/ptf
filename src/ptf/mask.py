@@ -1,7 +1,7 @@
-from cStringIO import StringIO
+from io import StringIO
 import sys
 from scapy.utils import hexdump
-import packet as scapy
+from . import packet as scapy
 
 class Mask:
     def __init__(self, exp_pkt, ignore_extra_bytes=False):
@@ -15,7 +15,7 @@ class Mask:
     def set_do_not_care(self, offset, bitwidth):
         # a very naive but simple method
         # we do it bit by bit :)
-        for idx in xrange(offset, offset + bitwidth):
+        for idx in range(offset, offset + bitwidth):
             offsetB = idx / 8
             offsetb = idx % 8
             self.mask[offsetB] = self.mask[offsetB] & (~(1 << (7 - offsetb)))
@@ -23,7 +23,7 @@ class Mask:
     def set_do_not_care_scapy(self, hdr_type, field_name):
         if hdr_type not in self.exp_pkt:
             self.valid = False
-            print "Unknown header type"
+            print("Unknown header type")
             return
         try:
             fields_desc = hdr_type.fields_desc
@@ -60,7 +60,7 @@ class Mask:
            len(pkt) < self.size:
             return False
         exp_pkt = str(self.exp_pkt)
-        for i in xrange(self.size):
+        for i in range(self.size):
             if (ord(exp_pkt[i]) & self.mask[i]) != (ord(pkt[i]) & self.mask[i]):
                 return False
         return True
@@ -70,12 +70,12 @@ class Mask:
         old_stdout = sys.stdout
         sys.stdout = buffer = StringIO()
         hexdump(self.exp_pkt)
-        print 'mask =',
+        print('mask =', end=' ')
         for i in range(0, len(self.mask), 16):
-            if i > 0: print '%04x  ' % i,
-            print ' '.join('%02x' % (x) for x in self.mask[i : i+8]),
-            print '',
-            print ' '.join('%02x' % (x) for x in self.mask[i+8 : i+16])
+            if i > 0: print('%04x  ' % i, end=' ')
+            print(' '.join('%02x' % (x) for x in self.mask[i : i+8]), end=' ')
+            print('', end=' ')
+            print(' '.join('%02x' % (x) for x in self.mask[i+8 : i+16]))
         sys.stdout = old_stdout
         return buffer.getvalue()
 

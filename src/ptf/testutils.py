@@ -4,7 +4,7 @@ import logging
 import types
 import time
 import re
-import packet as scapy
+from . import packet as scapy
 
 import ptf
 import ptf.dataplane
@@ -151,7 +151,7 @@ def simple_tcp_packet_ext_taglist(pktlen=100,
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, frag=ip_frag, options=ip_options)/ \
                 tcp_hdr
 
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
 
     return pkt
 
@@ -371,7 +371,7 @@ def simple_udp_packet(pktlen=100,
     if udp_payload:
         pkt = pkt/udp_payload
 
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
 
     return pkt
 
@@ -1737,7 +1737,7 @@ def simple_eth_raw_packet_with_taglist(pktlen=60,
 
     # Fill payload length
     pkt[Dot1Q:len(dl_tpid_list)].type = pktlen - len(pkt)
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
     return pkt
 
 def simple_ip_packet(pktlen=100,
@@ -1799,7 +1799,7 @@ def simple_ip_packet(pktlen=100,
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, proto=ip_proto, options=ip_options)
 
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
 
     return pkt
 
@@ -1851,7 +1851,7 @@ def simple_ip_only_packet(pktlen=100,
     else:
         pkt = scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, options=ip_options) / tcp_hdr
 
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
 
     return pkt
 
@@ -1972,7 +1972,7 @@ def simple_qinq_tcp_packet(pktlen=100,
           scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl)/ \
           scapy.TCP(sport=tcp_sport, dport=tcp_dport)
 
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
 
     return pkt
 
@@ -2399,7 +2399,7 @@ def hex_dump_buffer(src, length=16):
     @returns A string showing the hex dump
     """
     result = ["\n"]
-    for i in xrange(0, len(src), length):
+    for i in range(0, len(src), length):
        chars = src[i:i+length]
        hex = ' '.join(["%02X" % ord(x) for x in chars])
        printable = ''.join(["%s" % ((ord(x) <= 127 and
@@ -2416,7 +2416,7 @@ def inspect_packet(pkt):
     Wrapper around scapy's show() method.
     @returns A string showing the dissected packet.
     """
-    from cStringIO import StringIO
+    from io import StringIO
     out = None
     backup = sys.stdout
     try:
@@ -2480,7 +2480,7 @@ def ptf_ports(num=None):
     return ports[:num]
 
 def port_to_tuple(port):
-    if type(port) is int or type(port) is long:
+    if type(port) is int or type(port) is int:
         return 0, port
     if type(port) is tuple:
         return port
@@ -2609,7 +2609,7 @@ def verify_no_packet_any(test, pkt, ports=[], device_number=0):
         if device != device_number:
             continue
         if port in ports:
-            print 'verifying packet on port device', device_number, 'port', port
+            print('verifying packet on port device', device_number, 'port', port)
             verify_no_packet(test, pkt, (device, port))
 
 def verify_packets_any(test, pkt, ports=[], device_number=0):

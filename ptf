@@ -168,7 +168,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
                         try:
                             p1, p2 = port.split("-", 1)
                             p1, p2 = int(p1), int(p2)
-                            for p in xrange(p1, p2 + 1):  # p2 included
+                            for p in range(p1, p2 + 1):  # p2 included
                                 port_set.add(p)
                         except:
                             raise ValueError("")
@@ -244,7 +244,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
     group = parser.add_argument_group("Logging options")
     group.add_argument("--log-file", help="Name of log file")
     group.add_argument("--log-dir", help="Name of log directory")
-    dbg_lvl_names = sorted(DEBUG_LEVELS.keys(), key=lambda x: DEBUG_LEVELS[x])
+    dbg_lvl_names = sorted(list(DEBUG_LEVELS.keys()), key=lambda x: DEBUG_LEVELS[x])
     group.add_argument("--debug", choices=dbg_lvl_names,
                        help="Debug lvl: debug, info, warning, error, critical")
     group.add_argument("--verbose", action="store_const", dest="debug",
@@ -307,7 +307,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
 
     # Convert args from a Namespace to a plain dictionary
     config = config_default.copy()
-    for key in config.keys():
+    for key in list(config.keys()):
         config[key] = getattr(args, key)
 
     return (config, args)
@@ -410,7 +410,7 @@ def load_test_modules(config):
             modname = os.path.splitext(os.path.basename(filename))[0]
 
             try:
-                if sys.modules.has_key(modname):
+                if modname in sys.modules:
                     mod = sys.modules[modname]
                 else:
                     mod = imp.load_module(modname, *imp.find_module(modname, [root]))
@@ -420,11 +420,11 @@ def load_test_modules(config):
 
 
             # Find all testcases defined in the module
-            tests = dict((k, v) for (k, v) in mod.__dict__.items() if type(v) == type and
+            tests = dict((k, v) for (k, v) in list(mod.__dict__.items()) if type(v) == type and
                                                                       issubclass(v, unittest.TestCase) and
                                                                       hasattr(v, "runTest"))
             if tests:
-                for (testname, test) in tests.items():
+                for (testname, test) in list(tests.items()):
                     # Set default annotation values
                     if not hasattr(test, "_groups"):
                         test._groups = []
@@ -465,8 +465,8 @@ def prune_tests(test_specs, test_modules):
         else:
             negated = False
 
-        for (modname, (mod, tests)) in test_modules.items():
-            for (testname, test) in tests.items():
+        for (modname, (mod, tests)) in list(test_modules.items()):
+            for (testname, test) in list(tests.items()):
                 if e in test._groups or e == "%s.%s" % (modname, testname):
                     result.setdefault(modname, (mod, OrderedDict()))
                     if not negated:
@@ -506,7 +506,7 @@ def test_params_parse(config):
         return None
     params_str = "class _TestParams:\n    " + test_params
     try:
-        exec params_str
+        exec(params_str)
     except:
         logging.error(
             "Error when parsing test params "
@@ -516,7 +516,7 @@ def test_params_parse(config):
         return None
     params = {}
     logging.debug("Parsed test parameters:")
-    for k, v in vars(_TestParams).items():
+    for k, v in list(vars(_TestParams).items()):
         if k[:2] != "__":
             params[k] = v
             logging.debug("\t*{}={}".format(k, v))
@@ -564,22 +564,22 @@ if config["list"]:
     mod_count = 0
     test_count = 0
     all_groups = set()
-    print """\
+    print("""\
 Tests are shown grouped by module. If a test is in any groups beyond "standard"
-and its module's group then they are shown in parentheses."""
-    print
-    print """\
+and its module's group then they are shown in parentheses.""")
+    print()
+    print("""\
 Tests marked with '!' are disabled because they are experimental, special-purpose,
 or are too long to be run normally. These are not part of the "standard" test
-group or their module's test group."""
-    print
-    print "Test List:"
-    for (modname, (mod, tests)) in test_modules.items():
+group or their module's test group.""")
+    print()
+    print("Test List:")
+    for (modname, (mod, tests)) in list(test_modules.items()):
         mod_count += 1
         desc = (mod.__doc__ or "No description").strip().split('\n')[0]
         start_str = "  Module " + mod.__name__ + ": "
-        print start_str + _space_to(22, start_str) + desc
-        for (testname, test) in tests.items():
+        print(start_str + _space_to(22, start_str) + desc)
+        for (testname, test) in list(tests.items()):
             try:
                 desc = (test.__doc__ or "").strip()
                 desc = desc.split('\n')[0]
@@ -596,13 +596,13 @@ group or their module's test group."""
                                        testname)
             if len(start_str) > 22:
                 desc = "\n" + _space_to(22, "") + desc
-            print start_str + _space_to(22, start_str) + desc
+            print(start_str + _space_to(22, start_str) + desc)
             test_count += 1
-        print
-    print "%d modules shown with a total of %d tests" % \
-        (mod_count, test_count)
-    print
-    print "Test groups: %s" % (', '.join(sorted(all_groups)))
+        print()
+    print("%d modules shown with a total of %d tests" % \
+        (mod_count, test_count))
+    print()
+    print("Test groups: %s" % (', '.join(sorted(all_groups))))
 
     sys.exit(0)
 
@@ -610,15 +610,15 @@ test_modules = prune_tests(test_specs, test_modules)
 
 # Check if test list is requested; display and exit if so
 if config["list_test_names"]:
-    for (modname, (mod, tests)) in test_modules.items():
-        for (testname, test) in tests.items():
-            print "%s.%s" % (modname, testname)
+    for (modname, (mod, tests)) in list(test_modules.items()):
+        for (testname, test) in list(tests.items()):
+            print("%s.%s" % (modname, testname))
     sys.exit(0)
 
 # Generate the test suite
 test_suite = []
-for (modname, (mod, tests)) in test_modules.items():
-    for (testname, test) in tests.items():
+for (modname, (mod, tests)) in list(test_modules.items()):
+    for (testname, test) in list(tests.items()):
         test_suite.append(test())
 if config["test_order"] == "lexico":
     test_suite.sort()
@@ -691,7 +691,7 @@ if __name__ == "__main__":
     # Set up the dataplane
     ptf.dataplane_instance = ptf.dataplane.DataPlane(config)
     pcap_setup(config)
-    for port_id, ifname in config["port_map"].items():
+    for port_id, ifname in list(config["port_map"].items()):
         device, port = port_id
         ptf.dataplane_instance.port_add(ifname, device, port)
 
@@ -746,7 +746,7 @@ if __name__ == "__main__":
         if ptf.testutils.skipped_test_count == 1:
             ts = " test"
         logging.info("Skipped " + str(ptf.testutils.skipped_test_count) + ts)
-        print("Skipped " + str(ptf.testutils.skipped_test_count) + ts)
+        print(("Skipped " + str(ptf.testutils.skipped_test_count) + ts))
     logging.info("*** TEST RUN END  : " + time.asctime())
 
     # Shutdown the dataplane
@@ -757,23 +757,23 @@ if __name__ == "__main__":
     profiler_teardown(profiler)
 
     if run_failures or run_errors:
-        print
-        print "******************************************"
-        print "ATTENTION: SOME TESTS DID NOT PASS!!!"
+        print()
+        print("******************************************")
+        print("ATTENTION: SOME TESTS DID NOT PASS!!!")
         if (not config["xunit"]) and run_failures:
-            print
-            print "The following tests failed:"
-            print ", ".join([f[0].__class__.__name__ for f in run_failures])
+            print()
+            print("The following tests failed:")
+            print(", ".join([f[0].__class__.__name__ for f in run_failures]))
         if (not config["xunit"]) and run_errors:
-            print
-            print "The following tests errored:"
-            print ", ".join([f[0].__class__.__name__ for f in run_errors])
+            print()
+            print("The following tests errored:")
+            print(", ".join([f[0].__class__.__name__ for f in run_errors]))
         if (not config["xunit"]) and run_timeouts:
-            print
-            print "The following tests errored because of a timeout:"
-            print ", ".join([f[0].__class__.__name__ for f in run_timeouts])
-        print
-        print "******************************************"
+            print()
+            print("The following tests errored because of a timeout:")
+            print(", ".join([f[0].__class__.__name__ for f in run_timeouts]))
+        print()
+        print("******************************************")
         # exit(1) hangs sometimes
         os._exit(1)
     if ptf.testutils.skipped_test_count > 0 and config["fail_skipped"]:

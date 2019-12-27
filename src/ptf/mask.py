@@ -1,3 +1,4 @@
+from __future__ import print_function
 from io import StringIO
 import sys
 from scapy.utils import hexdump

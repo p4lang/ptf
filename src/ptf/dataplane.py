@@ -33,7 +33,14 @@ from . import mask
 import scapy.packet
 import scapy.utils
 from .pcap_writer import PcapWriter
-from io import StringIO
+# Python3 doesn't have support for StringIO.StringIO
+# Python2 does have support for both but io.StringIO
+# only accepts unicode which is not the usual str code
+# used by print statements in python2.x
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 try:
     import nnpy

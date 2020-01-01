@@ -2420,7 +2420,10 @@ def inspect_packet(pkt):
     Wrapper around scapy's show() method.
     @returns A string showing the dissected packet.
     """
-    from io import StringIO
+    try:
+        from StringIO import StringIO
+    except ImportError:
+        from io import StringIO
     out = None
     backup = sys.stdout
     try:

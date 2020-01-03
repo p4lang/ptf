@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
 
 sudo python ptf_nn/ptf_nn_agent.py \
-    --device-socket 0@tcp://127.0.0.1:10001 -i 0-1@veth0 \
-    &>/dev/null &
+    --device-socket 0@tcp://127.0.0.1:10001 -i 0-1@veth0 &
 
 sleep 5
 
 sudo python ptf_nn/ptf_nn_agent.py \
-    --device-socket 1@tcp://127.0.0.1:10002 -i 1-1@veth3 \
-    &>/dev/null &
+    --device-socket 1@tcp://127.0.0.1:10002 -i 1-1@veth3 &
 
 sleep 5
 
-sudo python ptf_nn/ptf_nn_test_bridge.py -ifrom veth1 -ito veth2 \
-    &>/dev/null &
+sudo python ptf_nn/ptf_nn_test_bridge.py -ifrom veth1 -ito veth2 &
 
 sleep 5
 

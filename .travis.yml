@@ -26,6 +26,7 @@ before_install:
   - bash CI/travis/install-nanomsg.sh
   - sudo ldconfig
   - bash CI/travis/install-nnpy.sh
+  - sudo pip install six
   - sudo pip3 install nose2
 
 install:

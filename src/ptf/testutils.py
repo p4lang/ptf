@@ -10,6 +10,7 @@ import ptf
 import ptf.dataplane
 import ptf.parse
 import ptf.ptfutils
+from six import StringIO
 
 global skipped_test_count
 skipped_test_count = 0
@@ -859,7 +860,7 @@ def simple_gre_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        inner_frame_bytes = bytearray(bytes(inner_fram))
+        inner_frame_bytes = bytearray(inner_frame)
         if ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['GRE'].proto = 0x86DD
     else:
@@ -955,7 +956,7 @@ def simple_grev6_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        inner_frame_bytes = bytearray(bytes(inner_fram))
+        inner_frame_bytes = bytearray(inner_frame)
         if ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['GRE'].proto = 0x86DD
     else:
@@ -1383,7 +1384,7 @@ def simple_ipv4ip_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        inner_frame_bytes = bytearray(bytes(inner_fram))
+        inner_frame_bytes = bytearray(inner_frame)
         if ((inner_frame_bytes[0] & 0xF0) == 0x40):
             pkt['IP'].proto = 4
         elif ((inner_frame_bytes[0] & 0xF0) == 0x60):
@@ -1449,7 +1450,7 @@ def simple_ipv6ip_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        inner_frame_bytes = bytearray(bytes(inner_fram))
+        inner_frame_bytes = bytearray(inner_frame)
         if ((inner_frame_bytes[0] & 0xF0) == 0x40):
             pkt['IPv6'].nh = 4
         elif ((inner_frame_bytes[0] & 0xF0) == 0x60):
@@ -2420,10 +2421,6 @@ def inspect_packet(pkt):
     Wrapper around scapy's show() method.
     @returns A string showing the dissected packet.
     """
-    try:
-        from StringIO import StringIO
-    except ImportError:
-        from io import StringIO
     out = None
     backup = sys.stdout
     try:

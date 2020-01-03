@@ -1,14 +1,5 @@
 from __future__ import print_function
-# Python3 doesn't have support for StringIO.StringIO
-# Python2 does have support for both but io.StringIO
-# only accepts unicode which is not the usual str code
-# used by print statements in python2.x Hence the below
-# import logic
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-
+from six import StringIO
 import sys
 from scapy.utils import hexdump
 from . import packet as scapy

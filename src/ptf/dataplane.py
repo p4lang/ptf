@@ -33,14 +33,7 @@ from . import mask
 import scapy.packet
 import scapy.utils
 from .pcap_writer import PcapWriter
-# Python3 doesn't have support for StringIO.StringIO
-# Python2 does have support for both but io.StringIO
-# only accepts unicode which is not the usual str code
-# used by print statements in python2.x
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from six import StringIO
 
 try:
     import nnpy
@@ -318,7 +311,7 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         msg = struct.pack("<iii%ds" % len(packet), self.MSG_TYPE_PACKET_IN,
                           port_number, len(packet), packet)
         # because nnpy expects unicode when using str
-        msg = list(msg)
+        msg = msg.decode().encode("utf-8")
         self.socket.send(msg)
         # nnpy does not return the number of bytes sent
         return len(packet)

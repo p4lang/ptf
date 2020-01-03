@@ -204,6 +204,8 @@ be subtracted from the result by prefixing them with the '^' character.  """
     # Set up default values
     parser.set_defaults(**config_default)
 
+    parser.add_argument('--version', action='version', version="ptf 0.1")
+
     parser.add_argument("test_specs", nargs="*",
                         help="Tests / Groups to run")
 
@@ -306,7 +308,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
 
     # Convert args from a Namespace to a plain dictionary
     config = config_default.copy()
-    for key in list(config.keys()):
+    for key in config.keys():
         config[key] = getattr(args, key)
 
     return (config, args)
@@ -419,11 +421,11 @@ def load_test_modules(config):
 
 
             # Find all testcases defined in the module
-            tests = dict((k, v) for (k, v) in list(mod.__dict__.items()) if type(v) == type and
+            tests = dict((k, v) for (k, v) in mod.__dict__.items() if type(v) == type and
                                                                       issubclass(v, unittest.TestCase) and
                                                                       hasattr(v, "runTest"))
             if tests:
-                for (testname, test) in list(tests.items()):
+                for (testname, test) in tests.items():
                     # Set default annotation values
                     if not hasattr(test, "_groups"):
                         test._groups = []
@@ -464,8 +466,8 @@ def prune_tests(test_specs, test_modules):
         else:
             negated = False
 
-        for (modname, (mod, tests)) in list(test_modules.items()):
-            for (testname, test) in list(tests.items()):
+        for (modname, (mod, tests)) in test_modules.items():
+            for (testname, test) in tests.items():
                 if e in test._groups or e == "%s.%s" % (modname, testname):
                     result.setdefault(modname, (mod, OrderedDict()))
                     if not negated:
@@ -574,7 +576,7 @@ or are too long to be run normally. These are not part of the "standard" test
 group or their module's test group.""")
     print()
     print("Test List:")
-    for (modname, (mod, tests)) in list(test_modules.items()):
+    for (modname, (mod, tests)) in test_modules.items():
         mod_count += 1
         desc = (mod.__doc__ or "No description").strip().split('\n')[0]
         start_str = "  Module " + mod.__name__ + ": "
@@ -610,15 +612,15 @@ test_modules = prune_tests(test_specs, test_modules)
 
 # Check if test list is requested; display and exit if so
 if config["list_test_names"]:
-    for (modname, (mod, tests)) in list(test_modules.items()):
-        for (testname, test) in list(tests.items()):
+    for (modname, (mod, tests)) in test_modules.items():
+        for (testname, test) in tests.items():
             print("%s.%s" % (modname, testname))
     sys.exit(0)
 
 # Generate the test suite
 test_suite = []
-for (modname, (mod, tests)) in list(test_modules.items()):
-    for (testname, test) in list(tests.items()):
+for (modname, (mod, tests)) in test_modules.items():
+    for (testname, test) in tests.items():
         test_suite.append(test())
 if config["test_order"] == "lexico":
     test_suite.sort()
@@ -691,7 +693,7 @@ if __name__ == "__main__":
     # Set up the dataplane
     ptf.dataplane_instance = ptf.dataplane.DataPlane(config)
     pcap_setup(config)
-    for port_id, ifname in list(config["port_map"].items()):
+    for port_id, ifname in config["port_map"].items():
         device, port = port_id
         ptf.dataplane_instance.port_add(ifname, device, port)
 
@@ -746,7 +748,7 @@ if __name__ == "__main__":
         if ptf.testutils.skipped_test_count == 1:
             ts = " test"
         logging.info("Skipped " + str(ptf.testutils.skipped_test_count) + ts)
-        print(("Skipped " + str(ptf.testutils.skipped_test_count) + ts))
+        print("Skipped " + str(ptf.testutils.skipped_test_count) + ts)
     logging.info("*** TEST RUN END  : " + time.asctime())
 
     # Shutdown the dataplane

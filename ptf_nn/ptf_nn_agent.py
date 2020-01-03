@@ -26,7 +26,6 @@ import argparse
 import time
 import struct
 import socket
-import queue
 try:
     import nnpy
 except ImportError:

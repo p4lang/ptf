@@ -10,6 +10,7 @@ import ptf
 import ptf.dataplane
 import ptf.parse
 import ptf.ptfutils
+import codecs
 from six import StringIO
 
 global skipped_test_count
@@ -151,8 +152,7 @@ def simple_tcp_packet_ext_taglist(pktlen=100,
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, frag=ip_frag, options=ip_options)/ \
                 tcp_hdr
-
-    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
 
     return pkt
 
@@ -372,7 +372,7 @@ def simple_udp_packet(pktlen=100,
     if udp_payload:
         pkt = pkt/udp_payload
 
-    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
 
     return pkt
 
@@ -1742,7 +1742,7 @@ def simple_eth_raw_packet_with_taglist(pktlen=60,
 
     # Fill payload length
     pkt[Dot1Q:len(dl_tpid_list)].type = pktlen - len(pkt)
-    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
     return pkt
 
 def simple_ip_packet(pktlen=100,
@@ -1804,7 +1804,7 @@ def simple_ip_packet(pktlen=100,
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, proto=ip_proto, options=ip_options)
 
-    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
 
     return pkt
 
@@ -1856,7 +1856,7 @@ def simple_ip_only_packet(pktlen=100,
     else:
         pkt = scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, options=ip_options) / tcp_hdr
 
-    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
 
     return pkt
 
@@ -1977,7 +1977,7 @@ def simple_qinq_tcp_packet(pktlen=100,
           scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl)/ \
           scapy.TCP(sport=tcp_sport, dport=tcp_dport)
 
-    pkt = pkt/("".join([chr(x % 256) for x in range(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
 
     return pkt
 
@@ -2405,10 +2405,10 @@ def hex_dump_buffer(src, length=16):
     """
     result = ["\n"]
     for i in range(0, len(src), length):
-       chars = src[i:i+length]
-       hex = ' '.join(["%02X" % ord(x) for x in chars])
-       printable = ''.join(["%s" % ((ord(x) <= 127 and
-                                     FILTER[ord(x)]) or '.') for x in chars])
+       chars = bytearray(src[i:i+length])
+       hex = ' '.join(["%02X" % x for x in chars])
+       printable = ''.join(["%s" % ((x <= 127 and
+                                     FILTER[x]) or '.') for x in chars])
        result.append("%04x  %-*s  %s\n" % (i, length*3, hex, printable))
     return ''.join(result)
 

@@ -133,6 +133,7 @@ class RemovePort(DataplaneBaseTest):
         testutils.send_packet(self, (0, 1), pkt)
         print("packet sent")
         testutils.verify_packet(self, pkt, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
 
 class SimpleTcpPacketTest(DataplaneBaseTest):
     def __init__(self):
@@ -145,5 +146,61 @@ class SimpleTcpPacketTest(DataplaneBaseTest):
         testutils.send_packet(self, (0, 1), pkt)
         print("packet sent")
         testutils.verify_packet(self, pkt, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
 
+class SimpleIpv4PacketTest(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pktlen = 1000
+        pkt = testutils.simple_ipv4ip_packet(pktlen=pktlen)
+        self.assertEqual(len(pkt), pktlen)
+        testutils.send_packet(self, (0, 1), pkt)
+        print("packet sent")
+        testutils.verify_packet(self, pkt, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
+
+class SimpleIpv6PacketTest(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pktlen = 400
+        pkt = testutils.simple_ipv6ip_packet(pktlen=pktlen)
+        self.assertEqual(len(pkt), pktlen)
+        testutils.send_packet(self, (0, 1), pkt)
+        print("packet sent")
+        testutils.verify_packet(self, pkt, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
+
+class Ipv4InIpv4PacketTest(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pktlen = 1000
+        pkt = testutils.simple_ipv4ip_packet(pktlen=pktlen)
+        pkt2 = testutils.simple_ipv4ip_packet(pktlen=pktlen, inner_frame=pkt["IP"])
+
+        testutils.send_packet(self, (0, 1), pkt2)
+        print("packet sent")
+        testutils.verify_packet(self, pkt2, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
+
+class Ipv6InGREPacketTest(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pktlen = 1000
+        udp = testutils.simple_udp_packet()
+        ipv6 = testutils.simple_ipv6ip_packet(inner_frame=udp['UDP'])
+        gre = testutils.simple_grev6_packet(pktlen=pktlen, inner_frame=ipv6["IPv6"])
+
+        self.assertEqual(gre['GRE'].proto, 0x86DD)
+        testutils.send_packet(self, (0, 1), gre)
+        print("packet sent")
+        testutils.verify_packet(self, gre, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
 

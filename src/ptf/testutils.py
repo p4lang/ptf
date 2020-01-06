@@ -860,7 +860,7 @@ def simple_gre_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        inner_frame_bytes = bytearray(inner_frame)
+        inner_frame_bytes = bytearray(bytes(inner_frame))
         if ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['GRE'].proto = 0x86DD
     else:
@@ -956,7 +956,7 @@ def simple_grev6_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        inner_frame_bytes = bytearray(inner_frame)
+        inner_frame_bytes = bytearray(bytes(inner_frame))
         if ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['GRE'].proto = 0x86DD
     else:
@@ -1384,7 +1384,7 @@ def simple_ipv4ip_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        inner_frame_bytes = bytearray(inner_frame)
+        inner_frame_bytes = bytearray(bytes(inner_frame))
         if ((inner_frame_bytes[0] & 0xF0) == 0x40):
             pkt['IP'].proto = 4
         elif ((inner_frame_bytes[0] & 0xF0) == 0x60):
@@ -1450,7 +1450,7 @@ def simple_ipv6ip_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        inner_frame_bytes = bytearray(inner_frame)
+        inner_frame_bytes = bytearray(bytes(inner_frame))
         if ((inner_frame_bytes[0] & 0xF0) == 0x40):
             pkt['IPv6'].nh = 4
         elif ((inner_frame_bytes[0] & 0xF0) == 0x60):

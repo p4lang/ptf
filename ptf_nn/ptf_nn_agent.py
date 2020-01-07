@@ -303,7 +303,11 @@ class NanomsgMgr(threading.Thread):
         msg = struct.pack("<iii{}s".format(len(p)), self.MSG_TYPE_PACKET_OUT,
                           port, len(p), p)
         # because nnpy expects unicode when using str
-        msg = bytearray(msg)
+        if sys.version_info[0] == 2:
+            msg = list(bytes(msg))
+        else:
+            msg = bytearray(msg)
+
         self.socket.send(msg)
 
     def handle_info_req(self, port_number, info_id, msg):

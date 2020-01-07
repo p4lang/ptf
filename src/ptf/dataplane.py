@@ -311,7 +311,10 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         msg = struct.pack("<iii%ds" % len(packet), self.MSG_TYPE_PACKET_IN,
                           port_number, len(packet), packet)
         # because nnpy expects unicode when using str
-        msg = bytearray(msg)
+        if sys.version_info[0] == 2:
+            msg = list(msg)
+        else:
+            msg = bytearray(msg)
         self.socket.send(msg)
         # nnpy does not return the number of bytes sent
         return len(packet)

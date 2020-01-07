@@ -128,3 +128,17 @@ class RemovePort(DataplaneBaseTest):
         testutils.send_packet(self, (0, 1), str(pkt))
         print "packet sent"
         testutils.verify_packet(self, pkt, (1, 1))
+
+class SimpleIpv4PacketTest(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pktlen = 75
+        pkt = testutils.simple_ipv4ip_packet(pktlen=pktlen)
+        self.assertEqual(len(pkt), pktlen)
+        testutils.send_packet(self, (0, 1), pkt)
+
+        print("packet sent")
+        testutils.verify_packet(self, pkt, (1, 1))
+        testutils.verify_no_other_packets(self, 1)

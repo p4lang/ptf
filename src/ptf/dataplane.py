@@ -819,7 +819,8 @@ class DataPlane(Thread):
                         print('--')
                         scapy.utils.hexdump(self.expected_packet)
                     elif isinstance(self.expected_packet, mask.Mask):
-                        print('Mask:\n', bytes(self.expected_packet))
+                        print('Mask:')
+                        print(self.expected_packet)
                     else:
                         scapy.utils.hexdump(self.expected_packet)
 

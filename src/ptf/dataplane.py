@@ -27,13 +27,13 @@ from collections import namedtuple
 from threading import Thread
 from threading import Lock
 from threading import Condition
-import ptfutils
-import netutils
-import mask
+from . import ptfutils
+from . import netutils
+from . import mask
 import scapy.packet
 import scapy.utils
-from pcap_writer import PcapWriter
-from StringIO import StringIO
+from .pcap_writer import PcapWriter
+from six import StringIO
 
 try:
     import nnpy
@@ -42,7 +42,7 @@ except ImportError:
     with_nnpy = False
 
 if "linux" in sys.platform:
-    import afpacket
+    from . import afpacket
 else:
     import pcap
 
@@ -67,8 +67,8 @@ def match_exp_pkt(exp_pkt, pkt):
         if not exp_pkt.is_valid():
             return False
         return exp_pkt.pkt_match(pkt)
-    e = str(exp_pkt)
-    p = str(pkt)
+    e = bytes(exp_pkt)
+    p = bytes(pkt)
     if len(e) < 60:
         p = p[:len(e)]
     return e == p
@@ -311,7 +311,10 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         msg = struct.pack("<iii%ds" % len(packet), self.MSG_TYPE_PACKET_IN,
                           port_number, len(packet), packet)
         # because nnpy expects unicode when using str
-        msg = list(msg)
+        if sys.version_info[0] == 2:
+            msg = list(msg)
+        else:
+            msg = bytearray(msg)
         self.socket.send(msg)
         # nnpy does not return the number of bytes sent
         return len(packet)
@@ -597,12 +600,12 @@ class DataPlane(Thread):
         Activity function for class
         """
         while not self.killed:
-            sockets = set([p.get_packet_source() for p in self.ports.values()])
+            sockets = set([p.get_packet_source() for p in list(self.ports.values())])
             sockets.add(self.waker)
             try:
                 sel_in, sel_out, sel_err = select.select(sockets, [], [], 1)
             except:
-                print sys.exc_info()
+                print(sys.exc_info())
                 self.logger.error("Select error, exiting")
                 break
 
@@ -700,7 +703,7 @@ class DataPlane(Thread):
         """
         min_port_number = None
         min_time = float('inf')
-        for (port_id, queue) in self.packet_queues.items():
+        for (port_id, queue) in list(self.packet_queues.items()):
             if port_id[0] != device:
                 continue
             if queue and queue[0][1] < min_time:
@@ -765,14 +768,14 @@ class DataPlane(Thread):
                 # so we have to redirect stdout to a string.
                 sys.stdout = StringIO()
 
-                print "========== RECEIVED =========="
+                print("========== RECEIVED ==========")
                 if isinstance(self.expected_packet, scapy.packet.Packet):
                     # Dissect this packet as if it were an instance of
                     # the expected packet's class.
                     scapy.packet.ls(self.expected_packet.__class__(self.packet))
-                    print '--'
+                    print('--')
                 scapy.utils.hexdump(self.packet)
-                print "=============================="
+                print("==============================")
 
                 return sys.stdout.getvalue()
             finally:
@@ -810,31 +813,32 @@ class DataPlane(Thread):
                 sys.stdout = StringIO()
 
                 if self.expected_packet is not None:
-                    print "========== EXPECTED =========="
+                    print("========== EXPECTED ==========")
                     if isinstance(self.expected_packet, scapy.packet.Packet):
                         scapy.packet.ls(self.expected_packet)
-                        print '--'
+                        print('--')
                         scapy.utils.hexdump(self.expected_packet)
                     elif isinstance(self.expected_packet, mask.Mask):
-                        print 'Mask:\n', str(self.expected_packet)
+                        print('Mask:')
+                        print(self.expected_packet)
                     else:
                         scapy.utils.hexdump(self.expected_packet)
 
-                print "========== RECEIVED =========="
+                print("========== RECEIVED ==========")
                 if self.recent_packets:
-                    print "%d total packets. Displaying most recent %d packets:" \
-                            % (self.packet_count, len(self.recent_packets))
+                    print("%d total packets. Displaying most recent %d packets:" \
+                            % (self.packet_count, len(self.recent_packets)))
                     for packet in self.recent_packets:
-                        print "------------------------------"
+                        print("------------------------------")
                         if isinstance(self.expected_packet, scapy.packet.Packet):
                             # Dissect this packet as if it were an instance of
                             # the expected packet's class.
                             scapy.packet.ls(self.expected_packet.__class__(packet))
-                            print '--'
+                            print('--')
                         scapy.utils.hexdump(packet)
                 else:
-                    print "%d total packets." % self.packet_count
-                print "=============================="
+                    print("%d total packets." % self.packet_count)
+                print("==============================")
 
                 return sys.stdout.getvalue()
             finally:
@@ -949,7 +953,7 @@ class DataPlane(Thread):
         """
         Drop any queued packets.
         """
-        for port_id in self.packet_queues.keys():
+        for port_id in list(self.packet_queues.keys()):
             self.packet_queues[port_id] = []
 
     def start_pcap(self, filename):

@@ -35,6 +35,7 @@ import threading
 import os
 import logging
 from fcntl import ioctl
+from ptf import afpacket
 from socket import AF_NETLINK, SOCK_DGRAM
 
 # copied from ptf.netutils
@@ -251,6 +252,7 @@ class IfaceMgr(threading.Thread):
             try:
                 self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
                                             socket.htons(0x03))
+                afpacket.enable_auxdata(self.socket)
                 if self.iface_rcv_buf != 0:
                     self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.iface_rcv_buf)
 
@@ -261,7 +263,7 @@ class IfaceMgr(threading.Thread):
                 logger.debug("IfaceMgr {}-{} ({}) AF_PACKET socket is open".format(
                              self.dev, self.port, self.iface_name))
                 while True:
-                    msg = self.socket.recv(4096)
+                    msg = afpacket.recv(self.socket, 4096)
                     self.received(msg)
             except socket.error as err:
                 logger.debug("IfaceMgr {}-{} ({}) Error reading from the socket.".format(

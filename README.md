@@ -56,8 +56,8 @@ on which to inject packets (along with the corresponding port number).
 
 PTF can be installed by running `sudo python setup.py install`. For more
 information on the different options accepted by `setup.py` (e.g. installing in
-a custom location), please refer to the [setuptools documentation]
-(https://pythonhosted.org/setuptools/setuptools.html).
+a custom location), please refer to the 
+[setuptools documentation](https://pythonhosted.org/setuptools/setuptools.html).
 
 ---
 

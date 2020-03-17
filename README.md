@@ -174,10 +174,10 @@ NICs on the host running PTF, like so:
 
 ### `nn`
 
-We introduce a new platform, `nn`, which uses [nanomsg] (http://nanomsg.org/) to
+We introduce a new platform, `nn`, which uses [nanomsg](http://nanomsg.org/) to
 send and receive packet to the switch. We support IPC and TCP nanomsg
 sockets. When using this platform, you need to make sure that the Python package
-[nnpy] (https://github.com/nanomsg/nnpy) is installed. With `nn`, do not use
+[nnpy](https://github.com/nanomsg/nnpy) is installed. With `nn`, do not use
 `--interface`, instead use `--device-socket`. For each device, you need to
 provide a list of enabled ports and a nanomsg socket address. For example:
 

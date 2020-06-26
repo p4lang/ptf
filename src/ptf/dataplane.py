@@ -806,6 +806,54 @@ class DataPlane(Thread):
             in the output. If the expected packet is a scapy packet object, the
             output will include information about the fields in the packet.
             """
+            # returns list of indexes of bytes not matching the expected packet
+            def get_indexes_not_equal(exp_pkt, pkt):
+                if isinstance(exp_pkt, mask.Mask):
+                    if not exp_pkt.is_valid():
+                        return []
+                    b, indxs_n_equal = exp_pkt.pkt_match(pkt, with_indexes=True)
+                    return indxs_n_equal
+
+                e = bytes(exp_pkt)
+                p = bytes(pkt)
+                if len(e) < 60:
+                    p = p[:len(e)]
+
+                indxs_n_equal = []
+                i = 0
+                for b in p:
+                    if b != e[i]:
+                        indxs_n_equal.append(i)
+                    i = i + 1
+
+                return indxs_n_equal
+
+            # modified scapy.utils.hexdump(packet)
+            # https://github.com/secdev/scapy/blob/master/scapy/utils.py
+            def hexdump_marked(packet, indxs_n_equal):
+                def red(inp_str):
+                    return '\x1b[1;31m' + inp_str + '\x1b[0m'
+
+                s = ""
+                x = scapy.utils.bytes_encode(packet)
+                x_len = len(x)
+                i = 0
+                while i < x_len:
+                    s += "%04x  " % i
+                    for j in range(16):
+                        if i + j < x_len:
+                            if indxs_n_equal is not None and i + j in indxs_n_equal:
+                                s += red("%02X " % scapy.utils.orb(x[i + j]))
+                            else:
+                                s += "%02X " % scapy.utils.orb(x[i + j])
+                        else:
+                            s += "   "
+                    s += " %s\n" % scapy.utils.sane_color(x[i:i + 16])
+                    i += 16
+                # remove trailing \n
+                s = s[:-1] if s.endswith("\n") else s
+                print(s)
+
             try:
                 stdout_save = sys.stdout
                 # The scapy packet dissection methods print directly to stdout,
@@ -835,7 +883,10 @@ class DataPlane(Thread):
                             # the expected packet's class.
                             scapy.packet.ls(self.expected_packet.__class__(packet))
                             print('--')
-                        scapy.utils.hexdump(packet)
+
+                        indxs_n_equal = get_indexes_not_equal(self.expected_packet, packet)
+                        hexdump_marked(packet, indxs_n_equal)
+
                 else:
                     print("%d total packets." % self.packet_count)
                 print("==============================")

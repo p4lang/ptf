@@ -15,7 +15,10 @@ setup(
         'ptf', 'ptf.platforms',
     ],
     package_dir={'': 'src'},
-    scripts=['ptf'],
+    scripts=[
+        'ptf',
+        'ptf_nn/ptf_nn_agent.py'
+    ],
     zip_safe=False,
     license='Apache License',
     keywords='ptf',

@@ -2529,7 +2529,7 @@ def dp_poll(test, device_number=0, port_number=None, timeout=-1, exp_pkt=None):
         test.at_receive(result.packet, device_number=result.device, port_number=result.port)
     return result
 
-def verify_packet(test, pkt, port_id, timeout=2):
+def verify_packet(test, pkt, port_id, timeout=100):
     """
     Check that an expected packet is received
     port_id can either be a single integer (port_number on default device 0)
@@ -2578,7 +2578,7 @@ def verify_no_other_packets(test, device_number=0, timeout=None):
         test.fail("A packet was received on device %d, port %r, but we expected no "
                   "packets.\n%s" % (result.device, result.port, result.format()))
 
-def verify_packets(test, pkt, ports=[], device_number=0, timeout=None):
+def verify_packets(test, pkt, ports=[], device_number=0, timeout=100):
     """
     Check that a packet is received on each of the specified port numbers for a
     given device (default device number is 0).
@@ -2648,7 +2648,7 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
         test.fail("Did not receive expected packet on any of ports %r for device %d.\n%s"
                     % (ports, device_number, failure_report))
 
-def verify_packet_any_port(test, pkt, ports=[], device_number=0, timeout=1):
+def verify_packet_any_port(test, pkt, ports=[], device_number=0, timeout=100):
     """
     Check that the packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).

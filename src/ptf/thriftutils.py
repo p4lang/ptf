@@ -62,7 +62,7 @@ def i32_to_ipv4Addr(addr):
     return socket.inet_ntoa(struct.pack("!i", addr))
 
 def ipv6Addr_to_string(addr):
-    return (str(socket.inet_pton(socket.AF_INET6, addr)))
+    return bytes(socket.inet_pton(socket.AF_INET6, addr))
 
 
 def main():

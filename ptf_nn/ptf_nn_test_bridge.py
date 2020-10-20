@@ -41,19 +41,19 @@ class Forwarder(threading.Thread):
         forwarders[iface_name] = self
 
     def forward(self, p):
-        print "forwarding", p, "---", self.other, "->", self.iface_name
+        print("forwarding", p, "---", self.other, "->", self.iface_name)
         sc.sendp(p, iface=self.iface_name, verbose=0)
 
     def run(self):
         other_fwd = forwarders[self.other]
-        sc.sniff(iface=self.iface_name, prn=lambda x: other_fwd.forward(str(x)))
+        sc.sniff(iface=self.iface_name, prn=lambda x: other_fwd.forward(x))
 
 def main():
     f1 = Forwarder(args.ifrom, args.ito)
     f2 = Forwarder(args.ito, args.ifrom)
     time.sleep(2)
     f1.start()
-    print "READY"
+    print("READY")
     try:
         while True:
             time.sleep(1)

@@ -4,12 +4,14 @@ import logging
 import types
 import time
 import re
-import packet as scapy
+from . import packet as scapy
 
 import ptf
 import ptf.dataplane
 import ptf.parse
 import ptf.ptfutils
+import codecs
+from six import StringIO
 
 global skipped_test_count
 skipped_test_count = 0
@@ -22,6 +24,7 @@ TCP_PROTOCOL = 0x6
 UDP_PROTOCOL = 0x11
 
 MINSIZE = 0
+TEST_PARAMS = None
 
 _import_blacklist.add('FILTERS')
 FILTERS = []
@@ -149,8 +152,7 @@ def simple_tcp_packet_ext_taglist(pktlen=100,
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, frag=ip_frag, options=ip_options)/ \
                 tcp_hdr
-
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
 
     return pkt
 
@@ -370,7 +372,7 @@ def simple_udp_packet(pktlen=100,
     if udp_payload:
         pkt = pkt/udp_payload
 
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
 
     return pkt
 
@@ -858,7 +860,8 @@ def simple_gre_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+        inner_frame_bytes = bytearray(bytes(inner_frame))
+        if ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['GRE'].proto = 0x86DD
     else:
         pkt = pkt / scapy.IP()
@@ -953,7 +956,8 @@ def simple_grev6_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+        inner_frame_bytes = bytearray(bytes(inner_frame))
+        if ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['GRE'].proto = 0x86DD
     else:
         pkt = pkt / scapy.IP()
@@ -1380,14 +1384,15 @@ def simple_ipv4ip_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x40):
+        inner_frame_bytes = bytearray(bytes(inner_frame))
+        if ((inner_frame_bytes[0] & 0xF0) == 0x40):
             pkt['IP'].proto = 4
-        elif ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+        elif ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['IP'].proto = 41
     else:
         pkt = pkt / scapy.IP()
         pkt = pkt/("D" * (pktlen - len(pkt)))
-        pkt['IP'].proto = 41
+        pkt['IP'].proto = 4
 
     return pkt
 
@@ -1445,9 +1450,10 @@ def simple_ipv6ip_packet(pktlen=300,
 
     if inner_frame:
         pkt = pkt / inner_frame
-        if ((ord(str(inner_frame)[0]) & 0xF0) == 0x40):
+        inner_frame_bytes = bytearray(bytes(inner_frame))
+        if ((inner_frame_bytes[0] & 0xF0) == 0x40):
             pkt['IPv6'].nh = 4
-        elif ((ord(str(inner_frame)[0]) & 0xF0) == 0x60):
+        elif ((inner_frame_bytes[0] & 0xF0) == 0x60):
             pkt['IPv6'].nh = 41
     else:
         pkt = pkt / scapy.IP()
@@ -1570,6 +1576,75 @@ def simple_icmpv6_packet(pktlen=100,
 
     return pkt
 
+def simple_ipv6_mld_packet(pktlen=300,
+                           eth_dst='00:01:02:03:04:05',
+                           eth_src='00:06:07:08:09:0a',
+                           dl_vlan_enable=False,
+                           vlan_vid=0,
+                           vlan_pcp=0,
+                           dl_vlan_cfi=0,
+                           ipv6_src='1::2',
+                           ipv6_dst='3::4',
+                           ipv6_fl=0,
+                           ipv6_tc=0,
+                           ipv6_ecn=None,
+                           ipv6_dscp=None,
+                           ipv6_hlim=64,
+                           mld_type=130,
+                           mld_mladdr='ff02::16',
+                           mld_mrd=64,
+                           inner_frame = None):
+    """
+    Return a simple dataplane IPv6 MLD packet
+
+    Supports a few parameters:
+    @param len Length of packet in bytes w/o CRC
+    @param eth_dst Destination MAC
+    @param eth_src Source MAC
+    @param dl_vlan_enable True if the packet is with vlan, False otherwise
+    @param vlan_vid VLAN ID
+    @param vlan_pcp VLAN priority
+    @param ipv6_src IPv6 source
+    @param ipv6_dst IPv6 destination
+    @param ipv6_fl IPv6 flowlabel
+    @param ipv6_tc IPv6 traffic class
+    @param ipv6_ecn IPv6 traffic class ECN
+    @param ipv6_dscp IPv6 traffic class DSCP
+    @param ipv6_hlim IPv6 hop limit
+    @param mld_type IPv6 MLD type
+    @param mld_mladdr IPv6 MLD multicast address
+    @param mld_mrd IPv6 MLD maximum response delay
+    @param inner_frame The inner Ethernet frame
+
+    Generates a simple IPv6 MLD packet. Users shouldn't assume anything about
+    this packet other than that it is a valid ethernet/IPv6/MLD frame.
+    """
+
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
+    # Next header should be 58 for IPv6 MLD
+    next_header = 58
+
+    # Note Dot1Q.id is really CFI
+    if (dl_vlan_enable):
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
+            scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim, nh=next_header)
+    else:
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+              scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim, nh=next_header)
+
+    pkt = pkt / ICMPv6MLReport(type=mld_type, mladdr=mld_mladdr, mrd=mld_mrd)
+
+    if inner_frame:
+        pkt = pkt / inner_frame
+    else:
+        pkt = pkt / simple_tcp_packet(pktlen = pktlen - len(pkt))
+
+    return pkt
+
 def simple_arp_packet(pktlen=60,
                       eth_dst='ff:ff:ff:ff:ff:ff',
                       eth_src='00:06:07:08:09:0a',
@@ -1667,7 +1742,7 @@ def simple_eth_raw_packet_with_taglist(pktlen=60,
 
     # Fill payload length
     pkt[Dot1Q:len(dl_tpid_list)].type = pktlen - len(pkt)
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
     return pkt
 
 def simple_ip_packet(pktlen=100,
@@ -1729,7 +1804,7 @@ def simple_ip_packet(pktlen=100,
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, proto=ip_proto, options=ip_options)
 
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
 
     return pkt
 
@@ -1781,7 +1856,7 @@ def simple_ip_only_packet(pktlen=100,
     else:
         pkt = scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, options=ip_options) / tcp_hdr
 
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
 
     return pkt
 
@@ -1902,10 +1977,85 @@ def simple_qinq_tcp_packet(pktlen=100,
           scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl)/ \
           scapy.TCP(sport=tcp_sport, dport=tcp_dport)
 
-    pkt = pkt/("".join([chr(x % 256) for x in xrange(pktlen - len(pkt))]))
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
 
     return pkt
 
+def simple_igmp_packet(pktlen=300,
+                       eth_dst='00:01:02:03:04:05',
+                       eth_src='00:06:07:08:09:0a',
+                       dl_vlan_enable=False,
+                       vlan_vid=0,
+                       vlan_pcp=0,
+                       dl_vlan_cfi=0,
+                       ip_src='192.168.0.1',
+                       ip_dst='192.168.0.2',
+                       ip_tos=0,
+                       ip_ecn=None,
+                       ip_dscp=None,
+                       ip_ttl=64,
+                       ip_id=0x0001,
+                       ip_ihl=None,
+                       ip_options=False,
+                       igmp_type=0x12,
+                       igmp_gaddr="224.2.3.4",
+                       igmp_mrtime=64,
+                       inner_frame = None):
+    """
+    Return a simple dataplane IGMP packet
+
+    Supports a few parameters:
+    @param len Length of packet in bytes w/o CRC
+    @param eth_dst Destination MAC
+    @param eth_src Source MAC
+    @param dl_vlan_enable True if the packet is with vlan, False otherwise
+    @param vlan_vid VLAN ID
+    @param vlan_pcp VLAN priority
+    @param ip_src IP source
+    @param ip_dst IP destination
+    @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
+    @param ip_ttl IP TTL
+    @param ip_id IP ID
+    @param igmp_type IGMP type
+    @param igmp_gaddr IGMP group addr
+    @param igmp_mrtime IGMP maximum response time
+    @param inner_frame The inner Ethernet frame
+
+    Generates a simple IGMP packet. Users shouldn't assume anything about
+    this packet other than that it is a valid ethernet/IP/IGMP frame.
+    """
+    if scapy.IGMP is None:
+        logging.error("An IGMP packet was requested but IGMP is not supported by your Scapy. See README for more information")
+        return None
+
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
+
+    # Note Dot1Q.id is really CFI
+    if (dl_vlan_enable):
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
+            scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl)
+    else:
+        if not ip_options:
+            pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl)
+        else:
+            pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, options=ip_options)
+
+    pkt = pkt / IGMP(type=igmp_type, gaddr=igmp_gaddr, mrtime=igmp_mrtime)
+
+    if inner_frame:
+        pkt = pkt / inner_frame
+    else:
+        pkt = pkt / simple_tcp_packet(pktlen = pktlen - len(pkt))
+
+    return pkt
 
 """
    DHCP Packet Creation functions
@@ -2214,24 +2364,16 @@ def test_params_get(default={}):
     """
     Return all the values passed via test-params if present
 
-    @param default Default dictionary to use if no valid params found
+    @param default Default dictionary to use if no params were provided or if
+    the provided string could not be "exec'd".
 
     WARNING: TEST PARAMETERS MUST BE PYTHON IDENTIFIERS;
     AND CANNOT START WITH "__";
     eg egr_count, not egr-count.
     """
-    test_params = ptf.config["test_params"]
-    params_str = "class _TestParams:\n    " + test_params
-    try:
-        exec params_str
-    except:
+    if TEST_PARAMS is None:
         return default
-
-    params = {}
-    for k, v in vars(_TestParams).items():
-        if k[:2] != "__":
-            params[k] = v
-    return params
+    return TEST_PARAMS
 
 def test_param_get(key, default=None):
     """
@@ -2262,24 +2404,23 @@ def hex_dump_buffer(src, length=16):
     @returns A string showing the hex dump
     """
     result = ["\n"]
-    for i in xrange(0, len(src), length):
-       chars = src[i:i+length]
-       hex = ' '.join(["%02X" % ord(x) for x in chars])
-       printable = ''.join(["%s" % ((ord(x) <= 127 and
-                                     FILTER[ord(x)]) or '.') for x in chars])
+    for i in range(0, len(src), length):
+       chars = bytearray(src[i:i+length])
+       hex = ' '.join(["%02X" % x for x in chars])
+       printable = ''.join(["%s" % ((x <= 127 and
+                                     FILTER[x]) or '.') for x in chars])
        result.append("%04x  %-*s  %s\n" % (i, length*3, hex, printable))
     return ''.join(result)
 
 def format_packet(pkt):
-    return "Packet length %d \n%s" % (len(str(pkt)),
-                                      hex_dump_buffer(str(pkt)))
+    return "Packet length %d \n%s" % (len(bytes(pkt)),
+                                      hex_dump_buffer(bytes(pkt)))
 
 def inspect_packet(pkt):
     """
     Wrapper around scapy's show() method.
     @returns A string showing the dissected packet.
     """
-    from cStringIO import StringIO
     out = None
     backup = sys.stdout
     try:
@@ -2343,7 +2484,7 @@ def ptf_ports(num=None):
     return ports[:num]
 
 def port_to_tuple(port):
-    if type(port) is int or type(port) is long:
+    if type(port) is int or (sys.version_info[0] == 2 and type(port) is long):
         return 0, port
     if type(port) is tuple:
         return port
@@ -2361,7 +2502,7 @@ def send_packet(test, port_id, pkt, count=1):
     or a tuple of 2 integers (device_number, port_number)
     """
     device, port = port_to_tuple(port_id)
-    pkt = str(pkt)
+    pkt = bytes(pkt)
     sent = 0
 
     for n in range(count):
@@ -2472,7 +2613,7 @@ def verify_no_packet_any(test, pkt, ports=[], device_number=0):
         if device != device_number:
             continue
         if port in ports:
-            print 'verifying packet on port device', device_number, 'port', port
+            print('verifying packet on port device', device_number, 'port', port)
             verify_no_packet(test, pkt, (device, port))
 
 def verify_packets_any(test, pkt, ports=[], device_number=0):
@@ -2604,7 +2745,7 @@ def verify_packet_prefix(test, pkt, port, len, device_number=0):
     Check that an expected packet is received
     """
     logging.debug("Checking for pkt on port %r", port)
-    result = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=str(pkt)[:len])
+    result = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=bytes(pkt)[:len])
     if isinstance(result, test.dataplane.PollFailure):
         test.fail("Did not receive expected packet on port %r\n.%s"
                     % (port, result.format()))

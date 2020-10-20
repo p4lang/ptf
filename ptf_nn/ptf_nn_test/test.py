@@ -24,8 +24,9 @@ class OneTest(DataplaneBaseTest):
 
     def runTest(self):
         pkt = "ab" * 20
-        testutils.send_packet(self, (0, 1), str(pkt))
-        print "packet sent"
+        pkt = pkt.encode()
+        testutils.send_packet(self, (0, 1), pkt)
+        print("packet sent")
         testutils.verify_packet(self, pkt, (1, 1))
 
 class GetMacTest(DataplaneBaseTest):
@@ -36,12 +37,13 @@ class GetMacTest(DataplaneBaseTest):
         def check_mac(device, port):
             mac = self.dataplane.get_mac(device, port)
             self.assertIsNotNone(mac)
-            self.assertEqual(mac.count(":"), 5)
+            self.assertEqual(mac.decode().count(":"), 5)
 
         check_mac(0, 1)
         pkt = "ab" * 20
-        testutils.send_packet(self, (0, 1), str(pkt))
-        print "packet sent"
+        pkt = pkt.encode()
+        testutils.send_packet(self, (0, 1), pkt)
+        print("packet sent")
         testutils.verify_packet(self, pkt, (1, 1))
         check_mac(1, 1)
 
@@ -61,18 +63,19 @@ class GetCountersTest(DataplaneBaseTest):
 
         counters_01_b = check_counters(0, 1)
         counters_11_b = check_counters(1, 1)
-        print "Counters:"
-        print " (0, 1) %d:%d" % counters_01_b
-        print " (1, 1) %d:%d" % counters_11_b
+        print("Counters:")
+        print(" (0, 1) %d:%d" % counters_01_b)
+        print(" (1, 1) %d:%d" % counters_11_b)
         pkt = "ab" * 20
-        testutils.send_packet(self, (0, 1), str(pkt))
-        print "packet sent"
+        pkt = pkt.encode()
+        testutils.send_packet(self, (0, 1), pkt)
+        print("packet sent")
         testutils.verify_packet(self, pkt, (1, 1))
         counters_01_e = check_counters(0, 1)
         counters_11_e = check_counters(1, 1)
-        print "Counters:"
-        print " (0, 1) %d:%d" % counters_01_e
-        print " (1, 1) %d:%d" % counters_11_e
+        print("Counters:")
+        print(" (0, 1) %d:%d" % counters_01_e)
+        print(" (1, 1) %d:%d" % counters_11_e)
         self.assertTrue(counters_01_e[1] > counters_01_b[1])
         self.assertTrue(counters_11_e[0] > counters_11_b[0])
 
@@ -82,17 +85,18 @@ class VerifyAnyPacketAnyPort(DataplaneBaseTest):
 
     def runTest(self):
         pkt = "ab" * 20
+        pkt = pkt.encode()
 
-        testutils.send_packet(self, (0, 1), str(pkt))
-        print "packet sent"
+        testutils.send_packet(self, (0, 1), pkt)
+        print("packet sent")
         testutils.verify_any_packet_any_port(
             self, pkts=[pkt], ports=[3, 1], device_number=1)
 
         # negative test: if the packet is indeed received, but not on one of the
         # expected ports, the test should fail
         with self.assertRaises(AssertionError):
-            testutils.send_packet(self, (0, 1), str(pkt))
-            print "packet sent"
+            testutils.send_packet(self, (0, 1), pkt)
+            print("packet sent")
             testutils.verify_any_packet_any_port(
                 self, pkts=[pkt], ports=[0, 2, 3], device_number=1)
 
@@ -102,9 +106,10 @@ class RemovePort(DataplaneBaseTest):
 
     def runTest(self):
         pkt = "ab" * 20
+        pkt = pkt.encode()
 
-        testutils.send_packet(self, (0, 1), str(pkt))
-        print "packet sent"
+        testutils.send_packet(self, (0, 1), pkt)
+        print("packet sent")
         testutils.verify_packet(self, pkt, (1, 1))
 
         # We remove a port to test port_remove, but in order to execute
@@ -120,11 +125,83 @@ class RemovePort(DataplaneBaseTest):
 
         ifname = find_ifname(1, 1)
         self.assertTrue(self.dataplane.port_remove(1, 1))
-        testutils.send_packet(self, (0, 1), str(pkt))
-        print "packet sent"
+        testutils.send_packet(self, (0, 1), pkt)
+        print("packet sent")
         testutils.verify_no_other_packets(self, device_number=1)
 
         self.dataplane.port_add(ifname, 1, 1)
-        testutils.send_packet(self, (0, 1), str(pkt))
-        print "packet sent"
+        testutils.send_packet(self, (0, 1), pkt)
+        print("packet sent")
         testutils.verify_packet(self, pkt, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
+
+class SimpleTcpPacketTest(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pktlen = 400
+        pkt = testutils.simple_tcp_packet(pktlen=pktlen)
+        self.assertEqual(len(pkt), pktlen)
+        testutils.send_packet(self, (0, 1), pkt)
+        print("packet sent")
+        testutils.verify_packet(self, pkt, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
+
+class SimpleIpv4PacketTest(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pktlen = 70
+        pkt = testutils.simple_ipv4ip_packet(pktlen=pktlen)
+        self.assertEqual(len(pkt), pktlen)
+        testutils.send_packet(self, (0, 1), pkt)
+
+        print("packet sent")
+        testutils.verify_packet(self, pkt, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
+
+class SimpleIpv6PacketTest(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pktlen = 400
+        pkt = testutils.simple_ipv6ip_packet(pktlen=pktlen)
+        self.assertEqual(len(pkt), pktlen)
+        testutils.send_packet(self, (0, 1), pkt)
+        print("packet sent")
+        testutils.verify_packet(self, pkt, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
+
+class Ipv4InIpv4PacketTest(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pktlen = 70
+        pkt = testutils.simple_ipv4ip_packet(pktlen=pktlen)
+        pkt2 = testutils.simple_ipv4ip_packet(pktlen=pktlen, inner_frame=pkt["IP"])
+
+        testutils.send_packet(self, (0, 1), pkt2)
+        print("packet sent")
+        testutils.verify_packet(self, pkt2, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
+
+class Ipv6InGREPacketTest(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pktlen = 1000
+        udp = testutils.simple_udp_packet()
+        ipv6 = testutils.simple_ipv6ip_packet(inner_frame=udp['UDP'])
+        gre = testutils.simple_grev6_packet(pktlen=pktlen, inner_frame=ipv6["IPv6"])
+
+        self.assertEqual(gre['GRE'].proto, 0x86DD)
+        testutils.send_packet(self, (0, 1), gre)
+        print("packet sent")
+        testutils.verify_packet(self, gre, (1, 1))
+        testutils.verify_no_other_packets(self, 1)
+

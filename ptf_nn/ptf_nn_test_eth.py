@@ -32,7 +32,7 @@ args = parser.parse_args()
 
 def receive(interface):
     def printp(p):
-        print "Received:", str(p)
+        print("Received:", p)
     sc.sniff(iface=interface, prn=lambda x: printp(x))
 
 def main():

@@ -26,16 +26,16 @@ import argparse
 import time
 import struct
 import socket
-import Queue
 try:
     import nnpy
 except ImportError:
-    print "Cannot find nnpy package, please install"
+    print("Cannot find nnpy package, please install")
     sys.exit(1)
 import threading
 import os
 import logging
 from fcntl import ioctl
+from ptf import afpacket
 from socket import AF_NETLINK, SOCK_DGRAM
 
 # copied from ptf.netutils
@@ -48,7 +48,7 @@ IFF_UP         = 0x0001
 
 def get_if(iff, cmd):
     s = socket.socket()
-    ifreq = ioctl(s, cmd, struct.pack("16s16x",iff))
+    ifreq = ioctl(s, cmd, struct.pack("16s16x",iff.encode("utf-8")))
     s.close()
     return ifreq
 
@@ -57,25 +57,25 @@ def get_if_index(iff):
 
 def get_mac(iff):
     return ':'.join(
-        ['%02x' % ord(char) for char in get_if(iff, SIOCGIFHWADDR)[18:24]])
+        ['%02x' % char for char in bytearray(get_if(iff, SIOCGIFHWADDR)[18:24])])
 
 def set_if_status(iff, status):
     s = socket.socket()
-    ifr = struct.pack('16sh', iff, 0)
+    ifr = struct.pack('16sh', iff.encode("utf-8"), 0)
     result = ioctl(s, SIOCGIFFLAGS, ifr)
     flags = struct.unpack('16sh', result)[1]
     if status:
        flags |= IFF_UP
     else:
        flags &= ~IFF_UP
-    ifr = struct.pack('16sh', iff, flags)
+    ifr = struct.pack('16sh', iff.encode("utf-8"), flags)
     ioctl(s, SIOCSIFFLAGS, ifr)
     s.close()
 
 def get_if_status(iff):
     try:
         s = socket.socket()
-        ifr = struct.pack('16sh', iff, 0)
+        ifr = struct.pack('16sh', iff.encode("utf-8"), 0)
         result = ioctl(s, SIOCGIFFLAGS, ifr)
         s.close()
     except IOError:
@@ -199,7 +199,7 @@ class IfaceMgr(threading.Thread):
             self.dev, self.port, self.iface_name))
         if self.dev in nano_mgrs:
             nano_mgr = nano_mgrs[self.dev]
-            nano_mgr.forward(str(p), self.port)
+            nano_mgr.forward(p, self.port)
             self.rx_ctr += 1
 
     def get_mac(self):
@@ -252,6 +252,7 @@ class IfaceMgr(threading.Thread):
             try:
                 self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
                                             socket.htons(0x03))
+                afpacket.enable_auxdata(self.socket)
                 if self.iface_rcv_buf != 0:
                     self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.iface_rcv_buf)
 
@@ -262,7 +263,7 @@ class IfaceMgr(threading.Thread):
                 logger.debug("IfaceMgr {}-{} ({}) AF_PACKET socket is open".format(
                              self.dev, self.port, self.iface_name))
                 while True:
-                    msg = self.socket.recv(4096)
+                    msg = afpacket.recv(self.socket, 4096)
                     self.received(msg)
             except socket.error as err:
                 logger.debug("IfaceMgr {}-{} ({}) Error reading from the socket.".format(
@@ -304,7 +305,11 @@ class NanomsgMgr(threading.Thread):
         msg = struct.pack("<iii{}s".format(len(p)), self.MSG_TYPE_PACKET_OUT,
                           port, len(p), p)
         # because nnpy expects unicode when using str
-        msg = list(msg)
+        if sys.version_info[0] == 2:
+            msg = list(bytes(msg))
+        else:
+            msg = bytearray(msg)
+
         self.socket.send(msg)
 
     def handle_info_req(self, port_number, info_id, msg):
@@ -322,7 +327,7 @@ class NanomsgMgr(threading.Thread):
                 mac = iface_mgr.get_mac()
                 fmt = "<iiii{}s".format(len(mac))
                 rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number,
-                                  info_id, self.MSG_INFO_STATUS_SUCCESS, mac)
+                                  info_id, self.MSG_INFO_STATUS_SUCCESS, mac.encode("utf-8"))
                 self.socket.send(rep)
 
         def handle_ctrs():

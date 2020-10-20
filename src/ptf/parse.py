@@ -4,7 +4,7 @@ Utility parsing functions
 
 import sys
 import socket
-import packet as scapy
+from . import packet as scapy
 
 def parse_mac(mac_str):
     """
@@ -15,7 +15,7 @@ def parse_mac(mac_str):
     @param mac_str The string to convert
     @return Array of 6 integer values
     """
-    return map(lambda val: int(val, 16), mac_str.split(":"))
+    return [int(val, 16) for val in mac_str.split(":")]
 
 def parse_ip(ip_str):
     """
@@ -26,7 +26,7 @@ def parse_ip(ip_str):
     @param ip_str The string to convert
     @return Integer value
     """
-    array = map(lambda val: int(val), ip_str.split("."))
+    array = [int(val) for val in ip_str.split(".")]
     val = 0
     for a in array:
         val <<= 8

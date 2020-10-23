@@ -440,6 +440,13 @@ def load_test_modules(config):
                     # Put test in its module's test group
                     if not test._disabled:
                         test._groups.append(modname)
+                    else:
+                        # If the test is disabled, create a group named
+                        # disabled and add it too. This is so that
+                        # users can conveniently exclude disabled tests
+                        # too when including only groups. Eg.
+                        # -s "group1 ^disabled"
+                        test._groups.append("disabled")
 
                     # Put test in the standard test group
                     if not test._disabled and not test._nonstandard:

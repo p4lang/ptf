@@ -2797,5 +2797,219 @@ def count_matched_packets_all_ports(test, exp_packet, ports=[], device_number=0,
 
     return total_rcv_pkt_cnt
 
+def simple_rocev2_packet(pktlen=100,
+                         eth_dst='00:01:02:03:04:05',
+                         eth_src='00:06:07:08:09:0a',
+                         dl_vlan_enable=False,
+                         vlan_vid=0,
+                         vlan_pcp=0,
+                         dl_vlan_cfi=0,
+                         ip_src='192.168.0.1',
+                         ip_dst='192.168.0.2',
+                         ip_tos=0,
+                         ip_ecn=None,
+                         ip_dscp=None,
+                         ip_ttl=64,
+                         udp_sport=1234,
+                         udp_dport=4791,
+                         ip_ihl=None,
+                         ip_options=False,
+                         ip_flag=0,
+                         ip_id=1,
+                         bth_opcode=0x81,
+                         bth_se=0,
+                         bth_migration_req=0,
+                         bth_pad_count=0,
+                         bth_transport_version=0,
+                         bth_partition_key=0xffff,
+                         bth_f_res1=0,
+                         bth_b_res1=0,
+                         bth_dst_qp=0x0000d2,
+                         bth_ack_req=0,
+                         bth_psn=0,
+                         rocev2_payload=None):
+    """
+    Return a simple dataplane ROCEv2 packet
+
+    Supports a few parameters:
+    @param len Length of packet in bytes w/o CRC
+    @param eth_dst Destination MAC
+    @param eth_src Source MAC
+    @param dl_vlan_enable True if the packet is with vlan, False otherwise
+    @param vlan_vid VLAN ID
+    @param vlan_pcp VLAN priority
+    @param dl_vlan_cfi The VLAN CFI value
+    @param ip_src IP source
+    @param ip_dst IP destination
+    @param ip_tos IP ToS
+    @param ip_ecn IP ToS ECN
+    @param ip_dscp IP ToS DSCP
+    @param ip_ttl IP TTL
+    @param ip_id IP ID
+    @param udp_sport UDP source port
+    @param udp_dport UDP destination port
+    @param bth_opcode BTH OpCode,
+    @param bth_se BTH Solicited Event,
+    @param bth_migration_req BTH MigReq,
+    @param bth_pad_count BTH Pad Count,
+    @param bth_transport_version BTH Transport Header Version,
+    @param bth_partition_key BTH Partition Key,
+    @param bth_f_res1 BTH F/Res1* (F/R),
+    @param bth_b_res1 BTH B/Res1* (B/R),
+    @param bth_dst_qp BTH Destination QP,
+    @param bth_ack_req BTH Acknowledge Request,
+    @param bth_psn BTH Packet Sequence Number,
+    @param rocev2_payload
+
+    Generates a simple ROCEv2 packet. Users shouldn't assume anything about
+    this packet other than that it is a valid ethernet/IP/UDP/ROCEv2 frame.
+    """
+
+    if scapy.BTH is None:
+        logging.error("A ROCEv2 packet was requested but ROCEv2 is not supported by your Scapy. See README for more information")
+        return None
+
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    bth_hdr = scapy.BTH(opcode=bth_opcode,
+                        solicited=bth_se,
+                        migreq=bth_migration_req,
+                        padcount=bth_pad_count,
+                        version=bth_transport_version,
+                        pkey=bth_partition_key,
+                        fecn=bth_f_res1,
+                        becn=bth_b_res1,
+                        dqpn=bth_dst_qp,
+                        ackreq=bth_ack_req,
+                        psn=bth_psn)
+
+    udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport)
+
+    ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
+
+    # Note Dot1Q.id is really CFI
+    if (dl_vlan_enable):
+        pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+            scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)/ \
+            scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, id=ip_id)/ \
+            udp_hdr/bth_hdr
+    else:
+        if not ip_options:
+            pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, id=ip_id, flags=ip_flag)/ \
+                udp_hdr/bth_hdr
+        else:
+            pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
+                scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, options=ip_options, id=ip_id, flags=ip_flag)/ \
+                udp_hdr/bth_hdr
+
+    if rocev2_payload:
+        pkt = pkt/rocev2_payload
+
+    pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
+
+    return pkt
+
+def simple_rocev2v6_packet(pktlen=100,
+                           eth_dst='00:01:02:03:04:05',
+                           eth_src='00:06:07:08:09:0a',
+                           dl_vlan_enable=False,
+                           vlan_vid=0,
+                           vlan_pcp=0,
+                           ipv6_src='2001:db8:85a3::8a2e:370:7334',
+                           ipv6_dst='2001:db8:85a3::8a2e:370:7335',
+                           ipv6_tc=0,
+                           ipv6_ecn=None,
+                           ipv6_dscp=None,
+                           ipv6_hlim=64,
+                           ipv6_fl=0,
+                           udp_sport=1234,
+                           udp_dport=4791,
+                           ip_ihl=None,
+                           ip_options=False,
+                           ip_flag=0,
+                           ip_id=1,
+                           bth_opcode=0x81,
+                           bth_se=0,
+                           bth_migration_req=0,
+                           bth_pad_count=0,
+                           bth_transport_version=0,
+                           bth_partition_key=0xffff,
+                           bth_f_res1=0,
+                           bth_b_res1=0,
+                           bth_dst_qp=0x0000d2,
+                           bth_ack_req=0,
+                           bth_psn=0,
+                           rocev2_payload=None):
+    """
+    Return a simple dataplane IPv6/ROCEv2 packet
+
+    Supports a few parameters:
+    @param len Length of packet in bytes w/o CRC
+    @param eth_dst Destination MAC
+    @param eth_src Source MAC
+    @param dl_vlan_enable True if the packet is with vlan, False otherwise
+    @param vlan_vid VLAN ID
+    @param vlan_pcp VLAN priority
+    @param ipv6_src IPv6 source
+    @param ipv6_dst IPv6 destination
+    @param ipv6_tc IPv6 traffic class
+    @param ipv6_ecn IPv6 traffic class ECN
+    @param ipv6_dscp IPv6 traffic class DSCP
+    @param ipv6_ttl IPv6 hop limit
+    @param ipv6_fl IPv6 flow label
+    @param udp_sport UDP source port
+    @param udp_dport UDP destination port
+    @param bth_opcode BTH OpCode,
+    @param bth_se BTH Solicited Event,
+    @param bth_migration_req BTH MigReq,
+    @param bth_pad_count BTH Pad Count,
+    @param bth_transport_version BTH Transport Header Version,
+    @param bth_partition_key BTH Partition Key,
+    @param bth_f_res1 BTH F/Res1* (F/R),
+    @param bth_b_res1 BTH B/Res1* (B/R),
+    @param bth_dst_qp BTH Destination QP,
+    @param bth_ack_req BTH Acknowledge Request,
+    @param bth_psn BTH Packet Sequence Number,
+    @param rocev2_payload
+
+    Generates a simple IPv6/ROCEv2 packet. Users shouldn't assume anything about
+    this packet other than that it is a valid ethernet/IP/UDP/ROCEv2 frame.
+    """
+
+    if scapy.BTH is None:
+        logging.error("A ROCEv2 packet was requested but ROCEv2 is not supported by your Scapy. See README for more information")
+        return None
+
+    if MINSIZE > pktlen:
+        pktlen = MINSIZE
+
+    bth_hdr = scapy.BTH(opcode=bth_opcode,
+                        solicited=bth_se,
+                        migreq=bth_migration_req,
+                        padcount=bth_pad_count,
+                        version=bth_transport_version,
+                        pkey=bth_partition_key,
+                        fecn=bth_f_res1,
+                        becn=bth_b_res1,
+                        dqpn=bth_dst_qp,
+                        ackreq=bth_ack_req,
+                        psn=bth_psn)
+
+    ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
+    pkt = scapy.Ether(dst=eth_dst, src=eth_src)
+    if dl_vlan_enable or vlan_vid or vlan_pcp:
+        pkt /= scapy.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
+    pkt /= scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim)
+    pkt /= scapy.UDP(sport=udp_sport, dport=udp_dport)
+    pkt /= bth_hdr
+
+    if rocev2_payload:
+        pkt = pkt/rocev2_payload
+
+    pkt /= ("D" * (pktlen - len(pkt)))
+
+    return pkt
 
 __all__ = list(set(locals()) - _import_blacklist)

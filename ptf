@@ -619,9 +619,16 @@ if config["list_test_names"]:
 
 # Generate the test suite
 test_suite = []
+tests_executed = []
+test_report = []
 for (modname, (mod, tests)) in test_modules.items():
     for (testname, test) in tests.items():
+        print("Preparing test " + modname + "." +testname)
         test_suite.append(test())
+        test_report.append({'testname':testname, 'mod':modname, 'status':"PASS"})
+        tests_executed.append(testname)
+print("Tests: %d" %(len(test_report)))
+
 if config["test_order"] == "lexico":
     test_suite.sort()
 elif config["test_order"] == "rand":
@@ -758,6 +765,43 @@ if __name__ == "__main__":
 
     profiler_teardown(profiler)
 
+    tests_errors = 0
+    tests_passed = 0
+    tests_failed = 0
+    for report in test_report:
+        status = ""
+        for test in run_failures:
+            tname = test[0].__class__.__name__
+            if (report['testname'] == tname):
+                status = "FAILED"
+                tests_failed += 1
+                break
+        for test in run_errors:
+            tname = test[0].__class__.__name__
+            if (report['testname'] == tname):
+                if (len(status) != 0):
+                    status += ", "
+                status += "ERROR"
+                tests_errors += 1
+                break
+        if (len(status) == 0):
+            tests_passed += 1
+        else:
+            report['status'] = status
+
+    print("")
+    print("Test execution report:")
+    for report in test_report:
+        s = report['mod']+"."+report['testname']
+        print(" %40s   - %s" %(s, report['status']))
+    print("")
+    print("Tests executed : " + str(len(tests_executed)))
+    print("Tests passed   : " + str(tests_passed))
+    print("Tests failed   : " + str(tests_failed))
+    print("Tests errors   : " + str(tests_errors))
+    print("")
+    print("The following tests have been executed:")
+    print(", ".join([f for f in tests_executed]))
     if run_failures or run_errors:
         print()
         print("******************************************")

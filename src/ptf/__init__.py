@@ -30,7 +30,7 @@ def open_logfile(name):
     logger = logging.getLogger()
 
     # Remove any existing handlers
-    for handler in logger.handlers:
+    for handler in list(logger.handlers):
         logger.removeHandler(handler)
         handler.close()
 

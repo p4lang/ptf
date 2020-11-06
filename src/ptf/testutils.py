@@ -2679,7 +2679,7 @@ def verify_packet_any_port(test, pkt, ports=[], device_number=0, timeout=1):
                 % (ports, device_number, result.format()))
     return (0, None)
 
-def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0, timeout=1):
+def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0, timeout=2):
     """
     Check that _any_ of the packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).

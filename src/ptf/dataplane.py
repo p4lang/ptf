@@ -845,7 +845,7 @@ class DataPlane(Thread):
                 sys.stdout.close()
                 sys.stdout = stdout_save  # Restore the original stdout.
 
-    def poll(self, device_number=0, port_number=None, timeout=-1, exp_pkt=None, filters=[]):
+    def poll(self, device_number=0, port_number=None, timeout=None, exp_pkt=None, filters=[]):
         """
         Poll one or all dataplane ports for a packet
 

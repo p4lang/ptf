@@ -2718,14 +2718,15 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0, timeout
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
-    if timeout <= 0:
-        raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
-
     p_timeout = timeout
     n_timeout = timeout
     if timeout==None:
         p_timeout = ptf.ptfutils.default_timeout
         n_timeout = ptf.ptfutils.default_negative_timeout
+
+    if p_timeout <= 0 or n_timeout <= 0:
+        raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
+
     received = False
     match_index = 0
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
@@ -2799,10 +2800,10 @@ def count_matched_packets(test, exp_packet, port, device_number=0, timeout=None)
     As soon as the packets stop arriving, the function waits for the timeout value and
     returns the counter. Therefore, this function requires a positive timeout value.
     """
-    if timeout <= 0:
-        raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
     if timeout is None:
         timeout = ptf.ptfutils.default_timeout
+    if timeout <= 0:
+        raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
 
     total_rcv_pkt_cnt = 0
     while True:
@@ -2822,10 +2823,10 @@ def count_matched_packets_all_ports(test, exp_packet, ports=[], device_number=0,
     receiving matched packets for the specified timeout duration. Therefore, this function
     requires a positive timeout value.
     """
-    if timeout <= 0:
-        raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
     if timeout is None:
         timeout = ptf.ptfutils.default_timeout
+    if timeout <= 0:
+        raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
 
     last_matched_packet_time = time.time()
     total_rcv_pkt_cnt = 0

@@ -2683,7 +2683,7 @@ def verify_packet_any_port(test, pkt, ports=[], device_number=0, timeout=None, n
     """
     if timeout==None:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout==None
+    if n_timeout==None:
         n_timeout = ptf.ptfutils.default_negative_timeout
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
     result = dp_poll(test, device_number=device_number, timeout=timeout, exp_pkt=pkt)

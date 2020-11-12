@@ -46,8 +46,7 @@ BTH = None
 if not config.get("disable_rocev2", False):
     try:
         ptf.disable_logging()
-        import scapy.contrib
-        import scapy.contrib.roce
+        scapy.main.load_contrib("roce")
         BTH = scapy.contrib.roce.BTH
         ptf.enable_logging()
         logging.info("ROCEv2 support found in Scapy")

@@ -50,7 +50,7 @@ if not config.get("disable_rocev2", False):
         BTH = scapy.contrib.roce.BTH
         ptf.enable_logging()
         logging.info("ROCEv2 support found in Scapy")
-    except ImportError:
+    except:
         ptf.enable_logging()
         logging.warn("ROCEv2 support not found in Scapy")
         pass

@@ -19,11 +19,11 @@ def gen_xid():
 """
 Wait on a condition variable until the given function returns non-None or a timeout expires.
 The condition variable must already be acquired.
-The timeout value -1 means use the default timeout.
+The timeout value None means use the default timeout.
 There is deliberately no support for an infinite timeout.
 """
-def timed_wait(cv, fn, timeout=-1):
-    if timeout == -1:
+def timed_wait(cv, fn, timeout=None):
+    if timeout == None:
         timeout = default_timeout
 
     end_time = time.time() + timeout

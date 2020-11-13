@@ -2517,7 +2517,7 @@ def send(test, port_id, pkt, count=1):
     """
     return send_packet(test, port_id, pkt, count=count)
 
-def dp_poll(test, device_number=0, port_number=None, timeout=-1, exp_pkt=None):
+def dp_poll(test, device_number=0, port_number=None, timeout=None, exp_pkt=None):
     """
     Wrapper function around dataplane.poll
     """
@@ -2529,14 +2529,14 @@ def dp_poll(test, device_number=0, port_number=None, timeout=-1, exp_pkt=None):
         test.at_receive(result.packet, device_number=result.device, port_number=result.port)
     return result
 
-def verify_packet(test, pkt, port_id, timeout=2):
+def verify_packet(test, pkt, port_id, timeout=None):
     """
     Check that an expected packet is received
     port_id can either be a single integer (port_number on default device 0)
     or a tuple of 2 integers (device_number, port_number)
     """
     if timeout==None:
-        timeout=2
+        timeout=ptf.ptfutils.default_timeout
     device, port = port_to_tuple(port_id)
     logging.debug("Checking for pkt on device %d, port %d", device, port)
     result = dp_poll(test, device_number=device, port_number=port,
@@ -2578,12 +2578,12 @@ def verify_no_other_packets(test, device_number=0, timeout=None):
         test.fail("A packet was received on device %d, port %r, but we expected no "
                   "packets.\n%s" % (result.device, result.port, result.format()))
 
-def verify_packets(test, pkt, ports=[], device_number=0, timeout=None):
+def verify_packets(test, pkt, ports=[], device_number=0, timeout=None, n_timeout=None):
     """
-    Check that a packet is received on each of the specified port numbers for a
+    a.) Check that a packet is received on each of the specified port numbers for a
     given device (default device number is 0).
 
-    Also verifies that the packet is not received on any other ports for this
+    b.) Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
 
@@ -2593,17 +2593,26 @@ def verify_packets(test, pkt, ports=[], device_number=0, timeout=None):
     For more complex usage, like multiple different packets being output, or
     multiple packets on the same port, use the primitive verify_packet,
     verify_no_packet, and verify_no_other_packets functions directly.
+
+    Timeout for this function is used as +ve timeout for (a) and n_timeout is used for
+    -ve timeout for (b)
+    Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
+    -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
+    if timeout==None:
+        timeout = ptf.ptfutils.default_timeout
+    if n_timeout==None:
+        n_timeout = ptf.ptfutils.default_negative_timeout
     for device, port in ptf_ports():
         if device != device_number:
             continue
         if port in ports:
             verify_packet(test, pkt, (device, port), timeout=timeout)
         else:
-            verify_no_packet(test, pkt, (device, port), timeout=timeout)
-    verify_no_other_packets(test, device_number=device_number, timeout=timeout)
+            verify_no_packet(test, pkt, (device, port), timeout=n_timeout)
+    verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
 
-def verify_no_packet_any(test, pkt, ports=[], device_number=0):
+def verify_no_packet_any(test, pkt, ports=[], device_number=0, timeout=None):
     """
     Check that a packet is NOT received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
@@ -2614,32 +2623,40 @@ def verify_no_packet_any(test, pkt, ports=[], device_number=0):
             continue
         if port in ports:
             print('verifying packet on port device', device_number, 'port', port)
-            verify_no_packet(test, pkt, (device, port))
+            verify_no_packet(test, pkt, (device, port), timeout=timeout)
 
-def verify_packets_any(test, pkt, ports=[], device_number=0):
+def verify_packets_any(test, pkt, ports=[], device_number=0, timeout=None, n_timeout=None):
     """
-    Check that a packet is received on _any_ of the specified ports belonging to
+    a.) Check that a packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
 
-    Also verifies that the packet is not received on any other ports for this
+    b.) Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
+    Timeout for this function is used as +ve timeout for (a) and n_timeout is used for
+    -ve timeout for (b)
+    Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
+    -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
     received = False
     failures = []
+    if timeout==None:
+        timeout = ptf.ptfutils.default_timeout
+    if n_timeout==None:
+        n_timeout = ptf.ptfutils.default_negative_timeout
     for device, port in ptf_ports():
         if device != device_number:
             continue
         if port in ports:
             logging.debug("Checking for pkt on device %d, port %d", device_number, port)
-            result = dp_poll(test, device_number=device, port_number=port, exp_pkt=pkt)
+            result = dp_poll(test, device_number=device, port_number=port, timeout=timeout, exp_pkt=pkt)
             if isinstance(result, test.dataplane.PollSuccess):
                 received = True
             else:
                 failures.append((port, result))
         else:
-            verify_no_packet(test, pkt, (device, port))
-    verify_no_other_packets(test)
+            verify_no_packet(test, pkt, (device, port), timeout=n_timeout)
+    verify_no_other_packets(test, timeout=n_timeout)
 
     if not received:
         def format_failure(port, failure):
@@ -2648,22 +2665,29 @@ def verify_packets_any(test, pkt, ports=[], device_number=0):
         test.fail("Did not receive expected packet on any of ports %r for device %d.\n%s"
                     % (ports, device_number, failure_report))
 
-def verify_packet_any_port(test, pkt, ports=[], device_number=0, timeout=1):
+def verify_packet_any_port(test, pkt, ports=[], device_number=0, timeout=None, n_timeout=None):
     """
-    Check that the packet is received on _any_ of the specified ports belonging to
+    a.) Check that the packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
 
     The function returns when either the expected packet is received or timeout (1 second).
 
-    Also verifies that the packet is not received on any other ports for this
+    b.) Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
 
     Returns the index of the port on which the packet is received and the packet.
+    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
+    -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
+    if timeout==None:
+        timeout = ptf.ptfutils.default_timeout
+    if n_timeout==None:
+        n_timeout = ptf.ptfutils.default_negative_timeout
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
-    result = dp_poll(test, device_number=device_number, exp_pkt=pkt, timeout=timeout)
-    verify_no_other_packets(test, device_number=device_number)
+    result = dp_poll(test, device_number=device_number, timeout=timeout, exp_pkt=pkt)
+    verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
 
     if isinstance(result, test.dataplane.PollSuccess):
         if result.port in ports:
@@ -2679,18 +2703,26 @@ def verify_packet_any_port(test, pkt, ports=[], device_number=0, timeout=1):
                 % (ports, device_number, result.format()))
     return (0, None)
 
-def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0, timeout=1):
+def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0, timeout=None, n_timeout=None):
     """
-    Check that _any_ of the packet is received on _any_ of the specified ports belonging to
+    a.) Check that _any_ of the packet is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
 
-    Also verifies that the packet is not received on any other ports for this
+    b.) Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
 
     Returns the index of the port on which the packet is received.
+    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
+    -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
-    if timeout <= 0:
+    if timeout==None:
+        timeout = ptf.ptfutils.default_timeout
+    if n_timeout==None:
+        n_timeout = ptf.ptfutils.default_negative_timeout
+
+    if timeout <= 0 or n_timeout <= 0:
         raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
 
     received = False
@@ -2704,7 +2736,7 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0, timeout
             if str(pkt) == received_packet:
                 match_index = ports.index(result.port)
                 received = True
-    verify_no_other_packets(test, device_number=device_number)
+    verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
 
     if isinstance(result, test.dataplane.PollFailure):
         test.fail("Did not receive any expected packet on any of ports %r for "
@@ -2720,42 +2752,53 @@ def verify_any_packet_any_port(test, pkts=[], ports=[], device_number=0, timeout
 
     return match_index
 
-def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0):
+def verify_each_packet_on_each_port(test, pkts=[], ports=[], device_number=0, timeout=None, n_timeout=None):
     """
-    Check that each packet is received on corresponding port in the port list belonging to
+    a.) Check that each packet is received on corresponding port in the port list belonging to
     the given device (default device_number is 0).
 
-    Also verifies that the packet is not received on any other ports for this
+    b.) Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
+    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
+    -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
     pkt_cnt = 0
     test.assertTrue(len(pkts) == len(ports), "packet list count does not match port list count")
+    if timeout==None:
+        timeout = ptf.ptfutils.default_timeout
+    if n_timeout==None:
+        n_timeout = ptf.ptfutils.default_negative_timeout
     for port, pkt in zip(ports, pkts):
         logging.debug("Checking for pkt on device %d, port %d", device_number, port)
-        result = dp_poll(test, device_number=device_number, port_number=port, exp_pkt=pkt)
+        result = dp_poll(test, device_number=device_number, port_number=port, timeout=timeout, exp_pkt=pkt)
         if isinstance(result, test.dataplane.PollFailure):
             test.fail("Did not receive expected packets on port %d for device %d.\n%s"
                         % (port, device_number, result.format()))
 
-    verify_no_other_packets(test, device_number=device_number)
+    verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
 
-def verify_packet_prefix(test, pkt, port, len, device_number=0):
+def verify_packet_prefix(test, pkt, port, len, device_number=0, timeout=None):
     """
     Check that an expected packet is received
     """
     logging.debug("Checking for pkt on port %r", port)
-    result = test.dataplane.poll(port_number=port, timeout=2, exp_pkt=bytes(pkt)[:len])
+    if timeout is None:
+        timeout = ptf.ptfutils.default_timeout
+    result = test.dataplane.poll(port_number=port, timeout=timeout, exp_pkt=bytes(pkt)[:len])
     if isinstance(result, test.dataplane.PollFailure):
         test.fail("Did not receive expected packet on port %r\n.%s"
                     % (port, result.format()))
 
-def count_matched_packets(test, exp_packet, port, device_number=0, timeout=1):
+def count_matched_packets(test, exp_packet, port, device_number=0, timeout=None):
     """
     Receive all packets on the port and count how many expected packets were received.
     As soon as the packets stop arriving, the function waits for the timeout value and
     returns the counter. Therefore, this function requires a positive timeout value.
     """
+    if timeout is None:
+        timeout = ptf.ptfutils.default_timeout
     if timeout <= 0:
         raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
 
@@ -2770,13 +2813,15 @@ def count_matched_packets(test, exp_packet, port, device_number=0, timeout=1):
 
     return total_rcv_pkt_cnt
 
-def count_matched_packets_all_ports(test, exp_packet, ports=[], device_number=0, timeout=1):
+def count_matched_packets_all_ports(test, exp_packet, ports=[], device_number=0, timeout=None):
     """
     Receive all packets on all specified ports and count how many expected packets were received.
     This function will return the cumulative count of matched packets received once it stops
     receiving matched packets for the specified timeout duration. Therefore, this function
     requires a positive timeout value.
     """
+    if timeout is None:
+        timeout = ptf.ptfutils.default_timeout
     if timeout <= 0:
         raise Exception("%s() requires positive timeout value." % sys._getframe().f_code.co_name)
 

@@ -10,8 +10,8 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  test:
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
       with:
@@ -45,5 +45,3 @@ jobs:
         python CI/travis/check-nnpy.py
         ./CI/travis/run_tests.sh
         sudo python3 /usr/local/bin/nose2 utests.tests
-
-

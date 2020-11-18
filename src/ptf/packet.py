@@ -42,6 +42,19 @@ DHCP = scapy.layers.dhcp.DHCP
 BOOTP = scapy.layers.dhcp.BOOTP
 PADDING = scapy.packet.Padding
 
+BTH = None
+if not config.get("disable_rocev2", False):
+    try:
+        ptf.disable_logging()
+        scapy.main.load_contrib("roce")
+        BTH = scapy.contrib.roce.BTH
+        ptf.enable_logging()
+        logging.info("ROCEv2 support found in Scapy")
+    except:
+        ptf.enable_logging()
+        logging.warn("ROCEv2 support not found in Scapy")
+        pass
+
 if not config.get("disable_ipv6", False):
     IPv6 = scapy.layers.inet6.IPv6
     IPv6ExtHdrRouting = scapy.layers.inet6.IPv6ExtHdrRouting

@@ -93,6 +93,7 @@ config_default = {
     "disable_mpls"       : False,
     "disable_nvgre"      : False,
     "disable_igmp"       : False,
+    "disable_rocev2"     : False,
     "qlen"               : 100,
     "test_case_timeout"  : None,
 

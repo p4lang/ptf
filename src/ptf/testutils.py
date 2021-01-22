@@ -1739,9 +1739,11 @@ def simple_eth_raw_packet_with_taglist(pktlen=60,
         for i in range(1, len(dl_tpid_list)):
             pkt[Dot1Q:i].type=dl_tpid_list[i]
         pkt.type=dl_tpid_list[0]
+        pkt[Dot1Q:len(dl_tpid_list)].type = pktlen - len(pkt)
+    else:
+       pkt.type = pktlen - len(pkt)
 
     # Fill payload length
-    pkt[Dot1Q:len(dl_tpid_list)].type = pktlen - len(pkt)
     pkt = pkt/codecs.decode("".join(["%02x"%(x%256) for x in range(pktlen - len(pkt))]), "hex")
     return pkt
 

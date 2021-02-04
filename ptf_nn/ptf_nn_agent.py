@@ -265,7 +265,7 @@ class IfaceMgr(threading.Thread):
                 while True:
                     msg = afpacket.recv(self.socket, 4096)
                     self.received(msg)
-            except socket.error as err:
+            except (socket.error, RuntimeError) as err:
                 logger.debug("IfaceMgr {}-{} ({}) Error reading from the socket.".format(
                              self.dev, self.port, self.iface_name))
                 self.socket.close()

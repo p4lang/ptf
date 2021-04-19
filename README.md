@@ -23,7 +23,7 @@ dataplane and is independent of OpenFlow. We also added several
 
 The following software is required to run PTF:
 
- * Python 2.7
+ * Python 2.7 or 3.x
  * Scapy
  * pypcap (optional - VLAN tests will fail without this)
  * tcpdump (optional - Scapy will complain if it's missing)

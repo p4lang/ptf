@@ -62,6 +62,7 @@ if not config.get("disable_ipv6", False):
     IPv6ExtHdrRouting = scapy.layers.inet6.IPv6ExtHdrRouting
     ICMPv6Unknown = scapy.layers.inet6.ICMPv6Unknown
     ICMPv6EchoRequest = scapy.layers.inet6.ICMPv6EchoRequest
+    ICMPv6MLReport = scapy.layers.inet6.ICMPv6MLReport
 
 ERSPAN = None
 ERSPAN_III = None

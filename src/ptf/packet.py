@@ -15,6 +15,7 @@ try:
     import scapy.layers.l2
     import scapy.layers.inet
     import scapy.layers.dhcp
+    import scapy.layers.vxlan
     import scapy.packet
     import scapy.main
     if not config.get("disable_ipv6", False):
@@ -41,6 +42,7 @@ ICMP = scapy.layers.inet.ICMP
 DHCP = scapy.layers.dhcp.DHCP
 BOOTP = scapy.layers.dhcp.BOOTP
 PADDING = scapy.packet.Padding
+VXLAN = scapy.layers.vxlan.VXLAN
 
 BTH = None
 if not config.get("disable_rocev2", False):
@@ -61,19 +63,6 @@ if not config.get("disable_ipv6", False):
     ICMPv6Unknown = scapy.layers.inet6.ICMPv6Unknown
     ICMPv6EchoRequest = scapy.layers.inet6.ICMPv6EchoRequest
 
-VXLAN = None
-if not config.get("disable_vxlan", False):
-    try:
-        ptf.disable_logging()
-        scapy.main.load_contrib("vxlan")
-        VXLAN = scapy.contrib.vxlan.VXLAN
-        ptf.enable_logging()
-        logging.info("VXLAN support found in Scapy")
-    except:
-        ptf.enable_logging()
-        logging.warn("VXLAN support not found in Scapy")
-        pass
-
 ERSPAN = None
 ERSPAN_III = None
 PlatformSpecific = None
@@ -83,7 +72,7 @@ if not config.get("disable_erspan", False):
         scapy.main.load_contrib("erspan")
         ERSPAN = scapy.contrib.erspan.ERSPAN
         ERSPAN_III = scapy.contrib.erspan.ERSPAN_III
-        PlatformSpecific = scapy.contrib.erspan.PlatformSpecific
+        PlatformSpecific = scapy.contrib.erspan.ERSPAN_PlatformSpecific
         ptf.enable_logging()
         logging.info("ERSPAN support found in Scapy")
     except:

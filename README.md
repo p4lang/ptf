@@ -29,8 +29,7 @@ The following software is required to run PTF:
  * tcpdump (optional - Scapy will complain if it's missing)
 
 We recommend that you install our extension of Scapy, which you can obtain
-[here](https://github.com/p4lang/scapy-vxlan). It adds support for additional
-header types: `VXLAN`, `ERSPAN`, `GENEVE`, `MPLS` and `NVGRE`.
+[here](https://github.com/p4lang/scapy-vxlan). It adds support for `NVGRE` header type.
 
 Scapy version 2.4.4 is needed for `ROCEv2` header type.
 

@@ -28,8 +28,8 @@ jobs:
         bash CI/travis/install-nanomsg.sh
         sudo ldconfig
         bash CI/travis/install-nnpy.sh
-        sudo pip install scapy
-        sudo pip3 install nose2 scapy
+        sudo pip install setuptools scapy
+        sudo pip3 install setuptools nose2 scapy
 
     - name: Install
       run: |

@@ -25,11 +25,14 @@ jobs:
         sudo apt-get install python3-dev
         sudo apt-get install python3-pip
         sudo apt-get install ethtool
+        sudo pip install setuptools
+        sudo pip install scapy
+        sudo pip3 install setuptools
+        sudo pip3 install nose2 scapy
+
         bash CI/travis/install-nanomsg.sh
         sudo ldconfig
         bash CI/travis/install-nnpy.sh
-        sudo pip install setuptools scapy
-        sudo pip3 install setuptools nose2 scapy
 
     - name: Install
       run: |

@@ -25,12 +25,11 @@ jobs:
         sudo apt-get install python3-dev
         sudo apt-get install python3-pip
         sudo apt-get install ethtool
-        sudo apt-get remove python-scapy
-        git clone https://github.com/p4lang/scapy-vxlan.git && cd scapy-vxlan && sudo python setup.py install && cd ..
         bash CI/travis/install-nanomsg.sh
         sudo ldconfig
         bash CI/travis/install-nnpy.sh
-        sudo pip3 install nose2
+        sudo pip install scapy
+        sudo pip3 install nose2 scapy
 
     - name: Install
       run: |

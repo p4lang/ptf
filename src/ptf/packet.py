@@ -18,6 +18,7 @@ try:
     import scapy.layers.vxlan
     import scapy.packet
     import scapy.main
+    import scapy.fields
     if not config.get("disable_ipv6", False):
         import scapy.route6
         import scapy.layers.inet6
@@ -109,16 +110,25 @@ if not config.get("disable_mpls", False):
 
 NVGRE = None
 if not config.get("disable_nvgre", False):
-    try:
-        ptf.disable_logging()
-        scapy.main.load_contrib("nvgre")
-        NVGRE = scapy.contrib.nvgre.NVGRE
-        ptf.enable_logging()
-        logging.info("NVGRE support found in Scapy")
-    except:
-        ptf.enable_logging()
-        logging.warn("NVGRE support not found in Scapy")
-        pass
+    class NVGRE(scapy.packet.Packet):
+        name = "NVGRE"
+        fields_desc = [
+            scapy.fields.BitField("chksum_present",0,1),
+            scapy.fields.BitField("routing_present",0,1),
+            scapy.fields.BitField("key_present",1,1),
+            scapy.fields.BitField("seqnum_present",0,1),
+            scapy.fields.BitField("reserved",0,9),
+            scapy.fields.BitField("version",0,3),
+            scapy.fields.XShortField("proto", 0x6558),
+            scapy.fields.ThreeBytesField("vsid", 0),
+            scapy.fields.XByteField("flowid", 0)
+        ]
+
+        def mysummary(self):
+            return self.sprintf("NVGRE (vni=%NVGRE.vsid%)")
+
+    scapy.packet.bind_layers(IP, NVGRE, proto=47)
+    scapy.packet.bind_layers(NVGRE, Ether)
 
 IGMP = None
 if not config.get("disable_igmp", False):

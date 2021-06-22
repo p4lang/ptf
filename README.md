@@ -24,14 +24,9 @@ dataplane and is independent of OpenFlow. We also added several
 The following software is required to run PTF:
 
  * Python 2.7 or 3.x
- * Scapy
+ * Scapy 2.4.4
  * pypcap (optional - VLAN tests will fail without this)
  * tcpdump (optional - Scapy will complain if it's missing)
-
-We recommend that you install our extension of Scapy, which you can obtain
-[here](https://github.com/p4lang/scapy-vxlan). It adds support for `NVGRE` header type.
-
-Scapy version 2.4.4 is needed for `ROCEv2` header type.
 
 Root/sudo privilege is required on the host, in order to run `ptf`.
 

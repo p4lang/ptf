@@ -133,6 +133,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
             # Parse --interface
             def check_interface(value):
                 try:
+                    value, port_info = value.split(';', 1)
                     dev_and_port, interface = value.split('@', 1)
                     dev_and_port = dev_and_port.split("-")
                     if len(dev_and_port) == 1:
@@ -143,7 +144,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
                         raise ValueError("")
                 except ValueError:
                     parser.error("incorrect interface syntax (got %s, expected 'port@interface' or 'device-port@interface')" % repr(value))
-                return (dev, port, interface)
+                return (dev, port, interface, port_info)
 
             assert(type(values) is str)
             getattr(namespace, self.dest).append(check_interface(values))

@@ -133,7 +133,10 @@ be subtracted from the result by prefixing them with the '^' character.  """
             # Parse --interface
             def check_interface(value):
                 try:
-                    value, port_info = value.split(';', 1)
+                    port_info = ""
+                    sp = ';'
+                    if sp in value:
+                        value, port_info = value.split(sp, 1)
                     dev_and_port, interface = value.split('@', 1)
                     dev_and_port = dev_and_port.split("-")
                     if len(dev_and_port) == 1:

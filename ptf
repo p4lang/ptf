@@ -146,7 +146,8 @@ be subtracted from the result by prefixing them with the '^' character.  """
                     else:
                         raise ValueError("")
                 except ValueError:
-                    parser.error("incorrect interface syntax (got %s, expected 'port@interface' or 'device-port@interface')" % repr(value))
+                    parser.error("incorrect interface syntax (got %s, expected 'port@interface' or 'device-port@interface' \
+                                  or providing port configuration using 'device-port@interface;arg=val;arg2=val...' )" % repr(value))
                 return (dev, port, interface, port_info)
 
             assert(type(values) is str)

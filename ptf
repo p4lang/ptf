@@ -66,6 +66,7 @@ config_default = {
     "platform_args"      : None,
     "platform_dir"       : None,
     "interfaces"         : [],
+    "port_info"          : {},
     "device_sockets"     : [],  # when using nanomsg
 
     # Logging options
@@ -133,10 +134,14 @@ be subtracted from the result by prefixing them with the '^' character.  """
             # Parse --interface
             def check_interface(value):
                 try:
-                    port_info = ""
                     sp = ';'
                     if sp in value:
-                        value, port_info = value.split(sp, 1)
+                        value, p_info = value.split(sp, 1)
+                        params = p_info.split(sp)
+                        port = params.pop(0)
+                        params.pop()
+                        port_cfg = dict(val.split("=") for val in params)
+                        getattr(namespace, "port_info")[port] = port_cfg
                     dev_and_port, interface = value.split('@', 1)
                     dev_and_port = dev_and_port.split("-")
                     if len(dev_and_port) == 1:
@@ -148,7 +153,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
                 except ValueError:
                     parser.error("incorrect interface syntax (got %s, expected 'port@interface' or 'device-port@interface' \
                                   or providing port configuration using 'device-port@interface;arg=val;arg2=val...' )" % repr(value))
-                return (dev, port, interface, port_info)
+                return (dev, port, interface)
 
             assert(type(values) is str)
             getattr(namespace, self.dest).append(check_interface(values))
@@ -560,6 +565,8 @@ import ptf.testutils
 # We do this before importing the test modules in case test parameters are being
 # accessed at test import time.
 ptf.testutils.TEST_PARAMS = test_params_parse(config)
+# Initiallize port information
+ptf.testutils.PORT_INFO = config["port_info"]
 
 test_specs = args.test_specs
 if config["test_file"] != None:

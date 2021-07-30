@@ -25,6 +25,7 @@ UDP_PROTOCOL = 0x11
 
 MINSIZE = 0
 TEST_PARAMS = None
+PORT_INFO = None
 
 _import_blacklist.add('FILTERS')
 FILTERS = []
@@ -2391,6 +2392,34 @@ def test_param_get(key, default=None):
 
     try:
         return params[key]
+    except:
+        return default
+
+def test_port_params_get(default={}):
+    """
+    Return all the port info values passed via --interface if present
+
+    @param default Default dictionary to use if no params were provided or if
+    the provided string could not be "exec'd".
+
+    """
+    if PORT_INFO is None:
+        return default
+    return PORT_INFO
+
+def port_param_get(port, key, default=None):
+    """
+    Return port info values passed via --interface if present
+
+    @param port The lookup key
+    @param key The lookup key
+    @param default Default value to use if not found
+
+    """
+    params = test_port_params_get()
+
+    try:
+        return params[port][key]
     except:
         return default
 

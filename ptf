@@ -133,8 +133,8 @@ be subtracted from the result by prefixing them with the '^' character.  """
         def __call__(self, parser, namespace, values, option_string=None):
             # Parse --interface
             def check_interface(value):
+                sp = ';'
                 try:
-                    sp = ';'
                     if sp in value:
                         value, p_info = value.split(sp, 1)
                         params = p_info.split(sp)

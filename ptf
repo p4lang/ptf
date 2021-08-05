@@ -139,7 +139,6 @@ be subtracted from the result by prefixing them with the '^' character.  """
                         value, p_info = value.split(sp, 1)
                         params = p_info.split(sp)
                         port = params.pop(0)
-                        params.pop()
                         port_cfg = dict(val.split("=") for val in params)
                         getattr(namespace, "port_info")[port] = port_cfg
                     dev_and_port, interface = value.split('@', 1)

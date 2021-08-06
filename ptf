@@ -488,7 +488,7 @@ def prune_tests(test_specs, test_modules):
                                 del result[modname]
                     matched = True
 
-        if not matched:
+        if not matched and not negated:
             die("test-spec element %s did not match any tests" % e)
 
     return result

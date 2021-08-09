@@ -2419,7 +2419,7 @@ def port_param_get(port, key, default=None):
     params = test_port_params_get()
 
     try:
-        return params[port][key]
+        return params[int(port)][key.lower()]
     except:
         return default
 

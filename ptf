@@ -133,14 +133,15 @@ be subtracted from the result by prefixing them with the '^' character.  """
         def __call__(self, parser, namespace, values, option_string=None):
             # Parse --interface
             def check_interface(value):
+                port_cfg = {}
                 sp = ';'
                 try:
                     if sp in value:
                         value, p_info = value.split(sp, 1)
                         params = p_info.split(sp)
-                        port = params.pop(0)
-                        port_cfg = dict(val.split("=") for val in params)
-                        getattr(namespace, "port_info")[port] = port_cfg
+                        for elem in params:
+                            key, val = elem.split("=")
+                            port_cfg[key.lower()] = val
                     dev_and_port, interface = value.split('@', 1)
                     dev_and_port = dev_and_port.split("-")
                     if len(dev_and_port) == 1:
@@ -149,6 +150,8 @@ be subtracted from the result by prefixing them with the '^' character.  """
                         dev, port = int(dev_and_port[0]), int(dev_and_port[1])
                     else:
                         raise ValueError("")
+                    if port_cfg:
+                        getattr(namespace, "port_info")[port] = port_cfg
                 except ValueError:
                     parser.error("incorrect interface syntax (got %s, expected 'port@interface' or 'device-port@interface' \
                                   or providing port configuration using 'device-port@interface;arg=val;arg2=val...' )" % repr(value))

@@ -140,7 +140,7 @@ def simple_tcp_packet_ext_taglist(pktlen=100,
               tcp_hdr
 
         for i in range(1, len(dl_tpid_list)):
-            pkt[Dot1Q:i].type=dl_tpid_list[i]
+            pkt[scapy.Dot1Q:i].type=dl_tpid_list[i]
         pkt.type=dl_tpid_list[0]
 
     else:
@@ -502,7 +502,7 @@ def simple_geneve_packet(pktlen=300,
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, flags=ip_flags, ihl=ip_ihl, options=ip_options)/ \
                 udp_hdr
 
-    pkt = pkt / GENEVE(vni = geneve_vni, proto = geneve_proto )
+    pkt = pkt / scapy.GENEVE(vni = geneve_vni, proto = geneve_proto )
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -676,7 +676,7 @@ def simple_vxlan_packet(pktlen=300,
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, flags=ip_flags, ihl=ip_ihl, options=ip_options)/ \
                 udp_hdr
 
-    pkt = pkt / VXLAN(vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
+    pkt = pkt / scapy.VXLAN(vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -755,7 +755,7 @@ def simple_vxlanv6_packet(pktlen=300,
               scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim)/ \
             udp_hdr
 
-    pkt = pkt / VXLAN(vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
+    pkt = pkt / scapy.VXLAN(vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -1636,7 +1636,7 @@ def simple_ipv6_mld_packet(pktlen=300,
         pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
               scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim, nh=next_header)
 
-    pkt = pkt / ICMPv6MLReport(type=mld_type, mladdr=mld_mladdr, mrd=mld_mrd)
+    pkt = pkt / scapy.ICMPv6MLReport(type=mld_type, mladdr=mld_mladdr, mrd=mld_mrd)
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -1737,9 +1737,9 @@ def simple_eth_raw_packet_with_taglist(pktlen=60,
             pkt = pkt/scapy.Dot1Q(prio=dl_vlan_pcp_list[i], id=dl_vlan_cfi_list[i], vlan=dl_vlanid_list[i])
 
         for i in range(1, len(dl_tpid_list)):
-            pkt[Dot1Q:i].type=dl_tpid_list[i]
+            pkt[scapy.Dot1Q:i].type=dl_tpid_list[i]
         pkt.type=dl_tpid_list[0]
-        pkt[Dot1Q:len(dl_tpid_list)].type = pktlen - len(pkt)
+        pkt[scapy.Dot1Q:len(dl_tpid_list)].type = pktlen - len(pkt)
     else:
        pkt.type = pktlen - len(pkt)
 
@@ -1894,16 +1894,16 @@ def simple_mpls_packet(pktlen=300,
         pktlen = MINSIZE
 
     pkt = scapy.Ether(dst=eth_dst, src=eth_src)
-    pkt[Ether].setfieldval('type', mpls_type)
+    pkt[scapy.Ether].setfieldval('type', mpls_type)
 
     if (dl_vlan_enable):
         pkt / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-        pkt[Dot1Q].setfieldval('type', mpls_type)
+        pkt[scapy.Dot1Q].setfieldval('type', mpls_type)
 
     mpls_tags = list(mpls_tags)
     while len(mpls_tags):
         tag = mpls_tags.pop(0)
-        mpls = MPLS()
+        mpls = scapy.MPLS()
         if 'label' in tag:
             mpls.label = tag['label']
         if 'tc' in tag:
@@ -2050,7 +2050,7 @@ def simple_igmp_packet(pktlen=300,
             pkt = scapy.Ether(dst=eth_dst, src=eth_src)/ \
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl, options=ip_options)
 
-    pkt = pkt / IGMP(type=igmp_type, gaddr=igmp_gaddr, mrtime=igmp_mrtime)
+    pkt = pkt / scapy.IGMP(type=igmp_type, gaddr=igmp_gaddr, mrtime=igmp_mrtime)
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -2486,7 +2486,7 @@ def ptf_ports(num=None):
     return ports[:num]
 
 def port_to_tuple(port):
-    if type(port) is int or (sys.version_info[0] == 2 and type(port) is long):
+    if type(port) is int or (sys.version_info[0] == 2 and type(port) is int):
         return 0, port
     if type(port) is tuple:
         return port

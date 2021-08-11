@@ -2395,7 +2395,7 @@ def test_param_get(key, default=None):
     except:
         return default
 
-def test_port_params_get(default={}):
+def port_params_get(default={}):
     """
     Return all the port info values passed via --interface if present
 
@@ -2416,7 +2416,7 @@ def port_param_get(port, key, default=None):
     @param default Default value to use if not found
 
     """
-    params = test_port_params_get()
+    params = port_params_get()
 
     try:
         return params[int(port)][key.lower()]

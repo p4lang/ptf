@@ -2692,7 +2692,7 @@ def verify_packets_any(test, pkt, ports=[], device_number=0, timeout=None, n_tim
     if not received:
         def format_failure(port, failure):
             return "On port %d:\n%s" % (port, failure.format())
-        failure_report = "\n".join([format_failure(f) for f in failures])
+        failure_report = "\n".join([format_failure(*f) for f in failures])
         test.fail("Did not receive expected packet on any of ports %r for device %d.\n%s"
                     % (ports, device_number, failure_report))
 

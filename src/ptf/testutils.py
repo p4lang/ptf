@@ -614,6 +614,7 @@ def simple_vxlan_packet(pktlen=300,
                         with_udp_chksum=True,
                         ip_ihl=None,
                         ip_options=False,
+                        vxlan_flags = 0x08,
                         vxlan_reserved1=0x000000,
                         vxlan_vni = 0xaba,
                         vxlan_reserved2=0x00,
@@ -638,6 +639,7 @@ def simple_vxlan_packet(pktlen=300,
     @param ip_flags IP Flags
     @param udp_sport UDP source port
     @param udp_dport UDP dest port (IANA) = 4789 (VxLAN)
+    @param vxlan_flags Flags
     @param vxlan_reserved1 reserved field (3B)
     @param vxlan_vni VXLAN Network Identifier
     @param vxlan_reserved2 reserved field (1B)
@@ -676,7 +678,7 @@ def simple_vxlan_packet(pktlen=300,
                 scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, flags=ip_flags, ihl=ip_ihl, options=ip_options)/ \
                 udp_hdr
 
-    pkt = pkt / scapy.VXLAN(vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
+    pkt = pkt / scapy.VXLAN(flags = vxlan_flags, vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -702,6 +704,7 @@ def simple_vxlanv6_packet(pktlen=300,
                           udp_sport=1234,
                           udp_dport=4789,
                           with_udp_chksum=True,
+                          vxlan_flags = 0x08,
                           vxlan_reserved1=0x000000,
                           vxlan_vni = 0xaba,
                           vxlan_reserved2=0x00,
@@ -725,6 +728,7 @@ def simple_vxlanv6_packet(pktlen=300,
     @param ipv6_hlim IPv6 hop limit
     @param udp_sport UDP source port
     @param udp_dport UDP dest port (IANA) = 4789 (VxLAN)
+    @param vxlan_flags Flags
     @param vxlan_reserved1 reserved field (3B)
     @param vxlan_vni VXLAN Network Identifier
     @param vxlan_reserved2 reserved field (1B)
@@ -755,7 +759,7 @@ def simple_vxlanv6_packet(pktlen=300,
               scapy.IPv6(src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim)/ \
             udp_hdr
 
-    pkt = pkt / scapy.VXLAN(vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
+    pkt = pkt / scapy.VXLAN(flags = vxlan_flags, vni = vxlan_vni, reserved1 = vxlan_reserved1, reserved2 = vxlan_reserved2)
 
     if inner_frame:
         pkt = pkt / inner_frame

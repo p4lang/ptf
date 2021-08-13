@@ -1064,7 +1064,7 @@ def simple_gre_erspan_packet(pktlen=300,
                               priority = erspan_priority,
                               direction = erspan_direction,
                               truncated = erspan_truncated,
-                              span_id = erspan_span_id,
+                              session_id = erspan_span_id,
                               unknown7 = erspan_unknown7)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)

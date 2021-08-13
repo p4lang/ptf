@@ -1145,9 +1145,9 @@ def ipv4_erspan_pkt(pktlen=350,
         pktlen = MINSIZE
 
     if version == 2:
-        erspan_hdr = scapy.GRE(proto=0x22eb)/scapy.ERSPAN_III(span_id=mirror_id, sgt_other = sgt_other)
+        erspan_hdr = scapy.GRE(proto=0x22eb)/scapy.ERSPAN_III(session_id=mirror_id, sgt_other = sgt_other)
     else:
-        erspan_hdr = scapy.GRE(proto=0x88be)/scapy.ERSPAN(span_id=mirror_id)
+        erspan_hdr = scapy.GRE(proto=0x88be)/scapy.ERSPAN(session_id=mirror_id)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
@@ -1233,11 +1233,11 @@ def ipv4_erspan_platform_pkt(pktlen=350,
         pktlen = MINSIZE
 
     if version == 2:
-        erspan_hdr = scapy.GRE(proto=0x22eb)/scapy.ERSPAN_III(span_id=mirror_id, sgt_other=sgt_other)
+        erspan_hdr = scapy.GRE(proto=0x22eb)/scapy.ERSPAN_III(session_id=mirror_id, sgt_other=sgt_other)
         if sgt_other & 0x01 == 1:
-            erspan_hdr = erspan_hdr/scapy.PlatformSpecific(platf_id=platf_id, info1=info1, info2=info2)
+            erspan_hdr = erspan_hdr/ERSPAN_PlatformSpecific(platf_id=platf_id, info1=info1, info2=info2)
     else:
-        erspan_hdr = scapy.GRE(proto=0x88be)/scapy.ERSPAN(span_id=mirror_id)
+        erspan_hdr = scapy.GRE(proto=0x88be)/scapy.ERSPAN(session_id=mirror_id)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 

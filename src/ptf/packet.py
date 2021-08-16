@@ -15,8 +15,10 @@ try:
     import scapy.layers.l2
     import scapy.layers.inet
     import scapy.layers.dhcp
+    import scapy.layers.vxlan
     import scapy.packet
     import scapy.main
+    import scapy.fields
     if not config.get("disable_ipv6", False):
         import scapy.route6
         import scapy.layers.inet6
@@ -41,6 +43,7 @@ ICMP = scapy.layers.inet.ICMP
 DHCP = scapy.layers.dhcp.DHCP
 BOOTP = scapy.layers.dhcp.BOOTP
 PADDING = scapy.packet.Padding
+VXLAN = scapy.layers.vxlan.VXLAN
 
 BTH = None
 if not config.get("disable_rocev2", False):
@@ -60,19 +63,7 @@ if not config.get("disable_ipv6", False):
     IPv6ExtHdrRouting = scapy.layers.inet6.IPv6ExtHdrRouting
     ICMPv6Unknown = scapy.layers.inet6.ICMPv6Unknown
     ICMPv6EchoRequest = scapy.layers.inet6.ICMPv6EchoRequest
-
-VXLAN = None
-if not config.get("disable_vxlan", False):
-    try:
-        ptf.disable_logging()
-        scapy.main.load_contrib("vxlan")
-        VXLAN = scapy.contrib.vxlan.VXLAN
-        ptf.enable_logging()
-        logging.info("VXLAN support found in Scapy")
-    except:
-        ptf.enable_logging()
-        logging.warn("VXLAN support not found in Scapy")
-        pass
+    ICMPv6MLReport = scapy.layers.inet6.ICMPv6MLReport
 
 ERSPAN = None
 ERSPAN_III = None
@@ -83,7 +74,7 @@ if not config.get("disable_erspan", False):
         scapy.main.load_contrib("erspan")
         ERSPAN = scapy.contrib.erspan.ERSPAN
         ERSPAN_III = scapy.contrib.erspan.ERSPAN_III
-        PlatformSpecific = scapy.contrib.erspan.PlatformSpecific
+        PlatformSpecific = scapy.contrib.erspan.ERSPAN_PlatformSpecific
         ptf.enable_logging()
         logging.info("ERSPAN support found in Scapy")
     except:
@@ -119,16 +110,25 @@ if not config.get("disable_mpls", False):
 
 NVGRE = None
 if not config.get("disable_nvgre", False):
-    try:
-        ptf.disable_logging()
-        scapy.main.load_contrib("nvgre")
-        NVGRE = scapy.contrib.nvgre.NVGRE
-        ptf.enable_logging()
-        logging.info("NVGRE support found in Scapy")
-    except:
-        ptf.enable_logging()
-        logging.warn("NVGRE support not found in Scapy")
-        pass
+    class NVGRE(scapy.packet.Packet):
+        name = "NVGRE"
+        fields_desc = [
+            scapy.fields.BitField("chksum_present",0,1),
+            scapy.fields.BitField("routing_present",0,1),
+            scapy.fields.BitField("key_present",1,1),
+            scapy.fields.BitField("seqnum_present",0,1),
+            scapy.fields.BitField("reserved",0,9),
+            scapy.fields.BitField("version",0,3),
+            scapy.fields.XShortField("proto", 0x6558),
+            scapy.fields.ThreeBytesField("vsid", 0),
+            scapy.fields.XByteField("flowid", 0)
+        ]
+
+        def mysummary(self):
+            return self.sprintf("NVGRE (vni=%NVGRE.vsid%)")
+
+    scapy.packet.bind_layers(IP, NVGRE, proto=47)
+    scapy.packet.bind_layers(NVGRE, Ether)
 
 IGMP = None
 if not config.get("disable_igmp", False):

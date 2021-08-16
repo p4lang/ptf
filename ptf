@@ -66,6 +66,7 @@ config_default = {
     "platform_args"      : None,
     "platform_dir"       : None,
     "interfaces"         : [],
+    "port_info"          : {},
     "device_sockets"     : [],  # when using nanomsg
 
     # Logging options
@@ -132,7 +133,15 @@ be subtracted from the result by prefixing them with the '^' character.  """
         def __call__(self, parser, namespace, values, option_string=None):
             # Parse --interface
             def check_interface(value):
+                port_cfg = {}
+                sp = ';'
                 try:
+                    if sp in value:
+                        value, p_info = value.split(sp, 1)
+                        params = p_info.split(sp)
+                        for elem in params:
+                            key, val = elem.split("=")
+                            port_cfg[key.lower()] = val
                     dev_and_port, interface = value.split('@', 1)
                     dev_and_port = dev_and_port.split("-")
                     if len(dev_and_port) == 1:
@@ -141,8 +150,11 @@ be subtracted from the result by prefixing them with the '^' character.  """
                         dev, port = int(dev_and_port[0]), int(dev_and_port[1])
                     else:
                         raise ValueError("")
+                    if port_cfg:
+                        getattr(namespace, "port_info")[port] = port_cfg
                 except ValueError:
-                    parser.error("incorrect interface syntax (got %s, expected 'port@interface' or 'device-port@interface')" % repr(value))
+                    parser.error("incorrect interface syntax (got %s, expected 'port@interface' or 'device-port@interface' \
+                                  or providing port configuration using 'device-port@interface;arg=val;arg2=val...' )" % repr(value))
                 return (dev, port, interface)
 
             assert(type(values) is str)
@@ -555,6 +567,8 @@ import ptf.testutils
 # We do this before importing the test modules in case test parameters are being
 # accessed at test import time.
 ptf.testutils.TEST_PARAMS = test_params_parse(config)
+# Initiallize port information
+ptf.testutils.PORT_INFO = config["port_info"]
 
 test_specs = args.test_specs
 if config["test_file"] != None:

@@ -3,6 +3,11 @@ from setuptools import setup
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
+with open("../requirements.txt", "r") as req:
+    requirements = []
+    for l in req.readlines():
+        requirements.append(l.rstrip())
+
 setup(
     name='ptf',
     version='0.9.1',
@@ -19,6 +24,7 @@ setup(
         'ptf',
         'ptf_nn/ptf_nn_agent.py'
     ],
+    install_requires=requirements,
     zip_safe=False,
     license='Apache License',
     keywords='ptf',

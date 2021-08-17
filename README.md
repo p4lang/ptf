@@ -17,6 +17,18 @@ dataplane and is independent of OpenFlow. We also added several
 
 ---
 
+# Contributing
+
+Before you start pushing new changes to this repository, you should notice that the entire `src/` code is automatically formatted with Black.
+Our GitHub Action pipeline will verify that code is correctly formatted and fail if not. 
+
+Two separate targets in makefile were prepared to make our work easier.
+If you want to run a check, type `make format-check`, but if you want to reformat your code, please use `make format`.
+
+More information about Black, you find at [Black's GitHub Page](https://github.com/psf/black)
+
+---
+
 # Longer Start
 
 ## Dependencies

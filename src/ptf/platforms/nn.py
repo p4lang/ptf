@@ -31,4 +31,4 @@ def platform_config_update(config):
 
     # no default configuration for this platform
 
-    config['port_map'] = port_map
+    config["port_map"] = port_map

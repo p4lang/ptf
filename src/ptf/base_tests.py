@@ -13,9 +13,10 @@ import ptf
 from ptf import config
 import ptf.dataplane as dataplane
 
+
 class BaseTest(unittest.TestCase):
     def __str__(self):
-        return self.id().replace('.runTest', '')
+        return self.id().replace(".runTest", "")
 
     def setUp(self):
         ptf.open_logfile(str(self))

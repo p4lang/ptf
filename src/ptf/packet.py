@@ -19,6 +19,7 @@ try:
     import scapy.packet
     import scapy.main
     import scapy.fields
+
     if not config.get("disable_ipv6", False):
         import scapy.route6
         import scapy.layers.inet6
@@ -110,18 +111,19 @@ if not config.get("disable_mpls", False):
 
 NVGRE = None
 if not config.get("disable_nvgre", False):
+
     class NVGRE(scapy.packet.Packet):
         name = "NVGRE"
         fields_desc = [
-            scapy.fields.BitField("chksum_present",0,1),
-            scapy.fields.BitField("routing_present",0,1),
-            scapy.fields.BitField("key_present",1,1),
-            scapy.fields.BitField("seqnum_present",0,1),
-            scapy.fields.BitField("reserved",0,9),
-            scapy.fields.BitField("version",0,3),
+            scapy.fields.BitField("chksum_present", 0, 1),
+            scapy.fields.BitField("routing_present", 0, 1),
+            scapy.fields.BitField("key_present", 1, 1),
+            scapy.fields.BitField("seqnum_present", 0, 1),
+            scapy.fields.BitField("reserved", 0, 9),
+            scapy.fields.BitField("version", 0, 3),
             scapy.fields.XShortField("proto", 0x6558),
             scapy.fields.ThreeBytesField("vsid", 0),
-            scapy.fields.XByteField("flowid", 0)
+            scapy.fields.XByteField("flowid", 0),
         ]
 
         def mysummary(self):

@@ -6,6 +6,7 @@ import sys
 import socket
 from . import packet as scapy
 
+
 def parse_mac(mac_str):
     """
     Parse a MAC address
@@ -17,12 +18,13 @@ def parse_mac(mac_str):
     """
     return [int(val, 16) for val in mac_str.split(":")]
 
+
 def parse_ip(ip_str):
     """
     Parse an IP address
 
     Parse an IP address '.' separated string of decimal digits to an
-    host ordered integer.  '172.24.74.77' => 
+    host ordered integer.  '172.24.74.77' =>
     @param ip_str The string to convert
     @return Integer value
     """
@@ -33,6 +35,7 @@ def parse_ip(ip_str):
         val += a
     return val
 
+
 def parse_ipv6(ip_str):
     """
     Parse an IPv6 address
@@ -40,6 +43,7 @@ def parse_ipv6(ip_str):
     Parse a textual IPv6 address and return a 16 byte binary string.
     """
     return socket.inet_pton(socket.AF_INET6, ip_str)
+
 
 def packet_type_classify(ether):
     try:

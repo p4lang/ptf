@@ -10,6 +10,17 @@ on:
     branches: [ master ]
 
 jobs:
+  verify-python:
+    name: Python code verification (src)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          make set-dev
+      - name: Verify code (python w/black)
+        run: |
+          make format-check
   test:
     runs-on: ubuntu-18.04
     steps:

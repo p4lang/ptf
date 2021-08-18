@@ -4,6 +4,7 @@ meaningful dataplane testing (unless ports are added dynamically as part of the
 test).
 """
 
+
 def platform_config_update(config):
     """
     Update configuration for the local platform
@@ -11,4 +12,4 @@ def platform_config_update(config):
     @param config The configuration dictionary to use/update
     """
 
-    config['port_map'] = {}
+    config["port_map"] = {}

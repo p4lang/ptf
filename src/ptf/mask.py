@@ -1,8 +1,14 @@
 from __future__ import print_function
+
+import six
 from six import StringIO
 import sys
 from scapy.utils import hexdump
-from . import packet as scapy
+
+if six.PY2:
+    from . import packet as scapy
+else:
+    import ptf.packet as scapy
 
 
 class Mask:

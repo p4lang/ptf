@@ -1,15 +1,22 @@
+import six
 import sys
 import copy
 import logging
 import types
 import time
 import re
-from . import packet as scapy
 
 import ptf
 import ptf.dataplane
 import ptf.parse
 import ptf.ptfutils
+
+if six.PY2:
+    from . import packet as scapy
+else:
+    import ptf.packet as scapy
+
+
 import codecs
 from six import StringIO
 

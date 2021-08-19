@@ -27,13 +27,25 @@ from collections import namedtuple
 from threading import Thread
 from threading import Lock
 from threading import Condition
-from . import ptfutils
-from . import netutils
-from . import mask
+
+import six
+
+
 import scapy.packet
 import scapy.utils
-from .pcap_writer import PcapWriter
 from six import StringIO
+
+#  for "backward compatibility"
+if six.PY2:
+    from . import ptfutils
+    from . import netutils
+    from . import mask
+    from .pcap_writer import PcapWriter
+else:
+    import ptf.ptfutils
+    import ptf.netutils
+    import ptf.mask
+    from ptf.pcap_writer import PcapWriter
 
 try:
     import nnpy

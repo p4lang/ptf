@@ -1,11 +1,14 @@
 """
 Utility parsing functions
 """
-
+import six
 import sys
 import socket
-from . import packet as scapy
 
+if six.PY2:
+    from . import packet as scapy
+else:
+    import ptf.packet as scapy
 
 def parse_mac(mac_str):
     """

@@ -3,7 +3,7 @@ from setuptools import setup
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-with open("../requirements.txt", "r") as req:
+with open("requirements.txt", "r") as req:
     requirements = []
     for l in req.readlines():
         requirements.append(l.rstrip())

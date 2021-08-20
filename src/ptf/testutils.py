@@ -1066,8 +1066,8 @@ def simple_gre_packet(
         version=gre_version,
         offset=gre_offset,
         key=gre_key,
-        seqence_number=gre_sequence_number,
-    )  # typo in Scapy
+        sequence_number=gre_sequence_number,
+    )
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
@@ -1204,8 +1204,8 @@ def simple_grev6_packet(
         version=gre_version,
         offset=gre_offset,
         key=gre_key,
-        seqence_number=gre_sequence_number,
-    )  # typo in Scapy
+        sequence_number=gre_sequence_number,
+    )
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
@@ -1279,11 +1279,11 @@ def simple_gre_erspan_packet(
     gre_key=None,
     gre_sequence_number=None,
     erspan_vlan=0,
-    erspan_priority=0,
-    erspan_direction=0,
-    erspan_truncated=0,
-    erspan_span_id=0,
-    erspan_unknown7=0,
+    erspan_cos=0,
+    erspan_en=0,
+    erspan_t=0,
+    erspan_session_id=0,
+    erspan_index=0,
     inner_frame=None,
 ):
     """
@@ -1316,11 +1316,11 @@ def simple_gre_erspan_packet(
     @param gre_sequence_number
     @param inner_frame payload of the GRE packet
     @param erspan_vlan
-    @param erspan_priority
-    @param erspan_direction
-    @param erspan_truncated
-    @param erspan_span_id
-    @param erspan_unknown7
+    @param erspan_cos
+    @param erspan_en
+    @param erspan_t
+    @param erspan_session_id
+    @param erspan_index
 
     Generates a simple GRE/ERSPAN packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/GRE/ERSPAN frame.
@@ -1345,16 +1345,16 @@ def simple_gre_erspan_packet(
         version=gre_version,
         offset=gre_offset,
         key=gre_key,
-        seqence_number=gre_sequence_number,
-    )  # typo in Scapy
+        sequence_number=gre_sequence_number,
+    )
 
     erspan_hdr = scapy.ERSPAN(
         vlan=erspan_vlan,
-        priority=erspan_priority,
-        direction=erspan_direction,
-        truncated=erspan_truncated,
-        session_id=erspan_span_id,
-        unknown7=erspan_unknown7,
+        cos=erspan_cos,
+        en=erspan_en,
+        t=erspan_t,
+        session_id=erspan_session_id,
+        index=erspan_index,
     )
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)

@@ -50,60 +50,64 @@ DEBUG_LEVELS = {
 # The default configuration dictionary for PTF
 config_default = {
     # Miscellaneous options
-    "list"               : False,
-    "list_test_names"    : False,
-    "allow_user"         : False,
+    "list"                      : False,
+    "list_test_names"           : False,
+    "allow_user"                : False,
 
     # Test selection options
-    "test_spec"          : "",
-    "test_file"          : None,
-    "test_dir"           : None,
-    "test_order"         : "default",
-    "test_order_seed"    : 0xaba,
+    "test_spec"                 : "",
+    "test_file"                 : None,
+    "test_dir"                  : None,
+    "test_order"                : "default",
+    "test_order_seed"           : 0xaba,
 
     # Switch connection options
-    "platform"           : "eth",
-    "platform_args"      : None,
-    "platform_dir"       : None,
-    "interfaces"         : [],
-    "port_info"          : {},
-    "device_sockets"     : [],  # when using nanomsg
+    "platform"                  : "eth",
+    "platform_args"             : None,
+    "platform_dir"              : None,
+    "interfaces"                : [],
+    "port_info"                 : {},
+    "device_sockets"            : [],  # when using nanomsg
 
     # Logging options
-    "log_file"           : "ptf.log",
-    "log_dir"            : None,
-    "debug"              : "verbose",
-    "profile"            : False,
-    "profile_file"       : "profile.out",
-    "xunit"              : False,
-    "xunit_dir"          : "xunit",
+    "log_file"                  : "ptf.log",
+    "log_dir"                   : None,
+    "debug"                     : "verbose",
+    "profile"                   : False,
+    "profile_file"              : "profile.out",
+    "xunit"                     : False,
+    "xunit_dir"                 : "xunit",
 
     # Test behavior options
-    "relax"              : False,
-    "test_params"        : None,
-    "failfast"           : False,
-    "fail_skipped"       : False,
-    "default_timeout"    : 2.0,
-    "default_negative_timeout" : 0.1,
-    "minsize"            : 0,
-    "random_seed"        : None,
-    "disable_ipv6"       : False,
-    "disable_vxlan"      : False,
-    "disable_erspan"     : False,
-    "disable_geneve"     : False,
-    "disable_mpls"       : False,
-    "disable_nvgre"      : False,
-    "disable_igmp"       : False,
-    "disable_rocev2"     : False,
-    "qlen"               : 100,
-    "test_case_timeout"  : None,
+    "relax"                     : False,
+    "test_params"               : None,
+    "failfast"                  : False,
+    "fail_skipped"              : False,
+    "default_timeout"           : 2.0,
+    "default_negative_timeout"  : 0.1,
+    "minsize"                   : 0,
+    "random_seed"               : None,
+    "disable_ipv6"              : False,
+    "disable_vxlan"             : False,
+    "disable_erspan"            : False,
+    "disable_geneve"            : False,
+    "disable_mpls"              : False,
+    "disable_nvgre"             : False,
+    "disable_igmp"              : False,
+    "disable_rocev2"            : False,
+    "qlen"                      : 100,
+    "test_case_timeout"         : None,
 
     # Socket options
-    "socket_recv_size"   : 4096,
+    "socket_recv_size"          : 4096,
+
+    # Packet manipulation provider module
+    "packet_manipulation_module": "ptf.packet_scapy",
 
     # Other configuration
-    "port_map"           : None,
+    "port_map"                  : None,
 }
+
 
 def config_setup():
     """
@@ -230,6 +234,9 @@ be subtracted from the result by prefixing them with the '^' character.  """
                         help="Proceed even if ptf is not run as root")
 
     parser.add_argument("--pypath", dest="pypath", action="append")
+
+    parser.add_argument("--packet-manipulation-module", type=str,
+                        help="Provide packet manipulation module which should be used as a 'packet' one for other PTF modules")
 
     group = parser.add_argument_group("Test selection options")
     group.add_argument("-f", "--test-file", help="File of tests to run, one per line")

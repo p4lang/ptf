@@ -3,6 +3,11 @@ format-check:
 	@echo "Checking format..."
 	python -m black src/
 
+.PHONY: format-isort
+format-isort:
+	@echo "Checking imports..."
+	python -m isort --check src/ --profile black
+
 .PHONY: format
 format:
 	@echo "Formatting..."

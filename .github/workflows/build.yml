@@ -21,6 +21,9 @@ jobs:
       - name: Verify code (python w/black)
         run: |
           make format-check
+      - name: Verify imports (python w/isort)
+        run: |
+          make format-isort
   test:
     runs-on: ubuntu-18.04
     steps:

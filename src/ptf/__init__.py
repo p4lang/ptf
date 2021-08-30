@@ -1,7 +1,7 @@
 """Docstring to silence pylint; ignores --ignore option for __init__.py"""
-import sys
-import os
 import logging
+import os
+import sys
 
 # Global config dictionary
 # Populated by oft.

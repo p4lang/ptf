@@ -1,9 +1,10 @@
 """
 Utility parsing functions
 """
-import six
-import sys
 import socket
+import sys
+
+import six
 
 if six.PY2:
     from . import packet as scapy

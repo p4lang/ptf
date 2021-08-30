@@ -6,12 +6,12 @@ and/or dataplane automatically set up.
 """
 
 import logging
-import unittest
 import os
+import unittest
 
 import ptf
-from ptf import config
 import ptf.dataplane as dataplane
+from ptf import config
 
 
 class BaseTest(unittest.TestCase):

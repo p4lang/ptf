@@ -4,25 +4,26 @@
 """
 Wrap scapy to satisfy pylint
 """
+import logging
+import sys
+
 import ptf
 from ptf import config
-import sys
-import logging
 
 try:
     import scapy.config
-    import scapy.route
-    import scapy.layers.l2
-    import scapy.layers.inet
-    import scapy.layers.dhcp
-    import scapy.layers.vxlan
-    import scapy.packet
-    import scapy.main
     import scapy.fields
+    import scapy.layers.dhcp
+    import scapy.layers.inet
+    import scapy.layers.l2
+    import scapy.layers.vxlan
+    import scapy.main
+    import scapy.packet
+    import scapy.route
 
     if not config.get("disable_ipv6", False):
-        import scapy.route6
         import scapy.layers.inet6
+        import scapy.route6
 except ImportError:
     sys.exit("Need to install scapy for packet parsing")
 

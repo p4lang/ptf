@@ -22,8 +22,8 @@ Network utilities for the OpenFlow test framework
 #############################################################################
 
 import socket
-from fcntl import ioctl
 import struct
+from fcntl import ioctl
 
 # From net/if_arp.h
 ARPHDR_ETHER = 1

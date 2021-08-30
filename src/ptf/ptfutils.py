@@ -2,12 +2,12 @@
 Utilities for the OpenFlow test framework
 """
 
-import random
-import time
-import os
 import fcntl
 import logging
+import os
+import random
 import signal
+import time
 
 default_timeout = None  # set by ptf
 default_negative_timeout = None  # set by ptf

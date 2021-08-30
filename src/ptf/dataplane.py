@@ -14,37 +14,29 @@ configuration.
 for filters should include a callback or a counter
 """
 
-import sys
-import os
-import socket
-import time
-import select
 import logging
+import os
+import select
+import socket
 import struct
-from collections import defaultdict
-from collections import deque
-from collections import namedtuple
-from threading import Thread
-from threading import Lock
-from threading import Condition
-
-import six
-
+import sys
+import time
+from collections import defaultdict, deque, namedtuple
+from threading import Condition, Lock, Thread
 
 import scapy.packet
 import scapy.utils
+import six
 from six import StringIO
 
 #  for "backward compatibility"
 if six.PY2:
-    from . import ptfutils
-    from . import netutils
-    from . import mask
+    from . import mask, netutils, ptfutils
     from .pcap_writer import PcapWriter
 else:
-    import ptf.ptfutils
-    import ptf.netutils
     import ptf.mask
+    import ptf.netutils
+    import ptf.ptfutils
     from ptf.pcap_writer import PcapWriter
 
 try:

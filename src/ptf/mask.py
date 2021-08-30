@@ -1,9 +1,10 @@
 from __future__ import print_function
 
-import six
-from six import StringIO
 import sys
+
+import six
 from scapy.utils import hexdump
+from six import StringIO
 
 if six.PY2:
     from . import packet as scapy

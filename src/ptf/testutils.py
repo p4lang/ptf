@@ -1,10 +1,11 @@
-import six
-import sys
 import copy
 import logging
-import types
-import time
 import re
+import sys
+import time
+import types
+
+import six
 
 import ptf
 import ptf.dataplane
@@ -16,8 +17,8 @@ if six.PY2:
 else:
     import ptf.packet as scapy
 
-
 import codecs
+
 from six import StringIO
 
 global skipped_test_count

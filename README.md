@@ -43,7 +43,7 @@ The following software is required to run PTF:
 
  * Python 2.7 or 3.x
  * Scapy 2.4.5
- * isort 1.16.0
+ * six 1.16.0
  * pypcap (optional - VLAN tests will fail without this)
  * tcpdump (optional - Scapy will complain if it's missing)
 

@@ -1,17 +1,24 @@
-.PHONY: format-check
-format-check:
+.PHONY: check
+check:
 	@echo "Checking format..."
-	python -m black src/
+	python -m black --check src/
+	python -m isort --check src/ --profile black
+
 
 .PHONY: format-isort
 format-isort:
-	@echo "Checking imports..."
-	python -m isort --check src/ --profile black
+	@echo "Formatting imports..."
+	python -m isort src/ --profile black
+
+.PHONY: format-black
+format-black:
+	@echo "Formatting code..."
+	python -m black src/
+
 
 .PHONY: format
-format:
-	@echo "Formatting..."
-	python -m black src/
+format: format-black format-isort
+	
 
 .PHONY: set-dev
 set-dev:

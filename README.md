@@ -42,11 +42,36 @@ More information about Black, you find at
 The following software is required to run PTF:
 
  * Python 2.7 or 3.x
- * Scapy 2.4.4
+ * Scapy 2.4.5
+ * six 1.16.0
  * pypcap (optional - VLAN tests will fail without this)
  * tcpdump (optional - Scapy will complain if it's missing)
 
 Root/sudo privilege is required on the host, in order to run `ptf`.
+
+To install minimal requirements execute:
+```text
+pip install -r requirements.txt
+```
+
+To enable VLAN tests, you need to install `pycap`:
+```text
+pip install PyCap
+```
+
+For developer purpose, you should install `requirements-dev.txt` with:
+```text
+pip install -r requirements-dev.txt
+```
+
+The `tcpdump` is optional, but to install it use:
+```text
+# on CentOS
+yum install tcpdump
+
+# on Debian base
+apt-get install tcpdump
+```
 
 ## Run PTF
 

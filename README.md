@@ -54,9 +54,9 @@ To install minimal requirements execute:
 pip install -r requirements.txt
 ```
 
-To enable VLAN tests, you need to install `pycap`:
+To enable VLAN tests, you need to install `pypcap`:
 ```text
-pip install PyCap
+pip install pypcap
 ```
 
 For developer purpose, you should install `requirements-dev.txt` with:

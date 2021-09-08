@@ -98,7 +98,7 @@ information on the different options accepted by `setup.py` (e.g. installing in
 a custom location), please refer to the [setuptools documentation]
 (https://pythonhosted.org/setuptools/setuptools.html).
 
-PTF can also be installed by using `pip` command:
+PTF can also be installed with `pip`:
 
 ```bash
 # Install the latest version

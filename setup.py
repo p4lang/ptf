@@ -1,6 +1,8 @@
+import os
 from setuptools import setup
+project_root = os.path.dirname(os.path.realpath(__file__))
 
-with open('README.md') as readme_file:
+with open(project_root + '/README.md') as readme_file:
     readme = readme_file.read()
 
 with open("requirements.txt", "r") as req:
@@ -13,6 +15,7 @@ setup(
     version='0.9.1',
     description='PTF is a Python based dataplane test framework.',
     long_description=readme,
+    long_description_content_type="text/markdown",
     author='Antonin Bas',
     author_email='antonin@barefootnetworks.com',
     url='https://github.com/p4lang/ptf',
@@ -31,10 +34,13 @@ setup(
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: Apache License',
+        'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
+    ],
+    install_requires = [
+        "scapy >= 2.4.4",
     ]
 )

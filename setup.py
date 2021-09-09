@@ -2,7 +2,7 @@ import os
 from setuptools import setup
 project_root = os.path.dirname(os.path.realpath(__file__))
 
-with open(project_root + '/README.md') as readme_file:
+with open(os.path.join(project_root, 'README.md')) as readme_file:
     readme = readme_file.read()
 
 with open("requirements.txt", "r") as req:

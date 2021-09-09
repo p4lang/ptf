@@ -19,18 +19,18 @@ dataplane and is independent of OpenFlow. We also added several
 
 # Contributing
 
-Before you start pushing new changes to this repository, you should notice 
+Before you start pushing new changes to this repository, you should notice
 that the entire `src/` code is automatically formatted with Black.
-Our GitHub Action pipeline will verify that code is correctly 
-formatted and fail if not. 
+Our GitHub Action pipeline will verify that code is correctly
+formatted and fail if not.
 
 Two separate targets in makefile were prepared to make our work easier.
-If you want to run a check, type `make format-check`, but if you want to 
+If you want to run a check, type `make format-check`, but if you want to
 reformat your code, please use `make format`.
 
-`Black` is listed in the `requirements-dev.txt`. To install it locally, you 
-can use `make set-dev` or `pip install -r requirements-dev.txt`. 
-More information about Black, you find at 
+`Black` is listed in the `requirements-dev.txt`. To install it locally, you
+can use `make set-dev` or `pip install -r requirements-dev.txt`.
+More information about Black, you find at
 [Black's GitHub Page](https://github.com/psf/black)
 
 ---
@@ -97,6 +97,15 @@ PTF can be installed by running `sudo python setup.py install`. For more
 information on the different options accepted by `setup.py` (e.g. installing in
 a custom location), please refer to the [setuptools documentation]
 (https://pythonhosted.org/setuptools/setuptools.html).
+
+PTF can also be installed with `pip`:
+
+```bash
+# Install the latest version
+pip install ptf
+# Install specific version
+pip install ptf==0.9.1
+```
 
 ---
 

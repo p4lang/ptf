@@ -3493,6 +3493,46 @@ def verify_each_packet_on_each_port(
     verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
 
 
+def verify_packets_on_multiple_port_lists(test, pkts=[], ports=[], device_number=0, timeout=2):
+    """
+    a.) Check that each of the packets from pkts[] list is received once on any port belonging to the given device (default device_number is 0) specifed
+    in an associated sublist in ports[] list.
+
+    b.) Also verifies that the packet is not received on any other ports for this
+    device, and that no other packets are received on the device (unless --relax is in effect).
+
+    @param pkts A list of expected packets
+    @param ports A list of lists of ports on which subsequent packets are expected
+    @returns A list of sets with indexes of ports the packets were received
+    """
+    test.assertTrue(
+        len(pkts) == len(ports), "Packet list count does not match port list count"
+    )
+
+    pkt_cnt = 0
+    rcv_idx = []
+    for port_list, pkt in zip(ports, pkts):
+        rcv_ports = set()
+        for port in port_list:
+            (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
+                port_number=port, timeout=timeout, filters=get_filters()
+            )
+            if rcv_device != device_number:
+                continue
+            logging.debug("Checking for pkt on device %d, port %d", device_number, port)
+            if ptf.dataplane.match_exp_pkt(pkt, rcv_pkt):
+                pkt_cnt += 1
+                rcv_ports.add(port_list.index(rcv_port))
+                break
+        rcv_idx.append(rcv_ports)
+
+    verify_no_other_packets(test)
+    test.assertTrue(
+        pkt_cnt == len(pkts),
+        "Did not receive pkt on one of ports %r for device %d" % (ports, device_number),
+    )
+    return rcv_idx
+
 def verify_packet_prefix(test, pkt, port, len, device_number=0, timeout=None):
     """
     Check that an expected packet is received

@@ -3452,6 +3452,46 @@ def verify_any_packet_any_port(
 
     return match_index
 
+def verify_any_masked_packet_any_port(test, pkts=[], ports=[], device_number=0, timeout=2):
+    """
+    a.) Check that _any_ of the packet is received on _any_ of the specified ports belonging to
+    the given device (default device_number is 0).
+
+    b.) Also verifies that the packet is not received on any other ports for this
+    device, and that no other packets are received on the device (unless --relax
+    is in effect).
+
+    In contrast to standard verify_any_packet_any_port() function this one
+    allows to verify masked packets.
+
+    Returns the index of the port on which the packet is received.
+    """
+    received = False
+    match_index = 0
+
+    result = dp_poll(test, device_number=device_number, timeout=timeout)
+
+    if isinstance(result, test.dataplane.PollSuccess) and result.port in ports:
+        received_packet = result.packet
+        for pkt in pkts:
+            if ptf.dataplane.match_exp_pkt(pkt, received_packet):
+                match_index = ports.index(result.port)
+                received = True
+    verify_no_other_packets(test, device_number=device_number)
+
+    if isinstance(result, test.dataplane.PollFailure):
+        test.fail("Did not receive any expected packet on any of ports %r for "
+                  "device %d.\n%s" % (ports, device_number, result.format()))
+
+    if result.port not in ports:
+        test.fail("One of the expected packets was received on device %d on an "
+                  "unexpected port: %d\n%s" % (device_number, result.port, result.format()))
+
+    if not received:
+        test.fail("Did not receive expected packet on any of ports for device %d.\n%s"
+                  % (device_number, result.format()))
+
+    return match_index
 
 def verify_each_packet_on_each_port(
     test, pkts=[], ports=[], device_number=0, timeout=None, n_timeout=None

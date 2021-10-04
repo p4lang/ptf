@@ -3454,7 +3454,7 @@ def verify_any_packet_any_port(
 
 
 def verify_any_masked_packet_any_port(
-    test, pkts=[], ports=[], device_number=0, timeout=2
+    test, pkts=[], ports=[], device_number=0, timeout=None, n_timeout=None
 ):
     """
     a.) Check that _any_ of the packet is received on _any_ of the specified ports belonging to
@@ -3468,7 +3468,21 @@ def verify_any_masked_packet_any_port(
     allows to verify masked packets.
 
     Returns the index of the port on which the packet is received.
+
+    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
+    -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
+    if timeout == None:
+        timeout = ptf.ptfutils.default_timeout
+    if n_timeout == None:
+        n_timeout = ptf.ptfutils.default_negative_timeout
+
+    if timeout <= 0 or n_timeout <= 0:
+        raise Exception(
+            "%s() requires positive timeout value." % sys._getframe().f_code.co_name
+        )
+
     received = False
     match_index = 0
 
@@ -3480,7 +3494,7 @@ def verify_any_masked_packet_any_port(
             if ptf.dataplane.match_exp_pkt(pkt, received_packet):
                 match_index = ports.index(result.port)
                 received = True
-    verify_no_other_packets(test, device_number=device_number)
+    verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
 
     if isinstance(result, test.dataplane.PollFailure):
         test.fail(
@@ -3544,7 +3558,7 @@ def verify_each_packet_on_each_port(
 
 
 def verify_packets_on_multiple_port_lists(
-    test, pkts=[], ports=[], device_number=0, timeout=2
+    test, pkts=[], ports=[], device_number=0, timeout=None, n_timeout=None
 ):
     """
     a.) Check that each of the packets from pkts[] list is received once on any port belonging to the given device (default device_number is 0) specifed
@@ -3556,10 +3570,24 @@ def verify_packets_on_multiple_port_lists(
     @param pkts A list of expected packets
     @param ports A list of lists of ports on which subsequent packets are expected
     @returns A list of sets with indexes of ports the packets were received
+
+    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
+    -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
     test.assertTrue(
         len(pkts) == len(ports), "Packet list count does not match port list count"
     )
+
+    if timeout == None:
+        timeout = ptf.ptfutils.default_timeout
+    if n_timeout == None:
+        n_timeout = ptf.ptfutils.default_negative_timeout
+
+    if timeout <= 0 or n_timeout <= 0:
+        raise Exception(
+            "%s() requires positive timeout value." % sys._getframe().f_code.co_name
+        )
 
     pkt_cnt = 0
     rcv_idx = []
@@ -3578,7 +3606,8 @@ def verify_packets_on_multiple_port_lists(
                 break
         rcv_idx.append(rcv_ports)
 
-    verify_no_other_packets(test)
+    verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
+
     test.assertTrue(
         pkt_cnt == len(pkts),
         "Did not receive pkt on one of ports %r for device %d" % (ports, device_number),

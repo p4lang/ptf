@@ -3457,7 +3457,7 @@ def verify_any_masked_packet_any_port(
     test, pkts=[], ports=[], device_number=0, timeout=None, n_timeout=None
 ):
     """
-    a.) Check that _any_ of the packet is received on _any_ of the specified ports belonging to
+    a.) Check that _any_ of the packets is received on _any_ of the specified ports belonging to
     the given device (default device_number is 0).
 
     b.) Also verifies that the packet is not received on any other ports for this
@@ -3561,7 +3561,7 @@ def verify_packets_on_multiple_port_lists(
     test, pkts=[], ports=[], device_number=0, timeout=None, n_timeout=None
 ):
     """
-    a.) Check that each of the packets from pkts[] list is received once on any port belonging to the given device (default device_number is 0) specifed
+    a.) Check that each of the packets from pkts[] list is received once on any port belonging to the given device (default device_number is 0) specified
     in an associated sublist in ports[] list.
 
     b.) Also verifies that the packet is not received on any other ports for this

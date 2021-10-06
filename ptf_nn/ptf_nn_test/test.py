@@ -1,5 +1,6 @@
 import ptf
 from ptf.base_tests import BaseTest
+from ptf.mask import Mask
 from ptf import config
 import ptf.testutils as testutils
 
@@ -231,3 +232,35 @@ class VerifyPacketsOnMultiplePortListsTest(DataplaneBaseTest):
             testutils.verify_packets_on_multiple_port_lists(
                 self, pkts=[pkt1, pkt1], ports=[[0, 2, 3], [0, 1]],
                 device_number=1)
+
+class VerifyAnyMaskedPacketAnyPortTest(DataplaneBaseTest):
+    def __init__(self):
+        DataplaneBaseTest.__init__(self)
+
+    def runTest(self):
+        pkt1 = testutils.simple_udp_packet(eth_dst="00:11:11:11:11:11")
+        pkt2 = testutils.simple_udp_packet(eth_dst="00:22:22:22:22:22")
+        exp_pkt = Mask(pkt2)
+        exp_pkt.set_do_not_care_scapy(Ether, 'dst')
+
+        testutils.send_packet(self, (0, 1), pkt1)
+        print("Packet sent")
+        # pkt2 will not be received
+        # pkt2 with masked eth_dst field will match
+        testutils.verify_any_masked_packet_any_port(
+            self, pkts=[pkt2, exp_pkt], ports=[0, 1], device_number=1)
+
+        # negative tests
+        with self.assertRaises(AssertionError):
+            testutils.send_packet(self, (0, 1), pkt1)
+            print("Packet sent")
+            # incorrect ports
+            testutils.verify_any_masked_packet_any_port(
+                self, pkts=[exp_pkt], ports=[0, 2, 3], device_number=1)
+
+        with self.assertRaises(AssertionError):
+            testutils.send_packet(self, (0, 1), pkt1)
+            print("Packet sent")
+            # incorrect packet
+            testutils.verify_any_masked_packet_any_port(
+                self, pkts=[pkt2], ports=[0, 1], device_number=1)

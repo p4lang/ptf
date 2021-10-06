@@ -3489,7 +3489,7 @@ def verify_any_masked_packet_any_port(
     result = dp_poll(test, device_number=device_number, timeout=timeout)
 
     if isinstance(result, test.dataplane.PollSuccess) and result.port in ports:
-        received_packet = result.packet
+        received_packet = str(result.packet)
         for pkt in pkts:
             if ptf.dataplane.match_exp_pkt(pkt, received_packet):
                 match_index = ports.index(result.port)

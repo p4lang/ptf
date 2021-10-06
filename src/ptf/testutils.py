@@ -3594,9 +3594,8 @@ def verify_packets_on_multiple_port_lists(
     for port_list, pkt in zip(ports, pkts):
         rcv_ports = set()
         for port in port_list:
-            (rcv_device, rcv_port, rcv_pkt, pkt_time) = test.dataplane.poll(
-                port_number=port, timeout=timeout, filters=get_filters()
-            )
+            (rcv_device, rcv_port, rcv_pkt, _) = dp_poll(
+                test, device_number=device_number, port_number=port, timeout=timeout)
             if rcv_device != device_number:
                 continue
             logging.debug("Checking for pkt on device %d, port %d", device_number, port)

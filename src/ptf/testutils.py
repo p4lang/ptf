@@ -3408,6 +3408,8 @@ def verify_any_packet_any_port(
     Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
+
+    The function may verify both: not masked and masked packets
     """
     if timeout == None:
         timeout = ptf.ptfutils.default_timeout
@@ -3422,70 +3424,6 @@ def verify_any_packet_any_port(
     received = False
     match_index = 0
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
-    result = dp_poll(test, device_number=device_number, timeout=timeout)
-
-    if isinstance(result, test.dataplane.PollSuccess) and result.port in ports:
-        received_packet = str(result.packet)
-        for pkt in pkts:
-            if str(pkt) == received_packet:
-                match_index = ports.index(result.port)
-                received = True
-    verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
-
-    if isinstance(result, test.dataplane.PollFailure):
-        test.fail(
-            "Did not receive any expected packet on any of ports %r for "
-            "device %d.\n%s" % (ports, device_number, result.format())
-        )
-
-    if result.port not in ports:
-        test.fail(
-            "One of the expected packets was received on device %d on an "
-            "unexpected port: %d\n%s" % (device_number, result.port, result.format())
-        )
-
-    if not received:
-        test.fail(
-            "Did not receive expected packet on any of ports for device %d.\n%s"
-            % (device_number, result.format())
-        )
-
-    return match_index
-
-
-def verify_any_masked_packet_any_port(
-    test, pkts=[], ports=[], device_number=0, timeout=None, n_timeout=None
-):
-    """
-    a.) Check that _any_ of the packets is received on _any_ of the specified ports belonging to
-    the given device (default device_number is 0).
-
-    b.) Also verifies that the packet is not received on any other ports for this
-    device, and that no other packets are received on the device (unless --relax
-    is in effect).
-
-    In contrast to standard verify_any_packet_any_port() function this one
-    allows to verify masked packets.
-
-    Returns the index of the port on which the packet is received.
-
-    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
-    Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
-    -ve timeout here means timeout for which we will wait for to check for unexpected pkts
-    """
-    if timeout == None:
-        timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
-        n_timeout = ptf.ptfutils.default_negative_timeout
-
-    if timeout <= 0 or n_timeout <= 0:
-        raise Exception(
-            "%s() requires positive timeout value." % sys._getframe().f_code.co_name
-        )
-
-    received = False
-    match_index = 0
-
     result = dp_poll(test, device_number=device_number, timeout=timeout)
 
     if isinstance(result, test.dataplane.PollSuccess) and result.port in ports:

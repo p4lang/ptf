@@ -3498,7 +3498,7 @@ def verify_each_packet_on_each_port(
     verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
 
 
-def verify_packets_on_multiple_port_lists(
+def verify_each_packet_on_multiple_port_lists(
     test, pkts=[], ports=[], device_number=0, timeout=None, n_timeout=None
 ):
     """

@@ -247,7 +247,7 @@ class VerifyPacketsOnMultiplePortListsTest(DataplaneBaseTest):
         print("Packets sent")
         # pkt1 will be received on one of ports (0, 1)
         # pkt2 will be received on one of ports (1, 2, 3)
-        testutils.verify_packets_on_multiple_port_lists(
+        testutils.verify_each_packet_on_multiple_port_lists(
             self, pkts=[pkt1, pkt2], ports=[[0, 1], [1, 2, 3]], device_number=1)
 
         # negative test
@@ -257,7 +257,7 @@ class VerifyPacketsOnMultiplePortListsTest(DataplaneBaseTest):
             print("Packets sent")
             # pkt1 will not be received on one of ports (0, 2, 3)
             # pkt1 will not be received on one of ports (1, 2, 3); it will be pkt2
-            testutils.verify_packets_on_multiple_port_lists(
+            testutils.verify_each_packet_on_multiple_port_lists(
                 self, pkts=[pkt1, pkt1], ports=[[0, 2, 3], [0, 1]],
                 device_number=1)
 

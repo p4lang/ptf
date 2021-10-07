@@ -3362,7 +3362,8 @@ def verify_packet_any_port(
     is in effect).
 
     Returns the index of the port on which the packet is received and the packet.
-    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Timeout for this function is used as +ve timeout for (a) and n_timeout is used for
+    -ve timeout for (b)
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
@@ -3405,7 +3406,8 @@ def verify_any_packet_any_port(
     is in effect).
 
     Returns the index of the port on which the packet is received.
-    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Timeout for this function is used as +ve timeout for (a) and n_timeout is used for
+    -ve timeout for (b)
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
 
@@ -3465,7 +3467,8 @@ def verify_each_packet_on_each_port(
     b.) Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
-    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Timeout for this function is used as +ve timeout for (a) and n_timeout is used for
+    -ve timeout for (b)
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
@@ -3509,7 +3512,8 @@ def verify_packets_on_multiple_port_lists(
     @param ports A list of lists of ports on which subsequent packets are expected
     @returns A list of sets with indexes of ports the packets were received
 
-    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Timeout for this function is used as +ve timeout for (a) and n_timeout is used for
+    -ve timeout for (b)
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """

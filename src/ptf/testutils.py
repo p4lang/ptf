@@ -3188,7 +3188,7 @@ def verify_packet(test, pkt, port_id, timeout=None):
     port_id can either be a single integer (port_number on default device 0)
     or a tuple of 2 integers (device_number, port_number)
     """
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
     device, port = port_to_tuple(port_id)
     logging.debug("Checking for pkt on device %d, port %d", device, port)
@@ -3264,9 +3264,9 @@ def verify_packets(test, pkt, ports=[], device_number=0, timeout=None, n_timeout
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
+    if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
     for device, port in ptf_ports():
         if device != device_number:
@@ -3312,9 +3312,9 @@ def verify_packets_any(
     """
     received = False
     failures = []
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
+    if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
     for device, port in ptf_ports():
         if device != device_number:
@@ -3367,9 +3367,9 @@ def verify_packet_any_port(
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
+    if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
     result = dp_poll(test, device_number=device_number, timeout=timeout, exp_pkt=pkt)
@@ -3413,9 +3413,9 @@ def verify_any_packet_any_port(
 
     The function may verify both: not masked and masked packets
     """
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
+    if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
 
     if timeout <= 0 or n_timeout <= 0:
@@ -3476,9 +3476,9 @@ def verify_each_packet_on_each_port(
     test.assertTrue(
         len(pkts) == len(ports), "packet list count does not match port list count"
     )
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
+    if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
     for port, pkt in zip(ports, pkts):
         logging.debug("Checking for pkt on device %d, port %d", device_number, port)
@@ -3521,9 +3521,9 @@ def verify_packets_on_multiple_port_lists(
         len(pkts) == len(ports), "Packet list count does not match port list count"
     )
 
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
+    if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
 
     if timeout <= 0 or n_timeout <= 0:

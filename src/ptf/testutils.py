@@ -3429,9 +3429,8 @@ def verify_any_packet_any_port(
     result = dp_poll(test, device_number=device_number, timeout=timeout)
 
     if isinstance(result, test.dataplane.PollSuccess) and result.port in ports:
-        received_packet = str(result.packet)
         for pkt in pkts:
-            if ptf.dataplane.match_exp_pkt(pkt, received_packet):
+            if ptf.dataplane.match_exp_pkt(pkt, result.packet):
                 match_index = ports.index(result.port)
                 received = True
     verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)

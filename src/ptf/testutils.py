@@ -3188,7 +3188,7 @@ def verify_packet(test, pkt, port_id, timeout=None):
     port_id can either be a single integer (port_number on default device 0)
     or a tuple of 2 integers (device_number, port_number)
     """
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
     device, port = port_to_tuple(port_id)
     logging.debug("Checking for pkt on device %d, port %d", device, port)
@@ -3264,9 +3264,9 @@ def verify_packets(test, pkt, ports=[], device_number=0, timeout=None, n_timeout
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
+    if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
     for device, port in ptf_ports():
         if device != device_number:
@@ -3312,9 +3312,9 @@ def verify_packets_any(
     """
     received = False
     failures = []
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
+    if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
     for device, port in ptf_ports():
         if device != device_number:
@@ -3362,13 +3362,14 @@ def verify_packet_any_port(
     is in effect).
 
     Returns the index of the port on which the packet is received and the packet.
-    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Timeout for this function is used as +ve timeout for (a) and n_timeout is used for
+    -ve timeout for (b)
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
+    if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
     result = dp_poll(test, device_number=device_number, timeout=timeout, exp_pkt=pkt)
@@ -3405,13 +3406,16 @@ def verify_any_packet_any_port(
     is in effect).
 
     Returns the index of the port on which the packet is received.
-    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Timeout for this function is used as +ve timeout for (a) and n_timeout is used for
+    -ve timeout for (b)
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
+
+    The function may verify both: not masked and masked packets
     """
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
+    if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
 
     if timeout <= 0 or n_timeout <= 0:
@@ -3425,9 +3429,8 @@ def verify_any_packet_any_port(
     result = dp_poll(test, device_number=device_number, timeout=timeout)
 
     if isinstance(result, test.dataplane.PollSuccess) and result.port in ports:
-        received_packet = str(result.packet)
         for pkt in pkts:
-            if str(pkt) == received_packet:
+            if ptf.dataplane.match_exp_pkt(pkt, result.packet):
                 match_index = ports.index(result.port)
                 received = True
     verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
@@ -3463,7 +3466,8 @@ def verify_each_packet_on_each_port(
     b.) Also verifies that the packet is not received on any other ports for this
     device, and that no other packets are received on the device (unless --relax
     is in effect).
-    Timeout for this function is used as +ve timeout for (a) and -ve timeout for (b)
+    Timeout for this function is used as +ve timeout for (a) and n_timeout is used for
+    -ve timeout for (b)
     Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
@@ -3471,9 +3475,9 @@ def verify_each_packet_on_each_port(
     test.assertTrue(
         len(pkts) == len(ports), "packet list count does not match port list count"
     )
-    if timeout == None:
+    if not timeout:
         timeout = ptf.ptfutils.default_timeout
-    if n_timeout == None:
+    if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
     for port, pkt in zip(ports, pkts):
         logging.debug("Checking for pkt on device %d, port %d", device_number, port)
@@ -3491,6 +3495,64 @@ def verify_each_packet_on_each_port(
             )
 
     verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
+
+
+def verify_each_packet_on_multiple_port_lists(
+    test, pkts=[], ports=[], device_number=0, timeout=None, n_timeout=None
+):
+    """
+    a.) Check that each of the packets from pkts[] list is received once on any port belonging to the given device (default device_number is 0) specified
+    in an associated sublist in ports[] list.
+
+    b.) Also verifies that the packet is not received on any other ports for this
+    device, and that no other packets are received on the device (unless --relax is in effect).
+
+    @param pkts A list of expected packets
+    @param ports A list of lists of ports on which subsequent packets are expected
+    @returns A list of sets with indexes of ports the packets were received
+
+    Timeout for this function is used as +ve timeout for (a) and n_timeout is used for
+    -ve timeout for (b)
+    Note: +ve timeout here means timeout in which we are expecting pkt to arrive in
+    -ve timeout here means timeout for which we will wait for to check for unexpected pkts
+    """
+    test.assertTrue(
+        len(pkts) == len(ports), "Packet list count does not match port list count"
+    )
+
+    if not timeout:
+        timeout = ptf.ptfutils.default_timeout
+    if not n_timeout:
+        n_timeout = ptf.ptfutils.default_negative_timeout
+
+    if timeout <= 0 or n_timeout <= 0:
+        raise Exception(
+            "%s() requires positive timeout value." % sys._getframe().f_code.co_name
+        )
+
+    pkt_cnt = 0
+    rcv_idx = []
+    for port_list, pkt in zip(ports, pkts):
+        rcv_ports = set()
+        for port in port_list:
+            (rcv_device, rcv_port, rcv_pkt, _) = dp_poll(
+                test, device_number=device_number, port_number=port, timeout=timeout)
+            if rcv_device != device_number:
+                continue
+            logging.debug("Checking for pkt on device %d, port %d", device_number, port)
+            if ptf.dataplane.match_exp_pkt(pkt, rcv_pkt):
+                pkt_cnt += 1
+                rcv_ports.add(port_list.index(rcv_port))
+                break
+        rcv_idx.append(rcv_ports)
+
+    verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
+
+    test.assertTrue(
+        pkt_cnt == len(pkts),
+        "Did not receive pkt on one of ports %r for device %d" % (ports, device_number),
+    )
+    return rcv_idx
 
 
 def verify_packet_prefix(test, pkt, port, len, device_number=0, timeout=None):

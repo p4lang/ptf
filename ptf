@@ -806,6 +806,14 @@ if __name__ == "__main__":
         print()
         print("******************************************")
         # exit(1) hangs sometimes
+        sys.stdout.flush()
         os._exit(1)
     if ptf.testutils.skipped_test_count > 0 and config["fail_skipped"]:
+        print()
+        print("******************************************")
+        print("ATTENTION: %d TESTS WERE SKIPPED!!!",
+                ptf.testutils.skipped_test_count)
+        print("******************************************")
+        print()
+        sys.stdout.flush()
         os._exit(1)

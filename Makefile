@@ -6,7 +6,7 @@ format-check:
 .PHONY: format
 format:
 	@echo "Formatting..."
-	python -m black src/
+	python -m black --check src/
 
 .PHONY: set-dev
 set-dev:

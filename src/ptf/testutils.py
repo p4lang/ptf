@@ -3536,7 +3536,8 @@ def verify_each_packet_on_multiple_port_lists(
         rcv_ports = set()
         for port in port_list:
             (rcv_device, rcv_port, rcv_pkt, _) = dp_poll(
-                test, device_number=device_number, port_number=port, timeout=timeout)
+                test, device_number=device_number, port_number=port, timeout=timeout
+            )
             if rcv_device != device_number:
                 continue
             logging.debug("Checking for pkt on device %d, port %d", device_number, port)

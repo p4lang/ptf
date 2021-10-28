@@ -1,7 +1,7 @@
 .PHONY: format-check
 format-check:
 	@echo "Checking format..."
-	python -m black src/
+	python -m black --check src/
 
 .PHONY: format
 format:

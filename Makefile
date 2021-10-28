@@ -1,12 +1,12 @@
 .PHONY: format-check
 format-check:
 	@echo "Checking format..."
-	python -m black src/
+	python -m black --check src/
 
 .PHONY: format
 format:
 	@echo "Formatting..."
-	python -m black --check src/
+	python -m black src/
 
 .PHONY: set-dev
 set-dev:

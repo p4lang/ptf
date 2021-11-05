@@ -235,8 +235,9 @@ be subtracted from the result by prefixing them with the '^' character.  """
 
     parser.add_argument("--pypath", dest="pypath", action="append")
 
-    parser.add_argument("--packet-manipulation-module", type=str,
-                        help="Provide packet manipulation module which should be used as a 'packet' one for other PTF modules")
+    parser.add_argument("-pmm", "--packet-manipulation-module", type=str,
+                        help="Provide packet manipulation module which should be used "
+                             "as a 'packet' one for other PTF modules")
 
     group = parser.add_argument_group("Test selection options")
     group.add_argument("-f", "--test-file", help="File of tests to run, one per line")

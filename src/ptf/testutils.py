@@ -4,7 +4,7 @@ import logging
 import types
 import time
 import re
-from . import packet as scapy
+from . import packet
 
 import ptf
 import ptf.dataplane
@@ -46,7 +46,7 @@ def get_filters():
 
 def ether_filter(pkt_str):
     try:
-        pkt = scapy.Ether(pkt_str)
+        pkt = packet.Ether(pkt_str)
         return True
     except:
         return False
@@ -54,8 +54,8 @@ def ether_filter(pkt_str):
 
 def ipv6_filter(pkt_str):
     try:
-        pkt = scapy.Ether(pkt_str)
-        return scapy.IPv6 in pkt
+        pkt = packet.Ether(pkt_str)
+        return packet.IPv6 in pkt
     except:
         return False
 
@@ -133,38 +133,38 @@ def simple_tcp_packet_ext_taglist(
         pktlen = MINSIZE
 
     if with_tcp_chksum:
-        tcp_hdr = scapy.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
+        tcp_hdr = packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
     else:
-        tcp_hdr = scapy.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0)
+        tcp_hdr = packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_taglist_enable:
-        pkt = scapy.Ether(dst=eth_dst, src=eth_src)
+        pkt = packet.Ether(dst=eth_dst, src=eth_src)
 
         for i in range(0, len(dl_vlanid_list)):
-            pkt = pkt / scapy.Dot1Q(
+            pkt = pkt / packet.Dot1Q(
                 prio=dl_vlan_pcp_list[i], id=dl_vlan_cfi_list[i], vlan=dl_vlanid_list[i]
             )
 
         pkt = (
             pkt
-            / scapy.IP(
+            / packet.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl
             )
             / tcp_hdr
         )
 
         for i in range(1, len(dl_tpid_list)):
-            pkt[scapy.Dot1Q : i].type = dl_tpid_list[i]
+            pkt[packet.Dot1Q : i].type = dl_tpid_list[i]
         pkt.type = dl_tpid_list[0]
 
     else:
         if not ip_options:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -177,8 +177,8 @@ def simple_tcp_packet_ext_taglist(
             )
         else:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -334,13 +334,13 @@ def simple_tcpv6_packet(
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src)
+    pkt = packet.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
-        pkt /= scapy.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
-    pkt /= scapy.IPv6(
+        pkt /= packet.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
+    pkt /= packet.IPv6(
         src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
     )
-    pkt /= scapy.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
+    pkt /= packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
     pkt /= "D" * (pktlen - len(pkt))
 
     return pkt
@@ -398,18 +398,18 @@ def simple_udp_packet(
         pktlen = MINSIZE
 
     if with_udp_chksum:
-        udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport)
+        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport)
     else:
-        udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, id=ip_id
             )
             / udp_hdr
@@ -417,8 +417,8 @@ def simple_udp_packet(
     else:
         if not ip_options:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -431,8 +431,8 @@ def simple_udp_packet(
             )
         else:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -488,8 +488,8 @@ def simple_ipv6_sr_packet(
     @param srh_nh IPV6 SRH next header
     """
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src)
-    pkt /= scapy.IPv6(
+    pkt = packet.Ether(dst=eth_dst, src=eth_src)
+    pkt /= packet.IPv6(
         src=ipv6_src,
         dst=ipv6_dst,
         fl=ipv6_fl,
@@ -499,7 +499,7 @@ def simple_ipv6_sr_packet(
         plen=ipv6_plen,
     )
     reserved = (srh_first_seg << 24) + (srh_flags << 8)
-    pkt /= scapy.IPv6ExtHdrRouting(
+    pkt /= packet.IPv6ExtHdrRouting(
         nh=srh_nh,
         type=4,
         segleft=srh_seg_left,
@@ -564,7 +564,7 @@ def simple_geneve_packet(
     @param geneve_reserved2 reserved field
     @param inner_frame The inner Ethernet frame
     """
-    if scapy.GENEVE is None:
+    if packet.GENEVE is None:
         logging.error(
             "A GENEVE packet was requested but GENEVE is not supported by your Scapy. See README for more information"
         )
@@ -576,18 +576,18 @@ def simple_geneve_packet(
         pktlen = MINSIZE
 
     if with_udp_chksum:
-        udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport)
+        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport)
     else:
-        udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -601,8 +601,8 @@ def simple_geneve_packet(
     else:
         if not ip_options:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -615,8 +615,8 @@ def simple_geneve_packet(
             )
         else:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -629,7 +629,7 @@ def simple_geneve_packet(
                 / udp_hdr
             )
 
-    pkt = pkt / scapy.GENEVE(vni=geneve_vni, proto=geneve_proto)
+    pkt = pkt / packet.GENEVE(vni=geneve_vni, proto=geneve_proto)
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -688,7 +688,7 @@ def simple_nvgre_packet(
     Generates a simple GRE packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/NVGRE frame.
     """
-    if scapy.NVGRE is None:
+    if packet.NVGRE is None:
         logging.error(
             "A NVGRE packet was requested but NVGRE is not supported by your Scapy. See README for more information"
         )
@@ -697,16 +697,16 @@ def simple_nvgre_packet(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    nvgre_hdr = scapy.NVGRE(vsid=nvgre_tni, flowid=nvgre_flowid)
+    nvgre_hdr = packet.NVGRE(vsid=nvgre_tni, flowid=nvgre_flowid)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -720,8 +720,8 @@ def simple_nvgre_packet(
     else:
         if not ip_options:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -734,8 +734,8 @@ def simple_nvgre_packet(
             )
         else:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -751,7 +751,7 @@ def simple_nvgre_packet(
     if inner_frame:
         pkt = pkt / inner_frame
     else:
-        pkt = pkt / scapy.IP()
+        pkt = pkt / packet.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -813,7 +813,7 @@ def simple_vxlan_packet(
     Generates a simple VXLAN packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/UDP/VXLAN frame.
     """
-    if scapy.VXLAN is None:
+    if packet.VXLAN is None:
         logging.error(
             "A VXLAN packet was requested but VXLAN is not supported by your Scapy. See README for more information"
         )
@@ -823,18 +823,18 @@ def simple_vxlan_packet(
         pktlen = MINSIZE
 
     if with_udp_chksum:
-        udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport)
+        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport)
     else:
-        udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -848,8 +848,8 @@ def simple_vxlan_packet(
     else:
         if not ip_options:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -862,8 +862,8 @@ def simple_vxlan_packet(
             )
         else:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -876,7 +876,7 @@ def simple_vxlan_packet(
                 / udp_hdr
             )
 
-    pkt = pkt / scapy.VXLAN(
+    pkt = pkt / packet.VXLAN(
         flags=vxlan_flags,
         vni=vxlan_vni,
         reserved1=vxlan_reserved1,
@@ -948,32 +948,32 @@ def simple_vxlanv6_packet(
         pktlen = MINSIZE
 
     if with_udp_chksum:
-        udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport)
+        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport)
     else:
-        udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IPv6(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IPv6(
                 src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
             )
             / udp_hdr
         )
     else:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.IPv6(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.IPv6(
                 src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
             )
             / udp_hdr
         )
 
-    pkt = pkt / scapy.VXLAN(
+    pkt = pkt / packet.VXLAN(
         flags=vxlan_flags,
         vni=vxlan_vni,
         reserved1=vxlan_reserved1,
@@ -1056,7 +1056,7 @@ def simple_gre_packet(
         pktlen = MINSIZE
 
     # proto (ethertype) is set by Scapy based on the payload
-    gre_hdr = scapy.GRE(
+    gre_hdr = packet.GRE(
         chksum_present=gre_chksum_present,
         routing_present=gre_routing_present,
         key_present=gre_key_present,
@@ -1074,9 +1074,9 @@ def simple_gre_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1090,8 +1090,8 @@ def simple_gre_packet(
     else:
         if not ip_options:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1104,8 +1104,8 @@ def simple_gre_packet(
             )
         else:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1124,7 +1124,7 @@ def simple_gre_packet(
         if (inner_frame_bytes[0] & 0xF0) == 0x60:
             pkt["GRE"].proto = 0x86DD
     else:
-        pkt = pkt / scapy.IP()
+        pkt = pkt / packet.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -1194,7 +1194,7 @@ def simple_grev6_packet(
         pktlen = MINSIZE
 
     # proto (ethertype) is set by Scapy based on the payload
-    gre_hdr = scapy.GRE(
+    gre_hdr = packet.GRE(
         chksum_present=gre_chksum_present,
         routing_present=gre_routing_present,
         key_present=gre_key_present,
@@ -1212,9 +1212,9 @@ def simple_grev6_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IPv6(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IPv6(
                 src=ipv6_src,
                 dst=ipv6_dst,
                 fl=ipv6_fl,
@@ -1226,8 +1226,8 @@ def simple_grev6_packet(
         )
     else:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.IPv6(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.IPv6(
                 src=ipv6_src,
                 dst=ipv6_dst,
                 fl=ipv6_fl,
@@ -1244,7 +1244,7 @@ def simple_grev6_packet(
         if (inner_frame_bytes[0] & 0xF0) == 0x60:
             pkt["GRE"].proto = 0x86DD
     else:
-        pkt = pkt / scapy.IP()
+        pkt = pkt / packet.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -1325,7 +1325,7 @@ def simple_gre_erspan_packet(
     Generates a simple GRE/ERSPAN packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/GRE/ERSPAN frame.
     """
-    if scapy.GRE is None or scapy.ERSPAN is None:
+    if packet.GRE is None or packet.ERSPAN is None:
         logging.error(
             "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information"
         )
@@ -1335,7 +1335,7 @@ def simple_gre_erspan_packet(
         pktlen = MINSIZE
 
     # proto (ethertype) is set by Scapy based on the payload
-    gre_hdr = scapy.GRE(
+    gre_hdr = packet.GRE(
         chksum_present=gre_chksum_present,
         routing_present=gre_routing_present,
         key_present=gre_key_present,
@@ -1348,7 +1348,7 @@ def simple_gre_erspan_packet(
         sequence_number=gre_sequence_number,
     )
 
-    erspan_hdr = scapy.ERSPAN(
+    erspan_hdr = packet.ERSPAN(
         vlan=erspan_vlan,
         cos=erspan_cos,
         en=erspan_en,
@@ -1362,9 +1362,9 @@ def simple_gre_erspan_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1379,8 +1379,8 @@ def simple_gre_erspan_packet(
     else:
         if not ip_options:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1394,8 +1394,8 @@ def simple_gre_erspan_packet(
             )
         else:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1412,7 +1412,7 @@ def simple_gre_erspan_packet(
     if inner_frame:
         pkt = pkt / inner_frame
     else:
-        pkt = pkt / scapy.IP()
+        pkt = pkt / packet.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -1463,7 +1463,7 @@ def ipv4_erspan_pkt(
     @param span_id (mirror_session_id)
     @param inner_frame payload of the GRE packet
     """
-    if scapy.GRE is None or scapy.ERSPAN is None or scapy.ERSPAN_III is None:
+    if packet.GRE is None or packet.ERSPAN is None or packet.ERSPAN_III is None:
         logging.error(
             "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information"
         )
@@ -1473,20 +1473,20 @@ def ipv4_erspan_pkt(
         pktlen = MINSIZE
 
     if version == 2:
-        erspan_hdr = scapy.GRE(proto=0x22EB) / scapy.ERSPAN_III(
+        erspan_hdr = packet.GRE(proto=0x22EB) / packet.ERSPAN_III(
             session_id=mirror_id, sgt_other=sgt_other
         )
     else:
-        erspan_hdr = scapy.GRE(proto=0x88BE) / scapy.ERSPAN(session_id=mirror_id)
+        erspan_hdr = packet.GRE(proto=0x88BE) / packet.ERSPAN(session_id=mirror_id)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1500,8 +1500,8 @@ def ipv4_erspan_pkt(
     else:
         if not ip_options:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1514,8 +1514,8 @@ def ipv4_erspan_pkt(
             )
         else:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1531,7 +1531,7 @@ def ipv4_erspan_pkt(
     if inner_frame:
         pkt = pkt / inner_frame
     else:
-        pkt = pkt / scapy.IP()
+        pkt = pkt / packet.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -1589,10 +1589,10 @@ def ipv4_erspan_platform_pkt(
     @param inner_frame payload of the GRE packet
     """
     if (
-        scapy.GRE is None
-        or scapy.ERSPAN is None
-        or scapy.ERSPAN_III is None
-        or scapy.PlatformSpecific is None
+        packet.GRE is None
+        or packet.ERSPAN is None
+        or packet.ERSPAN_III is None
+        or packet.PlatformSpecific is None
     ):
         logging.error(
             "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information"
@@ -1603,7 +1603,7 @@ def ipv4_erspan_platform_pkt(
         pktlen = MINSIZE
 
     if version == 2:
-        erspan_hdr = scapy.GRE(proto=0x22EB) / scapy.ERSPAN_III(
+        erspan_hdr = packet.GRE(proto=0x22EB) / packet.ERSPAN_III(
             session_id=mirror_id, sgt_other=sgt_other
         )
         if sgt_other & 0x01 == 1:
@@ -1611,16 +1611,16 @@ def ipv4_erspan_platform_pkt(
                 platf_id=platf_id, info1=info1, info2=info2
             )
     else:
-        erspan_hdr = scapy.GRE(proto=0x88BE) / scapy.ERSPAN(session_id=mirror_id)
+        erspan_hdr = packet.GRE(proto=0x88BE) / packet.ERSPAN(session_id=mirror_id)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1634,8 +1634,8 @@ def ipv4_erspan_platform_pkt(
     else:
         if not ip_options:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1648,8 +1648,8 @@ def ipv4_erspan_platform_pkt(
             )
         else:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1665,7 +1665,7 @@ def ipv4_erspan_platform_pkt(
     if inner_frame:
         pkt = pkt / inner_frame
     else:
-        pkt = pkt / scapy.IP()
+        pkt = pkt / packet.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -1719,16 +1719,16 @@ def simple_udpv6_packet(
         pktlen = MINSIZE
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src)
+    pkt = packet.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
-        pkt /= scapy.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
-    pkt /= scapy.IPv6(
+        pkt /= packet.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
+    pkt /= packet.IPv6(
         src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
     )
     if with_udp_chksum:
-        pkt /= scapy.UDP(sport=udp_sport, dport=udp_dport)
+        pkt /= packet.UDP(sport=udp_sport, dport=udp_dport)
     else:
-        pkt /= scapy.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+        pkt /= packet.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
     if udp_payload:
         pkt = pkt / udp_payload
     pkt /= "D" * (pktlen - len(pkt))
@@ -1787,9 +1787,9 @@ def simple_ipv4ip_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1801,7 +1801,7 @@ def simple_ipv4ip_packet(
         )
     else:
         if not ip_options:
-            pkt = scapy.Ether(dst=eth_dst, src=eth_src) / scapy.IP(
+            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1811,7 +1811,7 @@ def simple_ipv4ip_packet(
                 ihl=ip_ihl,
             )
         else:
-            pkt = scapy.Ether(dst=eth_dst, src=eth_src) / scapy.IP(
+            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1830,7 +1830,7 @@ def simple_ipv4ip_packet(
         elif (inner_frame_bytes[0] & 0xF0) == 0x60:
             pkt["IP"].proto = 41
     else:
-        pkt = pkt / scapy.IP()
+        pkt = pkt / packet.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
         pkt["IP"].proto = 4
 
@@ -1884,14 +1884,14 @@ def simple_ipv6ip_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IPv6(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IPv6(
                 src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
             )
         )
     else:
-        pkt = scapy.Ether(dst=eth_dst, src=eth_src) / scapy.IPv6(
+        pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IPv6(
             src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
         )
 
@@ -1903,7 +1903,7 @@ def simple_ipv6ip_packet(
         elif (inner_frame_bytes[0] & 0xF0) == 0x60:
             pkt["IPv6"].nh = 41
     else:
-        pkt = pkt / scapy.IP()
+        pkt = pkt / packet.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
         pkt["IPv6"].nh = 4
 
@@ -1961,17 +1961,17 @@ def simple_icmp_packet(
 
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=0, vlan=vlan_vid)
-            / scapy.IP(src=ip_src, dst=ip_dst, ttl=ip_ttl, tos=ip_tos, id=ip_id)
-            / scapy.ICMP(type=icmp_type, code=icmp_code)
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=0, vlan=vlan_vid)
+            / packet.IP(src=ip_src, dst=ip_dst, ttl=ip_ttl, tos=ip_tos, id=ip_id)
+            / packet.ICMP(type=icmp_type, code=icmp_code)
             / icmp_data
         )
     else:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.IP(src=ip_src, dst=ip_dst, ttl=ip_ttl, tos=ip_tos, id=ip_id)
-            / scapy.ICMP(type=icmp_type, code=icmp_code)
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.IP(src=ip_src, dst=ip_dst, ttl=ip_ttl, tos=ip_tos, id=ip_id)
+            / packet.ICMP(type=icmp_type, code=icmp_code)
             / icmp_data
         )
 
@@ -2026,13 +2026,13 @@ def simple_icmpv6_packet(
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src)
+    pkt = packet.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
-        pkt /= scapy.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
-    pkt /= scapy.IPv6(
+        pkt /= packet.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
+    pkt /= packet.IPv6(
         src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
     )
-    pkt /= scapy.ICMPv6Unknown(type=icmp_type, code=icmp_code)
+    pkt /= packet.ICMPv6Unknown(type=icmp_type, code=icmp_code)
     pkt /= "D" * (pktlen - len(pkt))
 
     return pkt
@@ -2094,9 +2094,9 @@ def simple_ipv6_mld_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IPv6(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IPv6(
                 src=ipv6_src,
                 dst=ipv6_dst,
                 fl=ipv6_fl,
@@ -2106,7 +2106,7 @@ def simple_ipv6_mld_packet(
             )
         )
     else:
-        pkt = scapy.Ether(dst=eth_dst, src=eth_src) / scapy.IPv6(
+        pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IPv6(
             src=ipv6_src,
             dst=ipv6_dst,
             fl=ipv6_fl,
@@ -2115,7 +2115,7 @@ def simple_ipv6_mld_packet(
             nh=next_header,
         )
 
-    pkt = pkt / scapy.ICMPv6MLReport(type=mld_type, mladdr=mld_mladdr, mrd=mld_mrd)
+    pkt = pkt / packet.ICMPv6MLReport(type=mld_type, mladdr=mld_mladdr, mrd=mld_mrd)
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -2158,10 +2158,10 @@ def simple_arp_packet(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src)
+    pkt = packet.Ether(dst=eth_dst, src=eth_src)
     if vlan_vid or vlan_pcp:
-        pkt /= scapy.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
-    pkt /= scapy.ARP(hwsrc=hw_snd, hwdst=hw_tgt, pdst=ip_tgt, psrc=ip_snd, op=arp_op)
+        pkt /= packet.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
+    pkt /= packet.ARP(hwsrc=hw_snd, hwdst=hw_tgt, pdst=ip_tgt, psrc=ip_snd, op=arp_op)
 
     pkt = pkt / ("\0" * (pktlen - len(pkt)))
 
@@ -2175,7 +2175,7 @@ def simple_eth_packet(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src, type=eth_type)
+    pkt = packet.Ether(dst=eth_dst, src=eth_src, type=eth_type)
 
     pkt = pkt / ("0" * (pktlen - len(pkt)))
 
@@ -2213,18 +2213,18 @@ def simple_eth_raw_packet_with_taglist(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src)
+    pkt = packet.Ether(dst=eth_dst, src=eth_src)
 
     if dl_taglist_enable:
         for i in range(0, len(dl_vlanid_list)):
-            pkt = pkt / scapy.Dot1Q(
+            pkt = pkt / packet.Dot1Q(
                 prio=dl_vlan_pcp_list[i], id=dl_vlan_cfi_list[i], vlan=dl_vlanid_list[i]
             )
 
         for i in range(1, len(dl_tpid_list)):
-            pkt[scapy.Dot1Q : i].type = dl_tpid_list[i]
+            pkt[packet.Dot1Q : i].type = dl_tpid_list[i]
         pkt.type = dl_tpid_list[0]
-        pkt[scapy.Dot1Q : len(dl_tpid_list)].type = pktlen - len(pkt)
+        pkt[packet.Dot1Q : len(dl_tpid_list)].type = pktlen - len(pkt)
     else:
         pkt.type = pktlen - len(pkt)
 
@@ -2285,9 +2285,9 @@ def simple_ip_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -2299,7 +2299,7 @@ def simple_ip_packet(
         )
     else:
         if not ip_options:
-            pkt = scapy.Ether(dst=eth_dst, src=eth_src) / scapy.IP(
+            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -2309,7 +2309,7 @@ def simple_ip_packet(
                 proto=ip_proto,
             )
         else:
-            pkt = scapy.Ether(dst=eth_dst, src=eth_src) / scapy.IP(
+            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -2365,22 +2365,22 @@ def simple_ip_only_packet(
         pktlen = MINSIZE
 
     if with_tcp_chksum:
-        tcp_hdr = scapy.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
+        tcp_hdr = packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
     else:
-        tcp_hdr = scapy.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0)
+        tcp_hdr = packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     if not ip_options:
         pkt = (
-            scapy.IP(
+            packet.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl
             )
             / tcp_hdr
         )
     else:
         pkt = (
-            scapy.IP(
+            packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -2425,7 +2425,7 @@ def simple_mpls_packet(
     @param inner_frame The inner frame
 
     """
-    if scapy.MPLS is None:
+    if packet.MPLS is None:
         logging.error(
             "A MPLS packet was requested but MPLS is not supported by your Scapy. See README for more information"
         )
@@ -2434,17 +2434,17 @@ def simple_mpls_packet(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src)
-    pkt[scapy.Ether].setfieldval("type", mpls_type)
+    pkt = packet.Ether(dst=eth_dst, src=eth_src)
+    pkt[packet.Ether].setfieldval("type", mpls_type)
 
     if dl_vlan_enable:
-        pkt / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-        pkt[scapy.Dot1Q].setfieldval("type", mpls_type)
+        pkt / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+        pkt[packet.Dot1Q].setfieldval("type", mpls_type)
 
     mpls_tags = list(mpls_tags)
     while len(mpls_tags):
         tag = mpls_tags.pop(0)
-        mpls = scapy.MPLS()
+        mpls = packet.MPLS()
         if "label" in tag:
             mpls.label = tag["label"]
         if "tc" in tag:
@@ -2517,11 +2517,11 @@ def simple_qinq_tcp_packet(
 
     # Note Dot1Q.id is really CFI
     pkt = (
-        scapy.Ether(dst=eth_dst, src=eth_src)
-        / scapy.Dot1Q(prio=dl_vlan_pcp_outer, id=dl_vlan_cfi_outer, vlan=dl_vlan_outer)
-        / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-        / scapy.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl)
-        / scapy.TCP(sport=tcp_sport, dport=tcp_dport)
+        packet.Ether(dst=eth_dst, src=eth_src)
+        / packet.Dot1Q(prio=dl_vlan_pcp_outer, id=dl_vlan_cfi_outer, vlan=dl_vlan_outer)
+        / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+        / packet.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl)
+        / packet.TCP(sport=tcp_sport, dport=tcp_dport)
     )
 
     pkt = pkt / codecs.decode(
@@ -2578,7 +2578,7 @@ def simple_igmp_packet(
     Generates a simple IGMP packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/IGMP frame.
     """
-    if scapy.IGMP is None:
+    if packet.IGMP is None:
         logging.error(
             "An IGMP packet was requested but IGMP is not supported by your Scapy. See README for more information"
         )
@@ -2592,19 +2592,19 @@ def simple_igmp_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl
             )
         )
     else:
         if not ip_options:
-            pkt = scapy.Ether(dst=eth_dst, src=eth_src) / scapy.IP(
+            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl
             )
         else:
-            pkt = scapy.Ether(dst=eth_dst, src=eth_src) / scapy.IP(
+            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -2614,7 +2614,7 @@ def simple_igmp_packet(
                 options=ip_options,
             )
 
-    pkt = pkt / scapy.IGMP(type=igmp_type, gaddr=igmp_gaddr, mrtime=igmp_mrtime)
+    pkt = pkt / packet.IGMP(type=igmp_type, gaddr=igmp_gaddr, mrtime=igmp_mrtime)
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -2689,10 +2689,10 @@ def dhcp_discover_packet(eth_client="00:01:02:03:04:05", set_broadcast_bit=False
 
     """
 
-    pkt = scapy.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
-    pkt /= scapy.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
-    pkt /= scapy.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
-    pkt /= scapy.BOOTP(
+    pkt = packet.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
+    pkt /= packet.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
+    pkt /= packet.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
+    pkt /= packet.BOOTP(
         op=DHCP_BOOTP_OP_REQUEST,
         htype=DHCP_BOOTP_HTYPE_ETHERNET,
         hlen=DHCP_BOOTP_HLEN_ETHERNET,
@@ -2706,7 +2706,7 @@ def dhcp_discover_packet(eth_client="00:01:02:03:04:05", set_broadcast_bit=False
         giaddr=DHCP_IP_DEFAULT_ROUTE,
         chaddr=__dhcp_mac_to_chaddr(eth_client),
     )
-    pkt /= scapy.DHCP(options=[("message-type", "discover"), ("end")])
+    pkt /= packet.DHCP(options=[("message-type", "discover"), ("end")])
     return pkt
 
 
@@ -2749,10 +2749,10 @@ def dhcp_offer_packet(
 
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_server, type=DHCP_ETHER_TYPE_IP)
-    pkt /= scapy.IP(src=ip_server, dst=ip_dst, tos=ip_tos, ttl=128, id=0)
-    pkt /= scapy.UDP(sport=DHCP_PORT_SERVER, dport=port_dst)
-    pkt /= scapy.BOOTP(
+    pkt = packet.Ether(dst=eth_dst, src=eth_server, type=DHCP_ETHER_TYPE_IP)
+    pkt /= packet.IP(src=ip_server, dst=ip_dst, tos=ip_tos, ttl=128, id=0)
+    pkt /= packet.UDP(sport=DHCP_PORT_SERVER, dport=port_dst)
+    pkt /= packet.BOOTP(
         op=DHCP_BOOTP_OP_REPLY,
         htype=DHCP_BOOTP_HTYPE_ETHERNET,
         hlen=DHCP_BOOTP_HLEN_ETHERNET,
@@ -2766,7 +2766,7 @@ def dhcp_offer_packet(
         giaddr=ip_gateway,
         chaddr=__dhcp_mac_to_chaddr(eth_client),
     )
-    pkt /= scapy.DHCP(
+    pkt /= packet.DHCP(
         options=[
             ("message-type", "offer"),
             ("server_id", ip_server),
@@ -2775,7 +2775,7 @@ def dhcp_offer_packet(
             ("end"),
         ]
     )
-    pkt /= scapy.PADDING("\x00" * padding_bytes)
+    pkt /= packet.PADDING("\x00" * padding_bytes)
     return pkt
 
 
@@ -2802,10 +2802,10 @@ def dhcp_request_packet(
 
     """
 
-    pkt = scapy.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
-    pkt /= scapy.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
-    pkt /= scapy.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
-    pkt /= scapy.BOOTP(
+    pkt = packet.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
+    pkt /= packet.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
+    pkt /= packet.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
+    pkt /= packet.BOOTP(
         op=DHCP_BOOTP_OP_REQUEST,
         htype=DHCP_BOOTP_HTYPE_ETHERNET,
         hlen=DHCP_BOOTP_HLEN_ETHERNET,
@@ -2819,7 +2819,7 @@ def dhcp_request_packet(
         giaddr=DHCP_IP_DEFAULT_ROUTE,
         chaddr=__dhcp_mac_to_chaddr(eth_client),
     )
-    pkt /= scapy.DHCP(
+    pkt /= packet.DHCP(
         options=[
             ("message-type", "request"),
             ("requested_addr", ip_requested),
@@ -2869,10 +2869,10 @@ def dhcp_ack_packet(
 
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
-    pkt = scapy.Ether(dst=eth_dst, src=eth_server, type=DHCP_ETHER_TYPE_IP)
-    pkt /= scapy.IP(src=ip_server, dst=ip_dst, tos=ip_tos, ttl=128, id=0)
-    pkt /= scapy.UDP(sport=DHCP_PORT_SERVER, dport=port_dst)
-    pkt /= scapy.BOOTP(
+    pkt = packet.Ether(dst=eth_dst, src=eth_server, type=DHCP_ETHER_TYPE_IP)
+    pkt /= packet.IP(src=ip_server, dst=ip_dst, tos=ip_tos, ttl=128, id=0)
+    pkt /= packet.UDP(sport=DHCP_PORT_SERVER, dport=port_dst)
+    pkt /= packet.BOOTP(
         op=DHCP_BOOTP_OP_REPLY,
         htype=DHCP_BOOTP_HTYPE_ETHERNET,
         hlen=DHCP_BOOTP_HLEN_ETHERNET,
@@ -2886,7 +2886,7 @@ def dhcp_ack_packet(
         giaddr=ip_gateway,
         chaddr=__dhcp_mac_to_chaddr(eth_client),
     )
-    pkt /= scapy.DHCP(
+    pkt /= packet.DHCP(
         options=[
             ("message-type", "ack"),
             ("server_id", ip_server),
@@ -2895,7 +2895,7 @@ def dhcp_ack_packet(
             ("end"),
         ]
     )
-    pkt /= scapy.PADDING("\x00" * padding_bytes)
+    pkt /= packet.PADDING("\x00" * padding_bytes)
     return pkt
 
 
@@ -2919,11 +2919,11 @@ def dhcp_release_packet(
 
     """
 
-    pkt = scapy.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
-    pkt /= scapy.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
-    pkt /= scapy.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
-    pkt /= scapy.BOOTP(ciaddr=ip_client, chaddr=__dhcp_mac_to_chaddr(eth_client))
-    pkt /= scapy.DHCP(
+    pkt = packet.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
+    pkt /= packet.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
+    pkt /= packet.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
+    pkt /= packet.BOOTP(ciaddr=ip_client, chaddr=__dhcp_mac_to_chaddr(eth_client))
+    pkt /= packet.DHCP(
         options=[("message-type", "release"), ("server_id", ip_server), ("end")]
     )
     return pkt
@@ -3536,7 +3536,8 @@ def verify_each_packet_on_multiple_port_lists(
         rcv_ports = set()
         for port in port_list:
             (rcv_device, rcv_port, rcv_pkt, _) = dp_poll(
-                test, device_number=device_number, port_number=port, timeout=timeout)
+                test, device_number=device_number, port_number=port, timeout=timeout
+            )
             if rcv_device != device_number:
                 continue
             logging.debug("Checking for pkt on device %d, port %d", device_number, port)
@@ -3703,7 +3704,7 @@ def simple_rocev2_packet(
     this packet other than that it is a valid ethernet/IP/UDP/ROCEv2 frame.
     """
 
-    if scapy.BTH is None:
+    if packet.BTH is None:
         logging.error(
             "A ROCEv2 packet was requested but ROCEv2 is not supported by your Scapy. See README for more information"
         )
@@ -3712,7 +3713,7 @@ def simple_rocev2_packet(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    bth_hdr = scapy.BTH(
+    bth_hdr = packet.BTH(
         opcode=bth_opcode,
         solicited=bth_se,
         migreq=bth_migration_req,
@@ -3726,16 +3727,16 @@ def simple_rocev2_packet(
         psn=bth_psn,
     )
 
-    udp_hdr = scapy.UDP(sport=udp_sport, dport=udp_dport)
+    udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            scapy.Ether(dst=eth_dst, src=eth_src)
-            / scapy.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / scapy.IP(
+            packet.Ether(dst=eth_dst, src=eth_src)
+            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / packet.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, id=ip_id
             )
             / udp_hdr
@@ -3744,8 +3745,8 @@ def simple_rocev2_packet(
     else:
         if not ip_options:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -3759,8 +3760,8 @@ def simple_rocev2_packet(
             )
         else:
             pkt = (
-                scapy.Ether(dst=eth_dst, src=eth_src)
-                / scapy.IP(
+                packet.Ether(dst=eth_dst, src=eth_src)
+                / packet.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -3853,7 +3854,7 @@ def simple_rocev2v6_packet(
     this packet other than that it is a valid ethernet/IP/UDP/ROCEv2 frame.
     """
 
-    if scapy.BTH is None:
+    if packet.BTH is None:
         logging.error(
             "A ROCEv2 packet was requested but ROCEv2 is not supported by your Scapy. See README for more information"
         )
@@ -3862,7 +3863,7 @@ def simple_rocev2v6_packet(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    bth_hdr = scapy.BTH(
+    bth_hdr = packet.BTH(
         opcode=bth_opcode,
         solicited=bth_se,
         migreq=bth_migration_req,
@@ -3877,13 +3878,13 @@ def simple_rocev2v6_packet(
     )
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
-    pkt = scapy.Ether(dst=eth_dst, src=eth_src)
+    pkt = packet.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
-        pkt /= scapy.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
-    pkt /= scapy.IPv6(
+        pkt /= packet.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
+    pkt /= packet.IPv6(
         src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
     )
-    pkt /= scapy.UDP(sport=udp_sport, dport=udp_dport)
+    pkt /= packet.UDP(sport=udp_sport, dport=udp_dport)
     pkt /= bth_hdr
 
     if rocev2_payload:

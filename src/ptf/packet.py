@@ -7,7 +7,9 @@ then, create an implementation of packet module for it (for Scapy it is packet_s
 """
 from ptf import config
 
-__module = __import__(config.get("packet_manipulation_module"), fromlist=["*"])
+__module = __import__(
+    config.get("packet_manipulation_module", "ptf.packet_scapy"), fromlist=["*"]
+)
 __keys = []
 
 # import logic - everything from __all__ if provided, otherwise everything not starting

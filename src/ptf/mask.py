@@ -1,8 +1,8 @@
 from __future__ import print_function
+import warnings
 from six import StringIO
 import sys
-from scapy.utils import hexdump
-from . import packet as scapy
+from . import packet
 
 
 class Mask:
@@ -21,7 +21,7 @@ class Mask:
             offsetb = idx % 8
             self.mask[offsetB] = self.mask[offsetB] & (~(1 << (7 - offsetb)))
 
-    def set_do_not_care_scapy(self, hdr_type, field_name):
+    def set_do_not_care_packet(self, hdr_type, field_name):
         if hdr_type not in self.exp_pkt:
             self.valid = False
             print("Unknown header type")
@@ -45,6 +45,12 @@ class Mask:
             else:
                 offset += bits
         self.set_do_not_care(hdr_offset * 8 + offset, bitwidth)
+
+    def set_do_not_care_scapy(self, hdr_type, field_name):
+        warnings.warn("\"set_do_not_care_scapy\" is going to be deprecated, please "
+                      "switch to the new one: \"set_do_not_care_packet\"",
+                      DeprecationWarning)
+        self.set_do_not_care_packet(hdr_type, field_name)
 
     def set_ignore_extra_bytes(self):
         self.ignore_extra_bytes = True
@@ -71,7 +77,7 @@ class Mask:
         assert self.valid
         old_stdout = sys.stdout
         sys.stdout = buffer = StringIO()
-        hexdump(self.exp_pkt)
+        packet.hexdump(self.exp_pkt)
         print("mask =", end=" ")
         for i in range(0, len(self.mask), 16):
             if i > 0:
@@ -84,14 +90,14 @@ class Mask:
 
 
 def utest():
-    p = scapy.Ether() / scapy.IP() / scapy.TCP()
+    p = packet.Ether() / packet.IP() / packet.TCP()
     m = Mask(p)
     assert m.pkt_match(p)
-    p1 = scapy.Ether() / scapy.IP() / scapy.TCP(sport=97)
+    p1 = packet.Ether() / packet.IP() / packet.TCP(sport=97)
     assert not m.pkt_match(p1)
-    m.set_do_not_care_scapy(scapy.TCP, "sport")
+    m.set_do_not_care_packet(packet.TCP, "sport")
     assert not m.pkt_match(p1)
-    m.set_do_not_care_scapy(scapy.TCP, "chksum")
+    m.set_do_not_care_packet(packet.TCP, "chksum")
     assert m.pkt_match(p1)
     exp_pkt = "\x01\x02\x03\x04\x05\x06"
     pkt = "\x01\x00\x00\x04\x05\x06\x07\x08"

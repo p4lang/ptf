@@ -19,6 +19,7 @@ try:
     import scapy.packet
     import scapy.main
     import scapy.fields
+    import scapy.utils
 
     if not config.get("disable_ipv6", False):
         import scapy.route6
@@ -144,3 +145,7 @@ if not config.get("disable_igmp", False):
         ptf.enable_logging()
         logging.warn("IGMP support not found in Scapy")
         pass
+
+
+# Scapy has its own hexdump
+hexdump = scapy.utils.hexdump

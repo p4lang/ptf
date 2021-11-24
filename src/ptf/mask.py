@@ -47,9 +47,11 @@ class Mask:
         self.set_do_not_care(hdr_offset * 8 + offset, bitwidth)
 
     def set_do_not_care_scapy(self, hdr_type, field_name):
-        warnings.warn("\"set_do_not_care_scapy\" is going to be deprecated, please "
-                      "switch to the new one: \"set_do_not_care_packet\"",
-                      DeprecationWarning)
+        warnings.warn(
+            '"set_do_not_care_scapy" is going to be deprecated, please '
+            'switch to the new one: "set_do_not_care_packet"',
+            DeprecationWarning,
+        )
         self.set_do_not_care_packet(hdr_type, field_name)
 
     def set_ignore_extra_bytes(self):

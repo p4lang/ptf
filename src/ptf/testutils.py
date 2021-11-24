@@ -135,7 +135,9 @@ def simple_tcp_packet_ext_taglist(
     if with_tcp_chksum:
         tcp_hdr = packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
     else:
-        tcp_hdr = packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0)
+        tcp_hdr = packet.TCP(
+            sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0
+        )
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
@@ -1607,7 +1609,7 @@ def ipv4_erspan_platform_pkt(
             session_id=mirror_id, sgt_other=sgt_other
         )
         if sgt_other & 0x01 == 1:
-            erspan_hdr = erspan_hdr / ERSPAN_PlatformSpecific(
+            erspan_hdr = erspan_hdr / packet.PlatformSpecific(
                 platf_id=platf_id, info1=info1, info2=info2
             )
     else:
@@ -2367,7 +2369,9 @@ def simple_ip_only_packet(
     if with_tcp_chksum:
         tcp_hdr = packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
     else:
-        tcp_hdr = packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0)
+        tcp_hdr = packet.TCP(
+            sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0
+        )
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 

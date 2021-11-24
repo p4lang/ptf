@@ -27,6 +27,7 @@ try:
 except ImportError:
     sys.exit("Need to install scapy for packet parsing")
 
+Packet = scapy.packet.Packet
 Ether = scapy.layers.l2.Ether
 LLC = scapy.layers.l2.LLC
 SNAP = scapy.layers.l2.SNAP
@@ -113,7 +114,7 @@ if not config.get("disable_mpls", False):
 NVGRE = None
 if not config.get("disable_nvgre", False):
 
-    class NVGRE(scapy.packet.Packet):
+    class NVGRE(Packet):
         name = "NVGRE"
         fields_desc = [
             scapy.fields.BitField("chksum_present", 0, 1),
@@ -149,3 +150,4 @@ if not config.get("disable_igmp", False):
 
 # Scapy has its own hexdump
 hexdump = scapy.utils.hexdump
+ls = scapy.packet.ls

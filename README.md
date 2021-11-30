@@ -43,7 +43,7 @@ The following software is required to run PTF:
 
  * Python 2.7 or 3.x
  * six 1.16.0
- * Scapy 2.4.5 (optional, if you provide other packet manipulation module)
+ * Scapy 2.4.5 (unless you provide another packet manipulation module)
  * pypcap (optional - VLAN tests will fail without this)
  * tcpdump (optional - Scapy will complain if it's missing)
 
@@ -194,8 +194,8 @@ timeout takes precedence over the global timeout passed on the command line.
 
 ## Pluggable packet manipulation module
 
-By default, `ptf` uses `Scapy` as a packet manipulation module, but it can also 
-operate on a different one. 
+By default, `ptf` uses `Scapy` as the packet manipulation module, but it can 
+also operate on a different one. 
 
 Such module **must define/implement the same symbols**, as defined in `Scapy` 
 implementation of packet. Most of them are just names of most common frame 
@@ -203,10 +203,10 @@ headers (Ether, IP, TCP, UDP, ...).
 
 The default implementation can be found in file 
 [/src/ptf/packet_scapy.py](/src/ptf/packet_scapy.py). It can be used as a 
-reference when implementing own version.
+reference when implementing your own version.
 
-To use other packet manipulation module, one needs to 
-provide it as an argument `-pmm` or `--packet-manipulation-module` when running 
+To use another packet manipulation module, one needs to 
+provide it as argument `-pmm` or `--packet-manipulation-module` when running the
 `ptf` binary.
 
 ```text

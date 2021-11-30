@@ -380,7 +380,7 @@ class L2AccessToTrunkVlanTest_Mask(sai_base_test.SAIThriftDataplaneTest):
 
         # illustrates how to use a mask even if no impact here
         m = Mask(exp_pkt)
-        m.set_do_not_care_scapy(IP, 'ttl')
+        m.set_do_not_care_packet(IP, 'ttl')
         try:
             send_packet(self, 2, pkt)
             verify_packets(self, m, [1])

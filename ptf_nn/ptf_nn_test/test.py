@@ -105,7 +105,7 @@ class VerifyAnyPacketAnyPort(DataplaneBaseTest):
         pkt1 = testutils.simple_udp_packet(eth_dst="00:11:11:11:11:11")
         pkt2 = testutils.simple_udp_packet(eth_dst="00:22:22:22:22:22")
         exp_pkt = Mask(pkt2)
-        exp_pkt.set_do_not_care_scapy(Ether, 'dst')
+        exp_pkt.set_do_not_care_packet(Ether, 'dst')
 
         testutils.send_packet(self, (0, 1), pkt1)
         print("Packet sent")

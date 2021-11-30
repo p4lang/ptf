@@ -30,8 +30,7 @@ from threading import Condition
 from . import ptfutils
 from . import netutils
 from . import mask
-import scapy.packet
-import scapy.utils
+from . import packet
 from .pcap_writer import PcapWriter
 from six import StringIO
 
@@ -802,12 +801,12 @@ class DataPlane(Thread):
                 sys.stdout = StringIO()
 
                 print("========== RECEIVED ==========")
-                if isinstance(self.expected_packet, scapy.packet.Packet):
+                if isinstance(self.expected_packet, packet.Packet):
                     # Dissect this packet as if it were an instance of
                     # the expected packet's class.
-                    scapy.packet.ls(self.expected_packet.__class__(self.packet))
+                    packet.ls(self.expected_packet.__class__(self.packet))
                     print("--")
-                scapy.utils.hexdump(self.packet)
+                packet.hexdump(self.packet)
                 print("==============================")
 
                 return sys.stdout.getvalue()
@@ -850,15 +849,15 @@ class DataPlane(Thread):
 
                 if self.expected_packet is not None:
                     print("========== EXPECTED ==========")
-                    if isinstance(self.expected_packet, scapy.packet.Packet):
-                        scapy.packet.ls(self.expected_packet)
+                    if isinstance(self.expected_packet, packet.Packet):
+                        packet.ls(self.expected_packet)
                         print("--")
-                        scapy.utils.hexdump(self.expected_packet)
+                        packet.hexdump(self.expected_packet)
                     elif isinstance(self.expected_packet, mask.Mask):
                         print("Mask:")
                         print(self.expected_packet)
                     else:
-                        scapy.utils.hexdump(self.expected_packet)
+                        packet.hexdump(self.expected_packet)
 
                 print("========== RECEIVED ==========")
                 if self.recent_packets:
@@ -866,14 +865,14 @@ class DataPlane(Thread):
                         "%d total packets. Displaying most recent %d packets:"
                         % (self.packet_count, len(self.recent_packets))
                     )
-                    for packet in self.recent_packets:
+                    for recent_packet in self.recent_packets:
                         print("------------------------------")
-                        if isinstance(self.expected_packet, scapy.packet.Packet):
+                        if isinstance(self.expected_packet, packet.Packet):
                             # Dissect this packet as if it were an instance of
                             # the expected packet's class.
-                            scapy.packet.ls(self.expected_packet.__class__(packet))
+                            packet.ls(self.expected_packet.__class__(recent_packet))
                             print("--")
-                        scapy.utils.hexdump(packet)
+                        packet.hexdump(recent_packet)
                 else:
                     print("%d total packets." % self.packet_count)
                 print("==============================")

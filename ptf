@@ -95,6 +95,8 @@ config_default = {
     "test_case_timeout": None,
     # Socket options
     "socket_recv_size": 4096,
+    # Packet manipulation provider module
+    "packet_manipulation_module": "ptf.packet_scapy",
     # Other configuration
     "port_map": None,
 }
@@ -238,6 +240,14 @@ be subtracted from the result by prefixing them with the '^' character.  """
     )
 
     parser.add_argument("--pypath", dest="pypath", action="append")
+
+    parser.add_argument(
+        "-pmm",
+        "--packet-manipulation-module",
+        type=str,
+        help="Provide packet manipulation module which should be used "
+        "as a 'packet' one for other PTF modules",
+    )
 
     group = parser.add_argument_group("Test selection options")
     group.add_argument("-f", "--test-file", help="File of tests to run, one per line")

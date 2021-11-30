@@ -23,19 +23,19 @@ from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
-
 class SAIThriftTest(BaseTest):
+
     def setUp(self):
         BaseTest.setUp(self)
 
         test_params = testutils.test_params_get()
-        print()
-        print("You specified the following test-params when invoking ptf:")
-        for k, v in list(test_params.items()):
-            print(k, ":\t\t\t", v)
+        print
+        print "You specified the following test-params when invoking ptf:"
+        for k, v in test_params.items():
+            print k, ":\t\t\t", v
 
         # Set up thrift client and contact server
-        self.transport = TSocket.TSocket("localhost", 9092)
+        self.transport = TSocket.TSocket('localhost', 9092)
         self.transport = TTransport.TBufferedTransport(self.transport)
         self.protocol = TBinaryProtocol.TBinaryProtocol(self.transport)
 
@@ -46,8 +46,8 @@ class SAIThriftTest(BaseTest):
         BaseTest.tearDown(self)
         self.transport.close()
 
-
 class SAIThriftDataplaneTest(SAIThriftTest):
+
     def setUp(self):
         SAIThriftTest.setUp(self)
 

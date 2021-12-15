@@ -12,3 +12,8 @@ format:
 set-dev:
 	@echo "Installing dev-dependencies..."
 	python -m pip install -r requirements-dev.txt
+
+.PHONY: test
+test:
+	@echo "Running tests..."
+	export PYTHONPATH=${PWD}/src && python -m pytest utests/

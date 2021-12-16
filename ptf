@@ -272,7 +272,9 @@ be subtracted from the result by prefixing them with the '^' character.  """
         "--test-order-seed", type=int, help="Specify seed to randomize test order"
     )
     group.add_argument(
-        "--num-shards", type=int, help="Number of shards that can be used to parallelize test execution"
+        "--num-shards",
+        type=int,
+        help="Number of shards that can be used to parallelize test execution",
     )
     group.add_argument(
         "--shard-id", type=int, help="Index of shard (>= 0 and < number of shards)"
@@ -771,7 +773,7 @@ for (modname, (mod, tests)) in test_modules.items():
 
 if config["shard_id"] < 0 or config["shard_id"] >= config["num_shards"]:
     die("shard id should be equal or greater than 0 and lower than number of shards")
-test_suite = test_suite[config["shard_id"]::config["num_shards"]]
+test_suite = test_suite[config["shard_id"] :: config["num_shards"]]
 
 if config["test_order"] == "lexico":
     test_suite.sort()

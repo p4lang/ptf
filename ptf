@@ -59,6 +59,8 @@ config_default = {
     "test_dir": None,
     "test_order": "default",
     "test_order_seed": 0xABA,
+    "num_shards": 1,
+    "shard_id": 0,
     # Switch connection options
     "platform": "eth",
     "platform_args": None,
@@ -268,6 +270,12 @@ be subtracted from the result by prefixing them with the '^' character.  """
     )
     group.add_argument(
         "--test-order-seed", type=int, help="Specify seed to randomize test order"
+    )
+    group.add_argument(
+        "--num-shards", type=int, help="Number of shards that can be used to parallelize test execution"
+    )
+    group.add_argument(
+        "--shard-id", type=int, help="Index of shard (>= 0 and < number of shards)"
     )
 
     group = parser.add_argument_group("Switch connection options")
@@ -760,6 +768,11 @@ test_suite = []
 for (modname, (mod, tests)) in test_modules.items():
     for (testname, test) in tests.items():
         test_suite.append(test())
+
+if config["shard_id"] < 0 or config["shard_id"] >= config["num_shards"]:
+    die("shard id should be equal or greater than 0 and lower than number of shards")
+test_suite = test_suite[config["shard_id"]::config["num_shards"]]
+
 if config["test_order"] == "lexico":
     test_suite.sort()
 elif config["test_order"] == "rand":

@@ -2618,7 +2618,7 @@ def simple_igmp_packet(
                 options=ip_options,
             )
 
-    pkt = pkt / packet.IGMP(type=igmp_type, gaddr=igmp_gaddr, mrtime=igmp_mrtime)
+    pkt = pkt / packet.IGMP(type=igmp_type, gaddr=igmp_gaddr, mrcode=igmp_mrtime)
 
     if inner_frame:
         pkt = pkt / inner_frame

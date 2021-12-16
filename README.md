@@ -216,6 +216,19 @@ sudo ./ptf <other parameters> -pmm foo.packet_foo
 Please make sure that this module is loaded into the runtime before running 
 any tests.
 
+## Sharding
+
+You can achieve parallelization by splitting tests into N groups and running them with separate PTF processes.
+Each PTF instance will run disjoint subset of all selected tests.
+
+For example to run specific set of tests across 3 PTF instances:
+
+```
+$ ssh mynode0 sudo ./ptf --test-dir mytests --num-shards 3 --shard-id 0 all ^other &
+$ ssh mynode1 sudo ./ptf --test-dir mytests --num-shards 3 --shard-id 1 all ^other &
+$ ssh mynode2 sudo ./ptf --test-dir mytests --num-shards 3 --shard-id 2 all ^other &
+```
+
 ---
 
 # Configuring PTF

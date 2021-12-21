@@ -89,23 +89,3 @@ class Mask:
             print(" ".join("%02x" % (x) for x in self.mask[i + 8 : i + 16]))
         sys.stdout = old_stdout
         return buffer.getvalue()
-
-
-def utest():
-    p = packet.Ether() / packet.IP() / packet.TCP()
-    m = Mask(p)
-    assert m.pkt_match(p)
-    p1 = packet.Ether() / packet.IP() / packet.TCP(sport=97)
-    assert not m.pkt_match(p1)
-    m.set_do_not_care_packet(packet.TCP, "sport")
-    assert not m.pkt_match(p1)
-    m.set_do_not_care_packet(packet.TCP, "chksum")
-    assert m.pkt_match(p1)
-    exp_pkt = "\x01\x02\x03\x04\x05\x06"
-    pkt = "\x01\x00\x00\x04\x05\x06\x07\x08"
-    m1 = Mask(exp_pkt.encode(), ignore_extra_bytes=True)
-    m1.set_do_not_care(8, 16)
-    assert m1.pkt_match(pkt.encode())
-
-
-utest()

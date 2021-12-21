@@ -18,9 +18,13 @@ jobs:
       - name: Install dependencies
         run: |
           make set-dev
+          python -m pip install scapy==2.4.5
       - name: Verify code (python w/black)
         run: |
           make format-check
+      - name: Run pytests (utests/tests)
+        run: | 
+          make test
   test:
     runs-on: ubuntu-18.04
     steps:

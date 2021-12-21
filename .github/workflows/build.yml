@@ -21,6 +21,9 @@ jobs:
       - name: Verify code (python w/black)
         run: |
           make format-check
+      - name: Run pytests (utests/tests)
+        run: | 
+          make test
   test:
     runs-on: ubuntu-18.04
     steps:
@@ -58,7 +61,3 @@ jobs:
         python CI/travis/check-nnpy.py
         ./CI/travis/run_tests.sh
         sudo python3 /usr/local/bin/nose2 utests.tests
-
-    - name: Run pytests
-      run: |
-        make test

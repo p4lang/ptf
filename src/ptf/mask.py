@@ -1,7 +1,7 @@
 from __future__ import print_function
 import warnings
 
-from six import StringIO, PY2
+from six import StringIO
 import sys
 from . import packet
 
@@ -23,12 +23,6 @@ class Mask:
             self.mask[offsetB] = self.mask[offsetB] & (~(1 << (7 - offsetb)))
 
     def set_do_not_care_packet(self, hdr_type, field_name):
-        def get_raw_packet():
-            if PY2:
-                if hasattr(self.exp_pkt[hdr_type], "__bytes__"):
-                    return self.exp_pkt[hdr_type].__bytes__()
-            return bytes(self.exp_pkt[hdr_type])
-
         if hdr_type not in self.exp_pkt:
             self.valid = False
             print("Unknown header type")
@@ -38,7 +32,7 @@ class Mask:
                 field
                 for field in hdr_type.fields_desc
                 if field.name
-                in self.exp_pkt[hdr_type].__class__(get_raw_packet()).fields.keys()
+                in self.exp_pkt[hdr_type].__class__(bytes(self.exp_pkt[hdr_type])).fields.keys()
             ]  # build & read packet to be sure, all fields are correctly filed
         except Exception:  # noqa
             self.valid = False

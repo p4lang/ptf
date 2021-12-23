@@ -32,7 +32,9 @@ class Mask:
                 field
                 for field in hdr_type.fields_desc
                 if field.name
-                in self.exp_pkt[hdr_type].__class__(bytes(self.exp_pkt[hdr_type])).fields.keys()
+                in self.exp_pkt[hdr_type]
+                .__class__(bytes(self.exp_pkt[hdr_type]))
+                .fields.keys()
             ]  # build & read packet to be sure, all fields are correctly filed
         except Exception:  # noqa
             self.valid = False

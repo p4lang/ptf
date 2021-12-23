@@ -34,14 +34,12 @@ class Mask:
             print("Unknown header type")
             return
         try:
-            fields_desc = hdr_type.fields_desc
-            if self.exp_pkt[hdr_type].fields:
-                fields_desc = [
-                    field
-                    for field in hdr_type.fields_desc
-                    if field.name
-                    in self.exp_pkt[hdr_type].__class__(get_raw_packet()).fields.keys()
-                ]
+            fields_desc = [
+                field
+                for field in hdr_type.fields_desc
+                if field.name
+                in self.exp_pkt[hdr_type].__class__(get_raw_packet()).fields.keys()
+            ]  # build & read packet to be sure, all fields are correctly filed
         except Exception:  # noqa
             self.valid = False
             return

@@ -35,7 +35,7 @@ class Mask:
                 in self.exp_pkt[hdr_type]
                 .__class__(bytes(self.exp_pkt[hdr_type]))
                 .fields.keys()
-            ]  # build & read packet to be sure, all fields are correctly filed
+            ]  # build & parse packet to be sure all fields are correctly filled
         except Exception:  # noqa
             self.valid = False
             return

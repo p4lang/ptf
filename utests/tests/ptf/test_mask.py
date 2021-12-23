@@ -37,3 +37,19 @@ class TestMask:
         assert (
             masked_simple_vxlan.mask != second_masked_packet.mask
         ), "Masks should not be equal"
+
+    def test_mask__mask_has_problem_with_conditional_fields(self):
+        pkt = VXLAN(flags=0x80, gpflags=0x23, gpid=0x1234, vni=0x1337)
+        mask_pkt = Mask(pkt)
+        mask_pkt.set_do_not_care_packet(VXLAN, "gpid")
+
+        assert mask_pkt.mask == [
+            255,
+            255,
+            0,
+            0,
+            255,
+            255,
+            255,
+            255,
+        ], "Only gpid field should be masked"

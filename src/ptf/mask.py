@@ -1,5 +1,6 @@
 from __future__ import print_function
 import warnings
+
 from six import StringIO
 import sys
 from . import packet
@@ -27,8 +28,15 @@ class Mask:
             print("Unknown header type")
             return
         try:
-            fields_desc = hdr_type.fields_desc
-        except:
+            fields_desc = [
+                field
+                for field in hdr_type.fields_desc
+                if field.name
+                in self.exp_pkt[hdr_type]
+                .__class__(bytes(self.exp_pkt[hdr_type]))
+                .fields.keys()
+            ]  # build & parse packet to be sure all fields are correctly filled
+        except Exception:  # noqa
             self.valid = False
             return
         hdr_offset = self.size - len(self.exp_pkt[hdr_type])
@@ -37,7 +45,7 @@ class Mask:
         for f in fields_desc:
             try:
                 bits = f.size
-            except:
+            except Exception:  # noqa
                 bits = 8 * f.sz
             if f.name == field_name:
                 bitwidth = bits

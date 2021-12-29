@@ -6,6 +6,12 @@ import sys
 from . import packet
 
 
+class MaskException(Exception):
+    """Generic Mask Exception"""
+
+    pass
+
+
 class Mask:
     def __init__(self, exp_pkt, ignore_extra_bytes=False):
         self.exp_pkt = exp_pkt
@@ -25,8 +31,8 @@ class Mask:
     def set_do_not_care_packet(self, hdr_type, field_name):
         if hdr_type not in self.exp_pkt:
             self.valid = False
-            print("Unknown header type")
-            return
+            raise MaskException("Unknown header type")
+
         try:
             fields_desc = [
                 field
@@ -38,7 +44,12 @@ class Mask:
             ]  # build & parse packet to be sure all fields are correctly filled
         except Exception:  # noqa
             self.valid = False
-            return
+            raise MaskException("Can not build or decode Packet")
+
+        if field_name not in [x.name for x in fields_desc]:
+            self.valid = False
+            raise MaskException("Field %s does not exists in frame" % field_name)
+
         hdr_offset = self.size - len(self.exp_pkt[hdr_type])
         offset = 0
         bitwidth = 0
@@ -87,13 +98,11 @@ class Mask:
         assert self.valid
         old_stdout = sys.stdout
         sys.stdout = buffer = StringIO()
-        packet.hexdump(self.exp_pkt)
-        print("mask =", end=" ")
-        for i in range(0, len(self.mask), 16):
-            if i > 0:
-                print("%04x  " % i, end=" ")
-            print(" ".join("%02x" % (x) for x in self.mask[i : i + 8]), end=" ")
-            print("", end=" ")
-            print(" ".join("%02x" % (x) for x in self.mask[i + 8 : i + 16]))
+
+        print("\npacket:")
+        packet.hexdump(self.exp_pkt)  # noqa
+        print("\npacket's mask:")
+        packet.hexdump(self.mask)  # noqa
+
         sys.stdout = old_stdout
         return buffer.getvalue()

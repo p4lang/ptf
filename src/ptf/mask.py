@@ -48,7 +48,7 @@ class Mask:
 
         if field_name not in [x.name for x in fields_desc]:
             self.valid = False
-            raise MaskException("Field %s does not exists in frame" % field_name)
+            raise MaskException("Field %s does not exist in frame" % field_name)
 
         hdr_offset = self.size - len(self.exp_pkt[hdr_type])
         offset = 0

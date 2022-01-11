@@ -95,11 +95,10 @@ class Mask:
         return True
 
     def __str__(self):
-        assert self.valid
         old_stdout = sys.stdout
         sys.stdout = buffer = StringIO()
-
-        print("\npacket:")
+        print("\npacket status: %s" % "OK" if self.valid else "INVALID")
+        print("packet:")
         packet.hexdump(self.exp_pkt)  # noqa
         print("\npacket's mask:")
         packet.hexdump(self.mask)  # noqa

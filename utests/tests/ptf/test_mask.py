@@ -97,6 +97,7 @@ class TestMask:
 
 
 EXPECTED_MASKED_PACKET = """
+packet status: OK
 packet:
 0000  00 01 02 03 04 05 00 06 07 08 09 0A 08 00 45 00  ..............E.
 0010  00 28 00 01 00 00 40 06 F9 7B C0 A8 00 01 C0 A8  .(....@..{......

@@ -12,7 +12,7 @@ with open("requirements.txt", "r") as req:
 
 setup(
     name='ptf',
-    version='0.9.2',
+    version='0.9.3',
     description='PTF is a Python based dataplane test framework.',
     long_description=readme,
     long_description_content_type="text/markdown",

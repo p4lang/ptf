@@ -57,6 +57,7 @@ config_default = {
     "test_spec": "",
     "test_file": None,
     "test_dir": None,
+    "group_mode": "class",
     "test_order": "default",
     "test_order_seed": 0xABA,
     "num_shards": 1,
@@ -220,6 +221,21 @@ be subtracted from the result by prefixing them with the '^' character.  """
                 )
             setattr(namespace, self.dest, values)
 
+            
+    class ActionGroupMode(argparse.Action):
+        """
+        Check the group-mode parameters.
+        """
+        def __call__(self, parser, namespace, values, option_string=None):
+            parameters = ['class', 'method']
+            assert type(values) is str
+            if not values in parameters:
+                parser.error(
+                    "invalid value for --group-mode: value %s does not support in %s" % (values, parameters)
+                )
+            setattr(namespace, self.dest, values)
+
+
     parser = argparse.ArgumentParser(usage=usage, description=description)
 
     # Set up default values
@@ -260,6 +276,14 @@ be subtracted from the result by prefixing them with the '^' character.  """
         required=True,
         help="Directory containing tests",
     )
+    
+    group.add_argument(
+        "--group-mode",
+        type=str,
+        action=ActionGroupMode,
+        help="Tests group mode, [class] - the only 'testMethod' in a class, [method] - all the methods with surffix 'Test'. Default is [class].",
+    )    
+    
     test_order_help = """Choose the order in which the tests will be run:
     default (tests are run in the order in which they appear on command line),
     lexico (use default string ordering on test names),
@@ -545,13 +569,25 @@ def load_test_modules(config):
                 raise
 
             # Find all testcases defined in the module
-            tests = dict(
-                (k, v)
-                for (k, v) in mod.__dict__.items()
-                if type(v) == type
-                and issubclass(v, unittest.TestCase)
-                and hasattr(v, "runTest")
-            )
+            if 'group_mode' not in config or config["group_mode"] != 'method':
+                tests = dict(
+                    (k, v)
+                    for (k, v) in mod.__dict__.items()
+                    if type(v) == type
+                    and issubclass(v, unittest.TestCase)
+                    and hasattr(v, "runTest")
+                )
+            else:
+                tests = dict(
+                    (k, v)
+                    for (k, v) in mod.__dict__.items()
+                    if type(v) == type
+                    and issubclass(v, ptf.base_tests.BaseTest)
+                    and v.__module__ != 'ptf.base_tests'
+                    and v.__name__ != 'BaseTest'
+                    and contains_test_methods(v)
+                )
+            
             if tests:
                 for (testname, test) in tests.items():
                     # Set default annotation values
@@ -583,6 +619,49 @@ def load_test_modules(config):
                 result[modname] = (mod, tests)
 
     return result
+
+def contains_test_methods(class_name):
+    """
+    Check if test class contains individual test method (suffix 'Test').
+    Only used when group_mode is [method].
+
+    Args:
+        class_name : Test class will be checked.
+
+    Returns:
+         If test class contains individual test method (suffix 'Test').
+    """
+    skip_test_methods = ['runTest', 'skipTest', 'subTest']
+    for attribute in dir(class_name):
+        attribute_value = getattr(class_name, attribute)
+        if callable(attribute_value) and not attribute in skip_test_methods:
+            if attribute.endswith('Test'):
+                return True
+    
+    return False
+
+
+def load_test_methods(class_name):
+    """
+    Load individual test methods(suffix 'Test') from test class.
+    Only used when group_mode is [method].
+    Args:
+        class_name : Test class will be checked.
+        
+    Returns:
+         Method name list.
+    """
+    
+    skip_test_methods = ['runTest','skipTest', 'subTest']
+    method_list = []
+    for attribute in dir(class_name):
+        attribute_value = getattr(class_name, attribute)
+        if callable(attribute_value) and not attribute in skip_test_methods:
+            #TODO use a pattern for the TestMethod name
+            if attribute.endswith('Test'):
+                method_list.append(attribute)
+    
+    return method_list
 
 
 def prune_tests(test_specs, test_modules):
@@ -768,8 +847,17 @@ if config["list_test_names"]:
 # Generate the test suite
 test_suite = []
 for (modname, (mod, tests)) in test_modules.items():
-    for (testname, test) in tests.items():
-        test_suite.append(test())
+    if 'group_mode' not in config or config["group_mode"] != 'method':
+        for (testname, test) in tests.items():
+            test_suite.append(test())
+    else:
+        suite = unittest.TestSuite()
+        for (testname, test) in tests.items():
+            for testmethod in load_test_methods(test):
+                suite.addTest(test(testmethod))
+        if suite.countTestCases() != 0:         
+            test_suite.append(suite)
+
 
 if config["shard_id"] < 0 or config["shard_id"] >= config["num_shards"]:
     die("shard id should be equal or greater than 0 and lower than number of shards")
@@ -871,9 +959,10 @@ if __name__ == "__main__":
     run_errors = []
     run_timeouts = []
     from ptf.ptfutils import Timeout
-
+       
+    
     for t in test_suite:
-        if t._testtimeout is not None:
+        if hasattr(t, '_testtimeout') and t._testtimeout is not None:
             this_test_timeout = t._testtimeout
         else:
             this_test_timeout = test_case_timeout

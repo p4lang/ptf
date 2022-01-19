@@ -33,6 +33,7 @@ if os.path.exists(os.path.join(pydir, "ptf")):
 import ptf
 from ptf import config
 import ptf.ptfutils
+import ptf.base_tests
 
 ##@var DEBUG_LEVELS
 # Map from strings to debugging levels
@@ -222,20 +223,6 @@ be subtracted from the result by prefixing them with the '^' character.  """
             setattr(namespace, self.dest, values)
 
             
-    class ActionGroupMode(argparse.Action):
-        """
-        Check the group-mode parameters.
-        """
-        def __call__(self, parser, namespace, values, option_string=None):
-            parameters = ['class', 'method']
-            assert type(values) is str
-            if not values in parameters:
-                parser.error(
-                    "invalid value for --group-mode: value %s does not support in %s" % (values, parameters)
-                )
-            setattr(namespace, self.dest, values)
-
-
     parser = argparse.ArgumentParser(usage=usage, description=description)
 
     # Set up default values
@@ -280,8 +267,8 @@ be subtracted from the result by prefixing them with the '^' character.  """
     group.add_argument(
         "--group-mode",
         type=str,
-        action=ActionGroupMode,
-        help="Tests group mode, [class] - the only 'testMethod' in a class, [method] - all the methods with surffix 'Test'. Default is [class].",
+        choices=["class", "method"],
+        help="Tests group mode, [class] - the only 'testMethod' in a class, [method] - all the methods with suffix 'Test'. Default is [class].",
     )    
     
     test_order_help = """Choose the order in which the tests will be run:

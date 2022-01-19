@@ -54,28 +54,28 @@ class GroupModeTestCase(BaseTestCase):
 
     def test_method_group_mode(self):
         out = self.run_tests("method")
-        expects = ["FrameworkTest.aTest ... ok",
+        expects = {"FrameworkTest.aTest ... ok",
                    "FrameworkTest.bTest ... ok",
                    "FrameworkTest.cTest ... ok",
-                   "Ran 3 tests"]
+                   "Ran 6 tests"} #hit twice
         hits = self.parse_output(out, expects)
-        self.assertEqual(hits, len(expects))
+        self.assertEqual(hits, len(expects) + 1)
 
 
     def test_class_group_mode(self):
         out = self.run_tests("class")
-        expects = ["framework_tests.FrameworkTest",
-                   "Ran 1 test"]
+        expects = ["framework_tests.FrameworkTest ", 
+                   "Ran 1 test"] #X4
         hits = self.parse_output(out, expects)
-        self.assertEqual(hits, len(expects))
+        self.assertEqual(hits, len(expects) + 3)
 
 
     def test_non_group_mode(self):
         out = self.run_tests(None)
-        expects = ["framework_tests.FrameworkTest",
-                   "Ran 1 test"]
+        expects = ["framework_tests.FrameworkTest ",
+                   "Ran 1 test"] #X4
         hits = self.parse_output(out, expects)
-        self.assertEqual(hits, len(expects))
+        self.assertEqual(hits, len(expects) + 3)
 
 
     def test_invalidate_group_mode(self):

@@ -536,6 +536,11 @@ def load_test_modules(config):
 
     for root, dirs, filenames in os.walk(config["test_dir"]):
         pyfiles = fnmatch.filter(filenames, "[!.]*.py")
+
+        # guarantee that files will be visited in the same order every time tests are loaded
+        pyfiles.sort()
+        dirs.sort()
+
         if len(pyfiles) == 0:
             continue
 

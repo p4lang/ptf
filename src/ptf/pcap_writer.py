@@ -41,7 +41,7 @@ class PcapWriter(object):
         self.stream.write(
             PcapPktHeader.pack(
                 int(timestamp),  # timestamp seconds
-                int((timestamp - int(timestamp)) * 10 ** 6),  # timestamp microseconds
+                int((timestamp - int(timestamp)) * 10**6),  # timestamp microseconds
                 len(data) + ppi_len,  # truncated length
                 len(data) + ppi_len,  # un-truncated length
             )

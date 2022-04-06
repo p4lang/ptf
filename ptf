@@ -940,6 +940,7 @@ if __name__ == "__main__":
         print("******************************************")
         # exit(1) hangs sometimes
         sys.stdout.flush()
+        sys.stderr.flush()
         os._exit(1)
     if ptf.testutils.skipped_test_count > 0 and config["fail_skipped"]:
         print()
@@ -948,4 +949,5 @@ if __name__ == "__main__":
         print("******************************************")
         print()
         sys.stdout.flush()
+        sys.stderr.flush()
         os._exit(1)

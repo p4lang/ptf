@@ -1,18 +1,22 @@
-from ptf.mask import Mask
-from ptf.packet_scapy import VXLAN, Ether, IP, TCP
-from ptf.testutils import simple_vxlan_packet
+import pytest
+from scapy.layers.inet import IP, TCP, UDP
+from scapy.layers.vxlan import VXLAN
+from scapy.packet import Packet
+
+from ptf.mask import Mask, MaskException
 
 
 class TestMask:
-    def test_mask__mask_simple_packet(self):
-        packet = Ether() / IP() / TCP()
+    def test_mask__mask_simple_packet(self, scapy_simple_tcp_packet):
+        packet = scapy_simple_tcp_packet
         mask_packet = Mask(packet)
         assert mask_packet.pkt_match(packet)
 
-        modified_packet = Ether() / IP() / TCP(sport=97)
+        modified_packet = packet.copy()
+        modified_packet[TCP].sport = 97
         assert not mask_packet.pkt_match(modified_packet)
 
-        # try to mask only sport (still packet will be diffrent on chksum!)
+        # try to mask only sport (still packet will be different on chksum!)
         mask_packet.set_do_not_care_packet(TCP, "sport")
         assert not mask_packet.pkt_match(modified_packet)
 
@@ -26,8 +30,10 @@ class TestMask:
         mask.set_do_not_care(8, 16)
         assert mask.pkt_match(packet.encode())
 
-    def test_mask__check_masking_conditional_field(self):
-        simple_vxlan = simple_vxlan_packet(vxlan_flags="G")
+    def test_mask__check_masking_conditional_field(self, scapy_simple_vxlan_packet):
+        simple_vxlan = scapy_simple_vxlan_packet
+        simple_vxlan[VXLAN].flags = "G"
+
         masked_simple_vxlan = Mask(simple_vxlan)
         masked_simple_vxlan.set_do_not_care_packet(VXLAN, "gpid")  # gpflags, gpid
 
@@ -53,3 +59,54 @@ class TestMask:
             255,
             255,
         ], "Only gpid field should be masked"
+
+    def test_mask__conditional_field__gpid_should_be_masked_correctly(
+        self, scapy_simple_vxlan_packet
+    ):
+        simple_vxlan = scapy_simple_vxlan_packet  # type: Packet
+        simple_vxlan[VXLAN].flags = "G"
+        masked_simple_vxlan = Mask(simple_vxlan)  # type: Mask
+        masked_simple_vxlan.set_do_not_care_packet(VXLAN, "gpid")
+        # UDP chksum will be different when we change VXLAN
+        masked_simple_vxlan.set_do_not_care_packet(UDP, "chksum")
+
+        packet_wth_custom_gpid = simple_vxlan.copy()  # type: Packet
+        packet_wth_custom_gpid[VXLAN].gpid = 0x15  # 21
+
+        assert masked_simple_vxlan.pkt_match(
+            packet_wth_custom_gpid
+        ), "Packets should match"
+
+    @pytest.mark.parametrize(
+        "elements_to_ignore", ((UDP, "sport"), (IP, "not_existing_field"))
+    )
+    def test_mask__negative__try_to_mask_not_existing_layer_or_field(
+        self, elements_to_ignore, scapy_simple_tcp_packet
+    ):
+        masked_packet = Mask(scapy_simple_tcp_packet)  # type: Mask
+        with pytest.raises(MaskException):
+            masked_packet.set_do_not_care_packet(
+                elements_to_ignore[0], elements_to_ignore[1]
+            )
+        assert not masked_packet.valid
+
+    def test_mask__validate_str_conversion(self, scapy_simple_tcp_packet):
+        masked_packet = Mask(scapy_simple_tcp_packet)  # type: Mask
+        masked_packet.set_do_not_care_packet(IP, "chksum")
+        assert str(masked_packet) == EXPECTED_MASKED_PACKET
+
+
+EXPECTED_MASKED_PACKET = """
+packet status: OK
+packet:
+0000  00 01 02 03 04 05 00 06 07 08 09 0A 08 00 45 00  ..............E.
+0010  00 28 00 01 00 00 40 06 F9 7B C0 A8 00 01 C0 A8  .(....@..{......
+0020  00 02 04 D2 00 50 00 00 00 00 00 00 00 00 50 02  .....P........P.
+0030  20 00 09 6D 00 00                                 ..m..
+
+packet's mask:
+0000  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF  ................
+0010  FF FF FF FF FF FF FF FF 00 00 FF FF FF FF FF FF  ................
+0020  FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF  ................
+0030  FF FF FF FF FF FF                                ......
+"""

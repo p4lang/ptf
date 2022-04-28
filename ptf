@@ -561,7 +561,7 @@ def load_test_modules(config):
                 raise
 
             # Find all testcases defined in the module
-            if 'group_mode' not in config or config["group_mode"] != 'method':
+            if not is_method_mode():
                 tests = dict(
                     (k, v)
                     for (k, v) in mod.__dict__.items()
@@ -611,6 +611,16 @@ def load_test_modules(config):
                 result[modname] = (mod, tests)
 
     return result
+
+
+def is_method_mode():
+    """
+    Check if the test in method mode
+    Returns:
+        bool : if the test in method mode
+    """
+    return 'group_mode' in config and config["group_mode"] == 'method'
+
 
 def contains_test_methods(class_name):
     """
@@ -679,13 +689,32 @@ def prune_tests(test_specs, test_modules):
                     result.setdefault(modname, (mod, OrderedDict()))
                     if not negated:
                         # if not hasattr(test, "_versions") or version in test._versions:
-                        result[modname][1][testname] = test
+                        result[modname][1][testname] = (test, [])
+                        result[modname][1][testname][1].extend(load_test_methods(test))
                     else:
                         if modname in result and testname in result[modname][1]:
                             del result[modname][1][testname]
                             if not result[modname][1]:
                                 del result[modname]
                     matched = True
+                #Only check specified methods
+                elif is_method_mode():
+                    for method in load_test_methods(test):
+                        if e == "%s.%s.%s" % (modname, testname, method):
+                            result.setdefault(modname, (mod, OrderedDict()))
+                            if not result[modname][1]:
+                                result[modname][1][testname] = (test, [])
+                            if not negated:
+                            # if not hasattr(test, "_versions") or version in test._versions:
+                                result[modname][1][testname][1].append(method)
+                            else:
+                                if modname in result and testname in result[modname][1] and method in result[modname][1][testname][1]:
+                                    result[modname][1][testname][1].remove(method)
+                                    if not result[modname][1][testname][1]:
+                                        del result[modname][1][testname]
+                                    if not result[modname][1]:
+                                        del result[modname]
+                            matched = True
 
         if not matched and not negated:
             die("test-spec element %s did not match any tests" % e)
@@ -839,14 +868,14 @@ if config["list_test_names"]:
 # Generate the test suite
 test_suite = []
 for (modname, (mod, tests)) in test_modules.items():
-    if 'group_mode' not in config or config["group_mode"] != 'method':
+    if not is_method_mode():
         for (testname, test) in tests.items():
-            test_suite.append(test())
+            test_suite.append(test[0]())
     else:
         suite = unittest.TestSuite()
         for (testname, test) in tests.items():
-            for testmethod in load_test_methods(test):
-                suite.addTest(test(testmethod))
+            for testmethod in test[1]:
+                suite.addTest(test[0](testmethod))
         if suite.countTestCases() != 0:         
             test_suite.append(suite)
 
@@ -1003,21 +1032,21 @@ if __name__ == "__main__":
         if (not config["xunit"]) and run_failures:
             print()
             print("The following tests failed:")
-            if 'group_mode' not in config or config["group_mode"] != 'method':
+            if not is_method_mode():
                 print(", ".join([f[0].__class__.__name__ for f in run_failures]))
             else:
                 print(", ".join([str(f[0]) for f in run_failures]))
         if (not config["xunit"]) and run_errors:
             print()
             print("The following tests errored:")
-            if 'group_mode' not in config or config["group_mode"] != 'method':
+            if not is_method_mode():
                 print(", ".join([f[0].__class__.__name__ for f in run_errors]))
             else:
                 print(", ".join([str(f[0]) for f in run_errors]))
         if (not config["xunit"]) and run_timeouts:
             print()
             print("The following tests errored because of a timeout:")
-            if 'group_mode' not in config or config["group_mode"] != 'method':
+            if not is_method_mode():
                 print(", ".join([f[0].__class__.__name__ for f in run_timeouts]))
             else:
                 print(", ".join([str(f[0]) for f in run_timeouts]))

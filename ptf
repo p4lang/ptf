@@ -998,15 +998,24 @@ if __name__ == "__main__":
         if (not config["xunit"]) and run_failures:
             print()
             print("The following tests failed:")
-            print(", ".join([f[0].__class__.__name__ for f in run_failures]))
+            if 'group_mode' not in config or config["group_mode"] != 'method':
+                print(", ".join([f[0].__class__.__name__ for f in run_failures]))
+            else:
+                print(", ".join([str(f[0]) for f in run_failures]))
         if (not config["xunit"]) and run_errors:
             print()
             print("The following tests errored:")
-            print(", ".join([f[0].__class__.__name__ for f in run_errors]))
+            if 'group_mode' not in config or config["group_mode"] != 'method':
+                print(", ".join([f[0].__class__.__name__ for f in run_errors]))
+            else:
+                print(", ".join([str(f[0]) for f in run_errors]))
         if (not config["xunit"]) and run_timeouts:
             print()
             print("The following tests errored because of a timeout:")
-            print(", ".join([f[0].__class__.__name__ for f in run_timeouts]))
+            if 'group_mode' not in config or config["group_mode"] != 'method':
+                print(", ".join([f[0].__class__.__name__ for f in run_timeouts]))
+            else:
+                print(", ".join([str(f[0]) for f in run_timeouts]))
         print()
         print("******************************************")
         # exit(1) hangs sometimes

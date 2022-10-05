@@ -359,7 +359,7 @@ class DataPlanePortNN(DataPlanePortIface):
 
     RCV_TIMEOUT = 10000
 
-    # indexed by device_number, maps to a PacketInjectNN instance
+    # indexed by device_number and interface name, maps to a PacketInjectNN instance
     packet_injecters = {}
 
     def __init__(self, interface_name, device_number, port_number, config={}):
@@ -368,13 +368,15 @@ class DataPlanePortNN(DataPlanePortIface):
         or tcp://<iface>:<port>)
         """
         self.interface_name = interface_name
-        if device_number not in self.packet_injecters:
-            self.packet_injecters[device_number] = DataPlanePacketSourceNN(
-                device_number, interface_name, self.RCV_TIMEOUT
-            )
-        self.packet_inject = self.packet_injecters[device_number]
-        self.port_number = port_number
         self.device_number = device_number
+        if (device_number, interface_name) not in self.packet_injecters:
+            self.packet_injecters[
+                (self.device_number, self.interface_name)
+            ] = DataPlanePacketSourceNN(device_number, interface_name, self.RCV_TIMEOUT)
+        self.packet_inject = self.packet_injecters[
+            (self.device_number, self.interface_name)
+        ]
+        self.port_number = port_number
         self.packet_inject.port_add(port_number)
 
     def __del__(self):
@@ -385,7 +387,7 @@ class DataPlanePortNN(DataPlanePortIface):
         """
         @retval An object implementing DataPlanePacketSourceIface
         """
-        return self.packet_injecters[self.device_number]
+        return self.packet_injecters[(self.device_number, self.interface_name)]
 
     def send(self, packet):
         """
@@ -393,33 +395,41 @@ class DataPlanePortNN(DataPlanePortIface):
         @param packet The packet data to send to the port
         @retval The number of bytes sent
         """
-        return self.packet_injecters[self.device_number].send(self.port_number, packet)
+        return self.packet_injecters[(self.device_number, self.interface_name)].send(
+            self.port_number, packet
+        )
 
     def down(self):
         """
         Bring the physical link down.
         """
-        self.packet_injecters[self.device_number].port_bring_down(self.port_number)
+        self.packet_injecters[
+            (self.device_number, self.interface_name)
+        ].port_bring_down(self.port_number)
 
     def up(self):
         """
         Bring the physical link up.
         """
-        self.packet_injecters[self.device_number].port_bring_up(self.port_number)
+        self.packet_injecters[(self.device_number, self.interface_name)].port_bring_up(
+            self.port_number
+        )
 
     def mac(self):
         """
         Return mac address
         """
-        return self.packet_injecters[self.device_number].get_mac(self.port_number)
+        return self.packet_injecters[(self.device_number, self.interface_name)].get_mac(
+            self.port_number
+        )
 
     def nn_counters(self):
         """
         Return counters
         """
-        return self.packet_injecters[self.device_number].get_nn_counters(
-            self.port_number
-        )
+        return self.packet_injecters[
+            (self.device_number, self.interface_name)
+        ].get_nn_counters(self.port_number)
 
 
 class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):

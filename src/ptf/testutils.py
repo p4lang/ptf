@@ -781,6 +781,7 @@ def simple_vxlan_packet(
     ip_ihl=None,
     ip_options=False,
     vxlan_flags=0x08,
+    vxlan_reserved0=0,
     vxlan_reserved1=0x000000,
     vxlan_vni=0xABA,
     vxlan_reserved2=0x00,
@@ -807,6 +808,7 @@ def simple_vxlan_packet(
     @param udp_sport UDP source port
     @param udp_dport UDP dest port (IANA) = 4789 (VxLAN)
     @param vxlan_flags Flags
+    @param vxlan_reserved0
     @param vxlan_reserved1 reserved field (3B)
     @param vxlan_vni VXLAN Network Identifier
     @param vxlan_reserved2 reserved field (1B)
@@ -881,6 +883,7 @@ def simple_vxlan_packet(
     pkt = pkt / packet.VXLAN(
         flags=vxlan_flags,
         vni=vxlan_vni,
+        reserved0=vxlan_reserved0,
         reserved1=vxlan_reserved1,
         reserved2=vxlan_reserved2,
     )

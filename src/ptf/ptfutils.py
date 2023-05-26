@@ -53,8 +53,14 @@ class EventDescriptor:
         fcntl.fcntl(self.pipe_wr, fcntl.F_SETFL, os.O_NONBLOCK)
 
     def __del__(self):
-        os.close(self.pipe_rd)
-        os.close(self.pipe_wr)
+        # This might look very strange, but for some reason, it is
+        # quite common when a PTF test process is exiting that this
+        # code is reached with os equal to None, which causes
+        # os.close(self.pipe_rd) to throw an exception.  This if
+        # condition simply avoids that exception.
+        if os is not None:
+            os.close(self.pipe_rd)
+            os.close(self.pipe_wr)
 
     def notify(self):
         try:

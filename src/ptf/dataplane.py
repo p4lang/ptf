@@ -986,6 +986,7 @@ class DataPlane(Thread):
         # Explicitly release ports to ensure we don't run out of sockets
         # even if someone keeps holding a reference to the dataplane.
         del self.ports
+        self.waker.close()
 
     def port_down(self, device_number, port_number):
         """Brings the specified port down"""

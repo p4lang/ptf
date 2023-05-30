@@ -52,7 +52,7 @@ class EventDescriptor:
         self.pipe_rd, self.pipe_wr = os.pipe()
         fcntl.fcntl(self.pipe_wr, fcntl.F_SETFL, os.O_NONBLOCK)
 
-    def __del__(self):
+    def close(self):
         os.close(self.pipe_rd)
         os.close(self.pipe_wr)
 

@@ -13,5 +13,5 @@ sub.setsockopt(nnpy.SUB, nnpy.SUB_SUBSCRIBE, '')
 pub.send('hello, world')
 recv = sub.recv()
 
-if recv != 'hello, world':
+if recv != b'hello, world':
     sys.exit(1)

@@ -5,16 +5,16 @@ name: Unit_Tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   verify-python:
     name: Python code verification (src)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install dependencies
         run: |
           make set-dev
@@ -26,24 +26,15 @@ jobs:
         run: | 
           make test
   test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: recursive
     - name: Dependencies
       run: |
-        sudo apt-get install python-dev
-        sudo apt-get install python-pip
-        sudo apt-get install cmake
-        sudo apt-get install libffi-dev
-        sudo apt-get install python3-dev
-        sudo apt-get install python3-pip
-        sudo apt-get install ethtool
-        sudo pip install setuptools
-        sudo pip install scapy
-        sudo pip3 install setuptools
-        sudo pip3 install nose2 scapy
+        sudo apt-get install cmake libffi-dev python3-dev python3-pip ethtool
+        sudo pip3 install setuptools nose2 scapy
 
         bash CI/travis/install-nanomsg.sh
         sudo ldconfig
@@ -61,4 +52,4 @@ jobs:
       run: |
         python CI/travis/check-nnpy.py
         ./CI/travis/run_tests.sh
-        sudo python3 /usr/local/bin/nose2 utests.tests.test
+        sudo python /usr/local/bin/nose2 utests.tests.test

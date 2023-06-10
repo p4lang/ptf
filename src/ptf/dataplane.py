@@ -225,16 +225,14 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     MSG_INFO_STATUS_SUCCESS = 0
     MSG_INFO_STATUS_NOT_SUPPORTED = 1
 
-    def __init__(self, device_number, socket_addr, rcv_timeout):
+    def __init__(self, device_number, socket_addr, rcv_timeout, snd_timeout):
         self.device_number = device_number
         self.socket_addr = socket_addr
         self.socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)
         self.socket.connect(socket_addr)
         self.rcv_timeout = rcv_timeout
         self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.RCVTIMEO, rcv_timeout)
-        # Time out after a second if the socket is non-functional.
-        # This should be long enough for nanomsg.
-        self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.SNDTIMEO, 1000)
+        self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.SNDTIMEO, snd_timeout)
         self.buffers = defaultdict(list)
         self.cvar = Condition()
         self.mac_addresses = {}
@@ -361,8 +359,11 @@ class DataPlanePortNN(DataPlanePortIface):
     """
 
     RCV_TIMEOUT = 10000
+    # Time out after a second if the socket is non-functional.
+    # This should be long enough for nanomsg.
+    SND_TIMEOUT = 1000
 
-    # indexed by device_number and interface name, maps to a PacketInjectNN instance
+    # indexed by device_number, maps to a PacketInjectNN instance
     packet_injecters = {}
 
     def __init__(self, interface_name, device_number, port_number, config={}):
@@ -371,15 +372,13 @@ class DataPlanePortNN(DataPlanePortIface):
         or tcp://<iface>:<port>)
         """
         self.interface_name = interface_name
-        self.device_number = device_number
-        if (device_number, interface_name) not in self.packet_injecters:
-            self.packet_injecters[
-                (self.device_number, self.interface_name)
-            ] = DataPlanePacketSourceNN(device_number, interface_name, self.RCV_TIMEOUT)
-        self.packet_inject = self.packet_injecters[
-            (self.device_number, self.interface_name)
-        ]
+        if device_number not in self.packet_injecters:
+            self.packet_injecters[device_number] = DataPlanePacketSourceNN(
+                device_number, interface_name, self.RCV_TIMEOUT, self.SND_TIMEOUT
+            )
+        self.packet_inject = self.packet_injecters[device_number]
         self.port_number = port_number
+        self.device_number = device_number
         self.packet_inject.port_add(port_number)
 
     def __del__(self):
@@ -390,7 +389,7 @@ class DataPlanePortNN(DataPlanePortIface):
         """
         @retval An object implementing DataPlanePacketSourceIface
         """
-        return self.packet_injecters[(self.device_number, self.interface_name)]
+        return self.packet_injecters[self.device_number]
 
     def send(self, packet):
         """
@@ -398,41 +397,33 @@ class DataPlanePortNN(DataPlanePortIface):
         @param packet The packet data to send to the port
         @retval The number of bytes sent
         """
-        return self.packet_injecters[(self.device_number, self.interface_name)].send(
-            self.port_number, packet
-        )
+        return self.packet_injecters[self.device_number].send(self.port_number, packet)
 
     def down(self):
         """
         Bring the physical link down.
         """
-        self.packet_injecters[
-            (self.device_number, self.interface_name)
-        ].port_bring_down(self.port_number)
+        self.packet_injecters[self.device_number].port_bring_down(self.port_number)
 
     def up(self):
         """
         Bring the physical link up.
         """
-        self.packet_injecters[(self.device_number, self.interface_name)].port_bring_up(
-            self.port_number
-        )
+        self.packet_injecters[self.device_number].port_bring_up(self.port_number)
 
     def mac(self):
         """
         Return mac address
         """
-        return self.packet_injecters[(self.device_number, self.interface_name)].get_mac(
-            self.port_number
-        )
+        return self.packet_injecters[self.device_number].get_mac(self.port_number)
 
     def nn_counters(self):
         """
         Return counters
         """
-        return self.packet_injecters[
-            (self.device_number, self.interface_name)
-        ].get_nn_counters(self.port_number)
+        return self.packet_injecters[self.device_number].get_nn_counters(
+            self.port_number
+        )
 
 
 class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):
@@ -989,7 +980,6 @@ class DataPlane(Thread):
         # Explicitly release ports to ensure we don't run out of sockets
         # even if someone keeps holding a reference to the dataplane.
         del self.ports
-        self.waker.close()
 
     def port_down(self, device_number, port_number):
         """Brings the specified port down"""

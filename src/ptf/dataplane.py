@@ -232,6 +232,9 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         self.socket.connect(socket_addr)
         self.rcv_timeout = rcv_timeout
         self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.RCVTIMEO, rcv_timeout)
+        # Time out after a second if the socket is non-functional.
+        # This should be long enough for nanomsg.
+        self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.SNDTIMEO, 1000)
         self.buffers = defaultdict(list)
         self.cvar = Condition()
         self.mac_addresses = {}

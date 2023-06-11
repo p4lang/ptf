@@ -376,8 +376,9 @@ class DataPlanePortNN(DataPlanePortIface):
         if (device_number, interface_name) not in self.packet_injecters:
             self.packet_injecters[
                 (self.device_number, self.interface_name)
-            ] = DataPlanePacketSourceNN(device_number, interface_name,
-                                        self.RCV_TIMEOUT, self.SND_TIMEOUT)
+            ] = DataPlanePacketSourceNN(
+                device_number, interface_name, self.RCV_TIMEOUT, self.SND_TIMEOUT
+            )
         self.packet_inject = self.packet_injecters[
             (self.device_number, self.interface_name)
         ]
@@ -746,7 +747,7 @@ class DataPlane(Thread):
         """
         min_port_number = None
         min_time = float("inf")
-        for (port_id, queue) in list(self.packet_queues.items()):
+        for port_id, queue in list(self.packet_queues.items()):
             if port_id[0] != device:
                 continue
             if queue and queue[0][1] < min_time:
@@ -944,9 +945,7 @@ class DataPlane(Thread):
         # Retrieve the packet. Returns (device number, port number, packet, time).
         def grab():
             self.logger.debug("Grabbing packet")
-            for (rcv_port_number, pkt, time) in self.packets(
-                device_number, port_number
-            ):
+            for rcv_port_number, pkt, time in self.packets(device_number, port_number):
                 rcv_device_number = device_number
                 grab_log["recent_packets"].append(pkt)
                 grab_log["packet_count"] += 1

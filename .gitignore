@@ -6,3 +6,4 @@ profiles/*.pyc
 dist
 build
 *.egg-info
+.eggs

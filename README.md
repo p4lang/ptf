@@ -98,12 +98,7 @@ on which to inject packets (along with the corresponding port number).
 
 ## Install PTF
 
-PTF can be installed by running `sudo python setup.py install`. For more
-information on the different options accepted by `setup.py` (e.g. installing in
-a custom location), please refer to the [setuptools documentation]
-(https://pythonhosted.org/setuptools/setuptools.html).
-
-PTF can also be installed with `pip`:
+PTF can be installed with `pip`:
 
 ```bash
 # Install the latest version
@@ -111,6 +106,8 @@ pip install ptf
 # Install specific version
 pip install ptf==0.9.1
 ```
+
+You can also install a local copy of PTF with `pip install .`.
 
 ---
 

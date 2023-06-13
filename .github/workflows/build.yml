@@ -29,20 +29,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-      with:
-        submodules: recursive
+
     - name: Dependencies
       run: |
-        sudo apt-get install cmake libffi-dev python3-dev python3-pip ethtool
-        sudo pip3 install setuptools nose2 scapy
+        sudo apt-get install cmake libffi-dev ethtool python3-dev
+        # Install the latest pip version (not python3-pip) as older versions
+        # seem to have issues when installing from source.
+        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        sudo python3 get-pip.py
+        sudo python3 -m pip install --upgrade setuptools nose2 scapy wheel
 
-        bash CI/travis/install-nanomsg.sh
+        bash CI/install-nanomsg.sh
         sudo ldconfig
-        bash CI/travis/install-nnpy.sh
+        bash CI/install-nnpy.sh
 
     - name: Install
       run: |
-        sudo python setup.py install
+        sudo python3 -m pip install .
 
     - name: Before_script
       run: |
@@ -50,6 +53,6 @@ jobs:
 
     - name: Script
       run: |
-        python CI/travis/check-nnpy.py
-        ./CI/travis/run_tests.sh
-        sudo python /usr/local/bin/nose2 utests.tests.test
+        python3 CI/check-nnpy.py
+        ./CI/run_tests.sh
+        sudo python3 /usr/local/bin/nose2 utests.tests.test

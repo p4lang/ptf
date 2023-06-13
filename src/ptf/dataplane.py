@@ -225,13 +225,14 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     MSG_INFO_STATUS_SUCCESS = 0
     MSG_INFO_STATUS_NOT_SUPPORTED = 1
 
-    def __init__(self, device_number, socket_addr, rcv_timeout):
+    def __init__(self, device_number, socket_addr, rcv_timeout, snd_timeout):
         self.device_number = device_number
         self.socket_addr = socket_addr
         self.socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)
         self.socket.connect(socket_addr)
         self.rcv_timeout = rcv_timeout
         self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.RCVTIMEO, rcv_timeout)
+        self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.SNDTIMEO, snd_timeout)
         self.buffers = defaultdict(list)
         self.cvar = Condition()
         self.mac_addresses = {}
@@ -358,6 +359,9 @@ class DataPlanePortNN(DataPlanePortIface):
     """
 
     RCV_TIMEOUT = 10000
+    # Time out after a second if the socket is non-functional.
+    # This should be long enough for nanomsg.
+    SND_TIMEOUT = 1000
 
     # indexed by device_number and interface name, maps to a PacketInjectNN instance
     packet_injecters = {}
@@ -372,7 +376,9 @@ class DataPlanePortNN(DataPlanePortIface):
         if (device_number, interface_name) not in self.packet_injecters:
             self.packet_injecters[
                 (self.device_number, self.interface_name)
-            ] = DataPlanePacketSourceNN(device_number, interface_name, self.RCV_TIMEOUT)
+            ] = DataPlanePacketSourceNN(
+                device_number, interface_name, self.RCV_TIMEOUT, self.SND_TIMEOUT
+            )
         self.packet_inject = self.packet_injecters[
             (self.device_number, self.interface_name)
         ]
@@ -741,7 +747,7 @@ class DataPlane(Thread):
         """
         min_port_number = None
         min_time = float("inf")
-        for (port_id, queue) in list(self.packet_queues.items()):
+        for port_id, queue in list(self.packet_queues.items()):
             if port_id[0] != device:
                 continue
             if queue and queue[0][1] < min_time:
@@ -939,9 +945,7 @@ class DataPlane(Thread):
         # Retrieve the packet. Returns (device number, port number, packet, time).
         def grab():
             self.logger.debug("Grabbing packet")
-            for (rcv_port_number, pkt, time) in self.packets(
-                device_number, port_number
-            ):
+            for rcv_port_number, pkt, time in self.packets(device_number, port_number):
                 rcv_device_number = device_number
                 grab_log["recent_packets"].append(pkt)
                 grab_log["packet_count"] += 1

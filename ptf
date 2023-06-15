@@ -16,7 +16,7 @@ import logging
 import unittest
 import time
 import os
-import imp
+import importlib
 import random
 import signal
 import fnmatch
@@ -544,7 +544,7 @@ def load_test_modules(config):
                 if modname in sys.modules:
                     mod = sys.modules[modname]
                 else:
-                    mod = imp.load_module(modname, *imp.find_module(modname, [root]))
+                    mod = importlib.import_module(modname)
             except:
                 logging.warning("Could not import file " + filename)
                 raise
@@ -809,9 +809,7 @@ if platform_name == "nn":
 
 platform_mod = None
 try:
-    platform_mod = imp.load_module(
-        platform_name, *imp.find_module(platform_name, [config["platform_dir"]])
-    )
+    platform_mod = importlib.import_module(platform_name)
 except:
     logging.warn("Failed to import " + platform_name + " platform module")
     raise

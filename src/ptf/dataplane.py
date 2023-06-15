@@ -32,7 +32,7 @@ from . import netutils
 from . import mask
 from . import packet
 from .pcap_writer import PcapWriter
-from six import StringIO
+from io import StringIO
 
 try:
     import nnpy

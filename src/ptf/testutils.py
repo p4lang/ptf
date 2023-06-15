@@ -11,7 +11,7 @@ import ptf.dataplane
 import ptf.parse
 import ptf.ptfutils
 import codecs
-from six import StringIO
+from io import StringIO
 
 global skipped_test_count
 skipped_test_count = 0

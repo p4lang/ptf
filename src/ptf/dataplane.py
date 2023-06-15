@@ -321,10 +321,7 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
             packet,
         )
         # because nnpy expects unicode when using str
-        if sys.version_info[0] == 2:
-            msg = list(msg)
-        else:
-            msg = bytearray(msg)
+        msg = bytearray(msg)
         self.socket.send(msg)
         # nnpy does not return the number of bytes sent
         return len(packet)

@@ -3179,7 +3179,7 @@ def ptf_ports(num=None):
 
 
 def port_to_tuple(port):
-    if type(port) is int or (sys.version_info[0] == 2 and type(port) is int):
+    if type(port) is int:
         return 0, port
     if type(port) is tuple:
         return port

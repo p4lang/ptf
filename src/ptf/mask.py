@@ -1,7 +1,7 @@
 from __future__ import print_function
 import warnings
 
-from six import StringIO
+from io import StringIO
 import sys
 from . import packet
 

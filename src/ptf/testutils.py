@@ -11,7 +11,7 @@ import ptf.dataplane
 import ptf.parse
 import ptf.ptfutils
 import codecs
-from six import StringIO
+from io import StringIO
 
 global skipped_test_count
 skipped_test_count = 0
@@ -3179,7 +3179,7 @@ def ptf_ports(num=None):
 
 
 def port_to_tuple(port):
-    if type(port) is int or (sys.version_info[0] == 2 and type(port) is int):
+    if type(port) is int:
         return 0, port
     if type(port) is tuple:
         return port

@@ -2,8 +2,6 @@ name: Publish releases to Pypi
 
 on:
   push:
-    branches:
-    - main
     tags:
     - v*
 

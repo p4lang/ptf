@@ -105,8 +105,8 @@ config_default = {
 
 
 def import_module(root_path, module_name):
-    """ Try to import a module and class directly instead of the typical
-        Python method. Allows for dynamic imports. """
+    """Try to import a module and class directly instead of the typical
+    Python method. Allows for dynamic imports."""
     finder = importlib.machinery.PathFinder()
     # Unfortunately this does not support Posix paths and silently
     # fails. So we have to use str().

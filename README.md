@@ -41,7 +41,7 @@ More information about Black, you find at
 
 The following software is required to run PTF:
 
- * Python 2.7 or 3.x
+ * Python 3.x
  * six 1.16.0
  * Scapy 2.4.5 (unless you provide another packet manipulation module)
  * pypcap (optional - VLAN tests will fail without this)

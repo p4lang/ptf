@@ -305,10 +305,7 @@ class NanomsgMgr(threading.Thread):
         msg = struct.pack("<iii{}s".format(len(p)), self.MSG_TYPE_PACKET_OUT,
                           port, len(p), p)
         # because nnpy expects unicode when using str
-        if sys.version_info[0] == 2:
-            msg = list(bytes(msg))
-        else:
-            msg = bytearray(msg)
+        msg = bytearray(msg)
 
         self.socket.send(msg)
 

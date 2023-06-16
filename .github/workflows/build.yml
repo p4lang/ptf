@@ -46,6 +46,7 @@ jobs:
     - name: Install
       run: |
         sudo python3 -m pip install .
+        ptf --version
 
     - name: Before_script
       run: |

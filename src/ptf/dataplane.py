@@ -249,9 +249,9 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         """
         return self.socket.getsockopt(nnpy.SOL_SOCKET, nnpy.RCVFD)
 
-    def __send_port_msg(self, msg_type, port_number, more):
+    def __send_port_msg(self, msg_type, port_number, more, flags=0):
         hdr = struct.pack("<iii", msg_type, port_number, more)
-        self.socket.send(hdr)
+        self.socket.send(hdr, flags)
 
     def __send_info_req_msg(self, port_number, info_type):
         self.__send_port_msg(self.MSG_TYPE_INFO_REQ, port_number, info_type)
@@ -268,7 +268,7 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
 
     def port_remove(self, port_number):
         self.ports.remove(port_number)
-        self.__send_port_msg(self.MSG_TYPE_PORT_REMOVE, port_number, 0)
+        self.__send_port_msg(self.MSG_TYPE_PORT_REMOVE, port_number, 0, nnpy.DONTWAIT)
 
     def port_bring_up(self, port_number):
         self.__send_port_msg(
@@ -321,7 +321,10 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
             packet,
         )
         # because nnpy expects unicode when using str
-        msg = bytearray(msg)
+        if sys.version_info[0] == 2:
+            msg = list(msg)
+        else:
+            msg = bytearray(msg)
         self.socket.send(msg)
         # nnpy does not return the number of bytes sent
         return len(packet)

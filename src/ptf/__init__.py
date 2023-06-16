@@ -3,6 +3,13 @@ import sys
 import os
 import logging
 
+try:
+    from ._version import __version__
+except ImportError:
+    # the generated _version.py file should not be checked-in
+    # if it is missing, we set the version string to "unknown"
+    __version__ = "unknown"
+
 # Global config dictionary
 # Populated by oft.
 config = {}

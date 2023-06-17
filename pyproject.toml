@@ -11,3 +11,4 @@ build-backend = 'setuptools.build_meta'
 root = "./"
 # use current tag and not next one
 version_scheme = "post-release"
+write_to = "src/ptf/_version.py"

@@ -31,7 +31,7 @@ if os.path.exists(os.path.join(pydir, "ptf")):
     sys.path.insert(0, pydir)
 
 import ptf
-from ptf import config
+from ptf import config, __version__
 import ptf.ptfutils
 
 ##@var DEBUG_LEVELS
@@ -233,7 +233,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
     # Set up default values
     parser.set_defaults(**config_default)
 
-    parser.add_argument("--version", action="version", version="ptf 0.1")
+    parser.add_argument("--version", action="version", version=__version__)
 
     parser.add_argument("test_specs", nargs="*", help="Tests / Groups to run")
 

@@ -28,11 +28,6 @@ Two separate targets in makefile were prepared to make our work easier.
 If you want to run a check, type `make format-check`, but if you want to
 reformat your code, please use `make format`.
 
-`Black` is listed in the `requirements-dev.txt`. To install it locally, you
-can use `make set-dev` or `pip install -r requirements-dev.txt`.
-More information about Black, you find at
-[Black's GitHub Page](https://github.com/psf/black)
-
 ---
 
 # Longer Start
@@ -49,11 +44,6 @@ The following software is required to run PTF:
 
 Root/sudo privilege is required on the host, in order to run `ptf`.
 
-To install minimal requirements execute:
-```text
-pip install -r requirements.txt
-```
-
 The default packet manipulator tool for `ptf` is `Scapy`. To install it use:
 ```text
 pip install scapy==2.4.5
@@ -62,11 +52,6 @@ pip install scapy==2.4.5
 To enable VLAN tests, you need to install `pypcap`:
 ```text
 pip install pypcap
-```
-
-For developer purpose, you should install `requirements-dev.txt` with:
-```text
-pip install -r requirements-dev.txt
 ```
 
 The `tcpdump` is optional, but to install it use:

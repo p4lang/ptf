@@ -16,7 +16,7 @@ import logging
 import unittest
 import time
 import os
-import imp
+import importlib
 import random
 import signal
 import fnmatch
@@ -102,6 +102,14 @@ config_default = {
     # Other configuration
     "port_map": None,
 }
+
+
+def import_module(root_path, module_name):
+    """Try to import a module and class directly instead of the typical
+    Python method. Allows for dynamic imports."""
+    finder = importlib.machinery.PathFinder()
+    module_specs = finder.find_spec(module_name, [root_path])
+    return module_specs.loader.load_module()
 
 
 def config_setup():
@@ -544,7 +552,7 @@ def load_test_modules(config):
                 if modname in sys.modules:
                     mod = sys.modules[modname]
                 else:
-                    mod = imp.load_module(modname, *imp.find_module(modname, [root]))
+                    mod = import_module(root, modname)
             except:
                 logging.warning("Could not import file " + filename)
                 raise
@@ -809,9 +817,7 @@ if platform_name == "nn":
 
 platform_mod = None
 try:
-    platform_mod = imp.load_module(
-        platform_name, *imp.find_module(platform_name, [config["platform_dir"]])
-    )
+    platform_mod = import_module(config["platform_dir"], platform_name)
 except:
     logging.warn("Failed to import " + platform_name + " platform module")
     raise

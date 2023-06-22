@@ -42,17 +42,11 @@ More information about Black, you find at
 The following software is required to run PTF:
 
  * Python 3.x
- * six 1.16.0
  * Scapy 2.4.5 (unless you provide another packet manipulation module)
  * pypcap (optional - VLAN tests will fail without this)
  * tcpdump (optional - Scapy will complain if it's missing)
 
 Root/sudo privilege is required on the host, in order to run `ptf`.
-
-To install minimal requirements execute:
-```text
-pip install -r requirements.txt
-```
 
 The default packet manipulator tool for `ptf` is `Scapy`. To install it use:
 ```text

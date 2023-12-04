@@ -3,3 +3,9 @@ profiles/*.pyc
 *~
 *.log
 *.pcap
+dist
+build
+*.egg-info
+.eggs
+
+src/ptf/_version.py

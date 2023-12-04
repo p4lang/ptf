@@ -1,0 +1,59 @@
+# Config file for automatic testing using github actions
+#
+
+name: Unit_Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify-python:
+    name: Python code verification (src)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          make set-dev
+          python -m pip install scapy==2.4.5
+      - name: Verify code (python w/black)
+        run: |
+          make format-check
+      - name: Run pytests (utests/tests)
+        run: | 
+          make test
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Dependencies
+      run: |
+        sudo apt-get install cmake libffi-dev ethtool python3-dev
+        # Install the latest pip version (not python3-pip) as older versions
+        # seem to have issues when installing from source.
+        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        sudo python3 get-pip.py
+        sudo python3 -m pip install --upgrade setuptools nose2 scapy wheel
+
+        bash CI/install-nanomsg.sh
+        sudo ldconfig
+        bash CI/install-nnpy.sh
+
+    - name: Install
+      run: |
+        sudo python3 -m pip install .
+        ptf --version
+
+    - name: Before_script
+      run: |
+        cd ptf_nn/; sudo ./veth_setup.sh; cd ..
+
+    - name: Script
+      run: |
+        python3 CI/check-nnpy.py
+        ./CI/run_tests.sh
+        sudo python3 /usr/local/bin/nose2 utests.tests.test

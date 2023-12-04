@@ -1,7 +1,14 @@
-'''Docstring to silence pylint; ignores --ignore option for __init__.py'''
+"""Docstring to silence pylint; ignores --ignore option for __init__.py"""
 import sys
 import os
 import logging
+
+try:
+    from ._version import __version__
+except ImportError:
+    # the generated _version.py file should not be checked-in
+    # if it is missing, we set the version string to "unknown"
+    __version__ = "unknown"
 
 # Global config dictionary
 # Populated by oft.
@@ -10,6 +17,7 @@ config = {}
 # Global DataPlane instance used by all tests.
 # Populated by oft.
 dataplane_instance = None
+
 
 def open_logfile(name):
     """
@@ -30,14 +38,14 @@ def open_logfile(name):
     logger = logging.getLogger()
 
     # Remove any existing handlers
-    for handler in logger.handlers:
+    for handler in list(logger.handlers):
         logger.removeHandler(handler)
         handler.close()
 
     formatter = logging.Formatter(_format, _datefmt)
 
     # Add a new handler
-    handler = logging.FileHandler(filename, mode='a')
+    handler = logging.FileHandler(filename, mode="a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
@@ -48,12 +56,14 @@ def open_logfile(name):
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
+
 def disable_logging():
     """
     Temporarily disable all logging by setting the global log level to
     CRITICAL, which is the highest log level in use.
     """
     logging.disable(logging.CRITICAL)
+
 
 def enable_logging():
     """

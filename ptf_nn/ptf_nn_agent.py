@@ -265,7 +265,7 @@ class IfaceMgr(threading.Thread):
                 while True:
                     msg = afpacket.recv(self.socket, 4096)
                     self.received(msg)
-            except socket.error as err:
+            except (socket.error, RuntimeError) as err:
                 logger.debug("IfaceMgr {}-{} ({}) Error reading from the socket.".format(
                              self.dev, self.port, self.iface_name))
                 self.socket.close()
@@ -305,10 +305,7 @@ class NanomsgMgr(threading.Thread):
         msg = struct.pack("<iii{}s".format(len(p)), self.MSG_TYPE_PACKET_OUT,
                           port, len(p), p)
         # because nnpy expects unicode when using str
-        if sys.version_info[0] == 2:
-            msg = list(bytes(msg))
-        else:
-            msg = bytearray(msg)
+        msg = bytearray(msg)
 
         self.socket.send(msg)
 

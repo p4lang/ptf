@@ -17,22 +17,60 @@ dataplane and is independent of OpenFlow. We also added several
 
 ---
 
+# Contributing
+
+Before you start pushing new changes to this repository, you should notice
+that the entire `src/` code is automatically formatted with Black.
+Our GitHub Action pipeline will verify that code is correctly
+formatted and fail if not.
+
+Two separate targets in makefile were prepared to make our work easier.
+If you want to run a check, type `make format-check`, but if you want to
+reformat your code, please use `make format`.
+
+`Black` is listed in the `requirements-dev.txt`. To install it locally, you
+can use `make set-dev` or `pip install -r requirements-dev.txt`.
+More information about Black, you find at
+[Black's GitHub Page](https://github.com/psf/black)
+
+---
+
 # Longer Start
 
 ## Dependencies
 
 The following software is required to run PTF:
 
- * Python 2.7
- * Scapy
+ * Python 3.x
+ * Scapy 2.4.5 (unless you provide another packet manipulation module)
  * pypcap (optional - VLAN tests will fail without this)
  * tcpdump (optional - Scapy will complain if it's missing)
 
-We recommend that you install our extension of Scapy, which you can obtain
-[here](https://github.com/p4lang/scapy-vxlan). It adds support for additional
-header types: `VXLAN`, `ERSPAN`, `GENEVE`, `MPLS` and `NVGRE`.
-
 Root/sudo privilege is required on the host, in order to run `ptf`.
+
+The default packet manipulator tool for `ptf` is `Scapy`. To install it use:
+```text
+pip install scapy==2.4.5
+```
+
+To enable VLAN tests, you need to install `pypcap`:
+```text
+pip install pypcap
+```
+
+For developer purpose, you should install `requirements-dev.txt` with:
+```text
+pip install -r requirements-dev.txt
+```
+
+The `tcpdump` is optional, but to install it use:
+```text
+# on CentOS
+yum install tcpdump
+
+# on Debian base
+apt-get install tcpdump
+```
 
 ## Run PTF
 
@@ -54,10 +92,16 @@ on which to inject packets (along with the corresponding port number).
 
 ## Install PTF
 
-PTF can be installed by running `sudo python setup.py install`. For more
-information on the different options accepted by `setup.py` (e.g. installing in
-a custom location), please refer to the [setuptools documentation]
-(https://pythonhosted.org/setuptools/setuptools.html).
+PTF can be installed with `pip`:
+
+```bash
+# Install the latest version
+pip install ptf
+# Install specific version
+pip install ptf==0.9.1
+```
+
+You can also install a local copy of PTF with `pip install .`.
 
 ---
 
@@ -138,6 +182,43 @@ is done executing, an exception will be raised and the test counts as an
 error. A timeout can also be specified for each individual test case, using the
 `@testtimeout` decorator, which needs to be imported from `ptf.testutils`. This
 timeout takes precedence over the global timeout passed on the command line.
+
+## Pluggable packet manipulation module
+
+By default, `ptf` uses `Scapy` as the packet manipulation module, but it can 
+also operate on a different one. 
+
+Such module **must define/implement the same symbols**, as defined in `Scapy` 
+implementation of packet. Most of them are just names of most common frame 
+headers (Ether, IP, TCP, UDP, ...).
+
+The default implementation can be found in file 
+[/src/ptf/packet_scapy.py](/src/ptf/packet_scapy.py). It can be used as a 
+reference when implementing your own version.
+
+To use another packet manipulation module, one needs to 
+provide it as argument `-pmm` or `--packet-manipulation-module` when running the
+`ptf` binary.
+
+```text
+sudo ./ptf <other parameters> -pmm foo.packet_foo 
+```
+
+Please make sure that this module is loaded into the runtime before running 
+any tests.
+
+## Sharding
+
+You can achieve parallelization by splitting tests into N groups and running them with separate PTF processes.
+Each PTF instance will run disjoint subset of all selected tests.
+
+For example to run specific set of tests across 3 PTF instances:
+
+```
+$ ssh mynode0 sudo ./ptf --test-dir mytests --num-shards 3 --shard-id 0 all ^other &
+$ ssh mynode1 sudo ./ptf --test-dir mytests --num-shards 3 --shard-id 1 all ^other &
+$ ssh mynode2 sudo ./ptf --test-dir mytests --num-shards 3 --shard-id 2 all ^other &
+```
 
 ---
 

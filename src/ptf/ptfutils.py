@@ -1,4 +1,3 @@
-
 """
 Utilities for the OpenFlow test framework
 """
@@ -10,20 +9,24 @@ import fcntl
 import logging
 import signal
 
-default_timeout = None # set by ptf
-default_negative_timeout = None # set by ptf
+default_timeout = None  # set by ptf
+default_negative_timeout = None  # set by ptf
+
 
 def gen_xid():
-    return random.randrange(1,0xffffffff)
+    return random.randrange(1, 0xFFFFFFFF)
+
 
 """
 Wait on a condition variable until the given function returns non-None or a timeout expires.
 The condition variable must already be acquired.
-The timeout value -1 means use the default timeout.
+The timeout value None means use the default timeout.
 There is deliberately no support for an infinite timeout.
 """
-def timed_wait(cv, fn, timeout=-1):
-    if timeout == -1:
+
+
+def timed_wait(cv, fn, timeout=None):
+    if timeout == None:
         timeout = default_timeout
 
     end_time = time.time() + timeout
@@ -38,7 +41,8 @@ def timed_wait(cv, fn, timeout=-1):
         if time.time() > end_time:
             return None
 
-class EventDescriptor():
+
+class EventDescriptor:
     """
     Similar to a condition variable, but can be passed to select().
     Only supports one waiter.
@@ -48,7 +52,7 @@ class EventDescriptor():
         self.pipe_rd, self.pipe_wr = os.pipe()
         fcntl.fcntl(self.pipe_wr, fcntl.F_SETFL, os.O_NONBLOCK)
 
-    def __del__(self):
+    def close(self):
         os.close(self.pipe_rd)
         os.close(self.pipe_wr)
 
@@ -64,8 +68,9 @@ class EventDescriptor():
     def fileno(self):
         return self.pipe_rd
 
+
 # inspired from http://stackoverflow.com/questions/8464391/what-should-i-do-if-socket-setdefaulttimeout-is-not-working
-class Timeout():
+class Timeout:
     """Timeout class using ALARM signal"""
 
     class TimeoutError(Exception):
@@ -74,10 +79,13 @@ class Timeout():
     def __init__(self, sec):
         try:
             from signal import alarm
+
             self.supported = True
         except ImportError:
-            logging.warn("Your platform does not support alarm signals, "
-                         "the Timeout feature is therefore not supported")
+            logging.warn(
+                "Your platform does not support alarm signals, "
+                "the Timeout feature is therefore not supported"
+            )
             self.supported = False
             return
         self.sec = sec
@@ -96,7 +104,7 @@ class Timeout():
     def __exit__(self, *args):
         if not self.supported or not self.valid:
             return
-        signal.alarm(0) # disable alarm
+        signal.alarm(0)  # disable alarm
 
     def raise_timeout(self, *args):
         raise Timeout.TimeoutError()

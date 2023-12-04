@@ -933,7 +933,7 @@ class DataPlane(Thread):
                             # the expected packet's class.
                             packet.ls(self.expected_packet.__class__(recent_packet))
                             print("--")
-                        indxs_n_equal = get_indexes_not_equal(self.expected_packet, packet)
+                        indxs_n_equal = get_indexes_not_equal(self.expected_packet, recent_packet)
                         hexdump_marked(recent_packet, indxs_n_equal)
                 else:
                     print("%d total packets." % self.packet_count)

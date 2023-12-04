@@ -79,7 +79,7 @@ class Mask:
     def is_valid(self):
         return self.valid
 
-    def pkt_match(self, pkt):
+    def pkt_match(self, pkt, with_indexes=False):
         # just to be on the safe side
         pkt = bytearray(bytes(pkt))
         # we fail if we don't match on sizes, or if ignore_extra_bytes is set,
@@ -89,9 +89,15 @@ class Mask:
         ) < self.size:
             return False
         exp_pkt = bytearray(bytes(self.exp_pkt))
+        indxs_n_equal = []
         for i in range(self.size):
             if (exp_pkt[i] & self.mask[i]) != (pkt[i] & self.mask[i]):
-                return False
+                if not with_indexes:
+                    return False
+                else:
+                    indxs_n_equal.append(i)
+        if with_indexes:
+            return len(indxs_n_equal) == 0, indxs_n_equal
         return True
 
     def __str__(self):

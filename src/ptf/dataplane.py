@@ -876,32 +876,6 @@ class DataPlane(Thread):
 
                 return indxs_n_equal
 
-            # modified scapy.utils.hexdump(packet)
-            # https://github.com/secdev/scapy/blob/master/scapy/utils.py
-            def hexdump_marked(in_packet, indxs_n_equal):
-                def red(inp_str):
-                    return '\x1b[1;31m' + inp_str + '\x1b[0m'
-
-                s = ""
-                x = packet.bytes_encode(in_packet)
-                x_len = len(x)
-                i = 0
-                while i < x_len:
-                    s += "%04x  " % i
-                    for j in range(16):
-                        if i + j < x_len:
-                            if indxs_n_equal is not None and i + j in indxs_n_equal:
-                                s += red("%02X " % packet.orb(x[i + j]))
-                            else:
-                                s += "%02X " % packet.orb(x[i + j])
-                        else:
-                            s += "   "
-                    s += " %s\n" % packet.sane_color(x[i:i + 16])
-                    i += 16
-                # remove trailing \n
-                s = s[:-1] if s.endswith("\n") else s
-                print(s)
-
             try:
                 stdout_save = sys.stdout
                 # The scapy packet dissection methods print directly to stdout,
@@ -934,7 +908,7 @@ class DataPlane(Thread):
                             packet.ls(self.expected_packet.__class__(recent_packet))
                             print("--")
                         indxs_n_equal = get_indexes_not_equal(self.expected_packet, recent_packet)
-                        hexdump_marked(recent_packet, indxs_n_equal)
+                        packet.hexdump_marked(recent_packet, indxs_n_equal)
                 else:
                     print("%d total packets." % self.packet_count)
                 print("==============================")

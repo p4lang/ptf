@@ -151,3 +151,6 @@ if not config.get("disable_igmp", False):
 # Scapy has its own hexdump
 hexdump = scapy.utils.hexdump
 ls = scapy.packet.ls
+bytes_encode = scapy.utils.bytes_encode
+orb = scapy.utils.orb
+sane_color = scapy.utils.sane_color

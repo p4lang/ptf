@@ -878,12 +878,12 @@ class DataPlane(Thread):
 
             # modified scapy.utils.hexdump(packet)
             # https://github.com/secdev/scapy/blob/master/scapy/utils.py
-            def hexdump_marked(packet, indxs_n_equal):
+            def hexdump_marked(in_packet, indxs_n_equal):
                 def red(inp_str):
                     return '\x1b[1;31m' + inp_str + '\x1b[0m'
 
                 s = ""
-                x = scapy.utils.bytes_encode(packet)
+                x = packet.bytes_encode(in_packet)
                 x_len = len(x)
                 i = 0
                 while i < x_len:
@@ -891,12 +891,12 @@ class DataPlane(Thread):
                     for j in range(16):
                         if i + j < x_len:
                             if indxs_n_equal is not None and i + j in indxs_n_equal:
-                                s += red("%02X " % scapy.utils.orb(x[i + j]))
+                                s += red("%02X " % packet.orb(x[i + j]))
                             else:
-                                s += "%02X " % scapy.utils.orb(x[i + j])
+                                s += "%02X " % packet.orb(x[i + j])
                         else:
                             s += "   "
-                    s += " %s\n" % scapy.utils.sane_color(x[i:i + 16])
+                    s += " %s\n" % packet.sane_color(x[i:i + 16])
                     i += 16
                 # remove trailing \n
                 s = s[:-1] if s.endswith("\n") else s

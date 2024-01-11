@@ -727,8 +727,9 @@ class DataPlane(Thread):
             self.logger.warn(
                 "The %s kernel may not send packets smaller than 15 bytes", sys.platform
             )
-        if self.pcap_writer:
-            self.pcap_writer.write(packet, time.time(), device_number, port_number)
+        with self.cvar:
+            if self.pcap_writer:
+                self.pcap_writer.write(packet, time.time(), device_number, port_number)
         bytes = self.ports[(device_number, port_number)].send(packet)
         self.tx_counters[(device_number, port_number)] += 1
         if bytes != len(packet):
@@ -1020,8 +1021,9 @@ class DataPlane(Thread):
             self.packet_queues[port_id] = []
 
     def start_pcap(self, filename):
-        assert self.pcap_writer == None
-        self.pcap_writer = PcapWriter(filename)
+        with self.cvar:
+            assert self.pcap_writer == None
+            self.pcap_writer = PcapWriter(filename)
 
     def stop_pcap(self):
         if self.pcap_writer:

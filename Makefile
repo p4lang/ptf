@@ -1,12 +1,12 @@
 .PHONY: format-check
 format-check:
 	@echo "Checking format..."
-	python -m black --check src/ ptf
+	python -m black --check src/ ptf_nn/ example/ utests/ ptf --exclude [a-z]-nnpy.py
 
 .PHONY: format
 format:
 	@echo "Formatting..."
-	python -m black src/ ptf
+	python -m black --check src/ ptf_nn/ example/ utests/ ptf --exclude [a-z]-nnpy.py
 
 .PHONY: set-dev
 set-dev:

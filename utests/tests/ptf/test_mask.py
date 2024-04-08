@@ -23,12 +23,45 @@ class TestMask:
         mask_packet.set_do_not_care_packet(TCP, "chksum")
         assert mask_packet.pkt_match(modified_packet)
 
+    def test_mask__set_do_not_care_all(self):
+        expected_packet = "\x01\x02\x03\x04\x05\x06"
+        packet = "\x08\x07\x06\x05\x04\x03\x02\x01"
+        mask = Mask(expected_packet.encode(), ignore_extra_bytes=True)
+        mask.set_do_not_care_all()
+        assert mask.pkt_match(packet.encode())
+
     def test_mask__set_do_not_care(self):
         expected_packet = "\x01\x02\x03\x04\x05\x06"
         packet = "\x01\x00\x00\x04\x05\x06\x07\x08"
         mask = Mask(expected_packet.encode(), ignore_extra_bytes=True)
         mask.set_do_not_care(8, 16)
         assert mask.pkt_match(packet.encode())
+
+    def test_mask__set_care_all(self):
+        expected_packet = "\x01\x02\x03\x04\x05\x06"
+        packet = "\x00\x02\x03\x04\x05\x06"
+        mask = Mask(expected_packet.encode(), ignore_extra_bytes=True)
+        mask.set_care_all()
+        assert not mask.pkt_match(packet.encode())
+
+    def test_mask__set_care(self):
+        expected_packet = "\x01\x02\x03\x04\x05\x06"
+        packet = "\x01\x02\x00\x04\x05\x06\x07\x08"
+        mask = Mask(
+            expected_packet.encode(), ignore_extra_bytes=True, dont_care_all=True
+        )
+        mask.set_care(0, 16)
+        assert mask.pkt_match(packet.encode())
+        mask.set_care(16, 8)
+        assert not mask.pkt_match(packet.encode())
+
+    def test_mask__set_care_packet(self):
+        packet = IP(src="1.1.1.1")
+        mask = Mask(packet.copy(), ignore_extra_bytes=True, dont_care_all=True)
+        packet[IP].src = "2.2.2.2"
+        assert mask.pkt_match(packet)
+        mask.set_care_packet(IP, "src")
+        assert not mask.pkt_match(packet)
 
     def test_mask__check_masking_conditional_field(self, scapy_simple_vxlan_packet):
         simple_vxlan = scapy_simple_vxlan_packet

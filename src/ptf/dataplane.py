@@ -371,10 +371,10 @@ class DataPlanePortNN(DataPlanePortIface):
         self.interface_name = interface_name
         self.device_number = device_number
         if (device_number, interface_name) not in self.packet_injecters:
-            self.packet_injecters[
-                (self.device_number, self.interface_name)
-            ] = DataPlanePacketSourceNN(
-                device_number, interface_name, self.RCV_TIMEOUT, self.SND_TIMEOUT
+            self.packet_injecters[(self.device_number, self.interface_name)] = (
+                DataPlanePacketSourceNN(
+                    device_number, interface_name, self.RCV_TIMEOUT, self.SND_TIMEOUT
+                )
             )
         self.packet_inject = self.packet_injecters[
             (self.device_number, self.interface_name)

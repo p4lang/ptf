@@ -4,6 +4,7 @@ from ptf.mask import Mask
 from ptf import config
 import ptf.testutils as testutils
 
+
 class DataplaneBaseTest(BaseTest):
     def __init__(self):
         BaseTest.__init__(self)
@@ -19,6 +20,7 @@ class DataplaneBaseTest(BaseTest):
         if config["log_dir"] != None:
             self.dataplane.stop_pcap()
 
+
 class OneTest(DataplaneBaseTest):
     def __init__(self):
         DataplaneBaseTest.__init__(self)
@@ -29,6 +31,7 @@ class OneTest(DataplaneBaseTest):
         testutils.send_packet(self, (0, 1), pkt)
         print("packet sent")
         testutils.verify_packet(self, pkt, (1, 1))
+
 
 class GetMacTest(DataplaneBaseTest):
     def __init__(self):
@@ -80,6 +83,7 @@ class GetCountersTest(DataplaneBaseTest):
         self.assertTrue(counters_01_e[1] > counters_01_b[1])
         self.assertTrue(counters_11_e[0] > counters_11_b[0])
 
+
 class VerifyAnyPacketAnyPort(DataplaneBaseTest):
     def __init__(self):
         DataplaneBaseTest.__init__(self)
@@ -91,7 +95,8 @@ class VerifyAnyPacketAnyPort(DataplaneBaseTest):
         testutils.send_packet(self, (0, 1), pkt)
         print("packet sent")
         testutils.verify_any_packet_any_port(
-            self, pkts=[pkt], ports=[3, 1], device_number=1)
+            self, pkts=[pkt], ports=[3, 1], device_number=1
+        )
 
         # negative test: if the packet is indeed received, but not on one of the
         # expected ports, the test should fail
@@ -99,20 +104,22 @@ class VerifyAnyPacketAnyPort(DataplaneBaseTest):
             testutils.send_packet(self, (0, 1), pkt)
             print("packet sent")
             testutils.verify_any_packet_any_port(
-                self, pkts=[pkt], ports=[0, 2, 3], device_number=1)
+                self, pkts=[pkt], ports=[0, 2, 3], device_number=1
+            )
 
         print("Verify masked packets")
         pkt1 = testutils.simple_udp_packet(eth_dst="00:11:11:11:11:11")
         pkt2 = testutils.simple_udp_packet(eth_dst="00:22:22:22:22:22")
         exp_pkt = Mask(pkt2)
-        exp_pkt.set_do_not_care_packet(Ether, 'dst')
+        exp_pkt.set_do_not_care_packet(Ether, "dst")
 
         testutils.send_packet(self, (0, 1), pkt1)
         print("Packet sent")
         # pkt2 will not be received
         # pkt2 with masked eth_dst field will match
         testutils.verify_any_packet_any_port(
-            self, pkts=[pkt2, exp_pkt], ports=[0, 1], device_number=1)
+            self, pkts=[pkt2, exp_pkt], ports=[0, 1], device_number=1
+        )
 
         # negative tests
         with self.assertRaises(AssertionError):
@@ -120,14 +127,17 @@ class VerifyAnyPacketAnyPort(DataplaneBaseTest):
             print("Packet sent")
             # incorrect ports
             testutils.verify_any_packet_any_port(
-                self, pkts=[exp_pkt], ports=[0, 2, 3], device_number=1)
+                self, pkts=[exp_pkt], ports=[0, 2, 3], device_number=1
+            )
 
         with self.assertRaises(AssertionError):
             testutils.send_packet(self, (0, 1), pkt1)
             print("Packet sent")
             # incorrect packet
             testutils.verify_any_packet_any_port(
-                self, pkts=[pkt2], ports=[0, 1], device_number=1)
+                self, pkts=[pkt2], ports=[0, 1], device_number=1
+            )
+
 
 class RemovePort(DataplaneBaseTest):
     def __init__(self):
@@ -164,6 +174,7 @@ class RemovePort(DataplaneBaseTest):
         testutils.verify_packet(self, pkt, (1, 1))
         testutils.verify_no_other_packets(self, 1)
 
+
 class SimpleTcpPacketTest(DataplaneBaseTest):
     def __init__(self):
         DataplaneBaseTest.__init__(self)
@@ -176,6 +187,7 @@ class SimpleTcpPacketTest(DataplaneBaseTest):
         print("packet sent")
         testutils.verify_packet(self, pkt, (1, 1))
         testutils.verify_no_other_packets(self, 1)
+
 
 class SimpleIpv4PacketTest(DataplaneBaseTest):
     def __init__(self):
@@ -191,6 +203,7 @@ class SimpleIpv4PacketTest(DataplaneBaseTest):
         testutils.verify_packet(self, pkt, (1, 1))
         testutils.verify_no_other_packets(self, 1)
 
+
 class SimpleIpv6PacketTest(DataplaneBaseTest):
     def __init__(self):
         DataplaneBaseTest.__init__(self)
@@ -203,6 +216,7 @@ class SimpleIpv6PacketTest(DataplaneBaseTest):
         print("packet sent")
         testutils.verify_packet(self, pkt, (1, 1))
         testutils.verify_no_other_packets(self, 1)
+
 
 class Ipv4InIpv4PacketTest(DataplaneBaseTest):
     def __init__(self):
@@ -218,6 +232,7 @@ class Ipv4InIpv4PacketTest(DataplaneBaseTest):
         testutils.verify_packet(self, pkt2, (1, 1))
         testutils.verify_no_other_packets(self, 1)
 
+
 class Ipv6InGREPacketTest(DataplaneBaseTest):
     def __init__(self):
         DataplaneBaseTest.__init__(self)
@@ -225,14 +240,15 @@ class Ipv6InGREPacketTest(DataplaneBaseTest):
     def runTest(self):
         pktlen = 1000
         udp = testutils.simple_udp_packet()
-        ipv6 = testutils.simple_ipv6ip_packet(inner_frame=udp['UDP'])
+        ipv6 = testutils.simple_ipv6ip_packet(inner_frame=udp["UDP"])
         gre = testutils.simple_grev6_packet(pktlen=pktlen, inner_frame=ipv6["IPv6"])
 
-        self.assertEqual(gre['GRE'].proto, 0x86DD)
+        self.assertEqual(gre["GRE"].proto, 0x86DD)
         testutils.send_packet(self, (0, 1), gre)
         print("packet sent")
         testutils.verify_packet(self, gre, (1, 1))
         testutils.verify_no_other_packets(self, 1)
+
 
 class VerifyPacketsOnMultiplePortListsTest(DataplaneBaseTest):
     def __init__(self):
@@ -248,7 +264,8 @@ class VerifyPacketsOnMultiplePortListsTest(DataplaneBaseTest):
         # pkt1 will be received on one of ports (0, 1)
         # pkt2 will be received on one of ports (1, 2, 3)
         testutils.verify_each_packet_on_multiple_port_lists(
-            self, pkts=[pkt1, pkt2], ports=[[0, 1], [1, 2, 3]], device_number=1)
+            self, pkts=[pkt1, pkt2], ports=[[0, 1], [1, 2, 3]], device_number=1
+        )
 
         # negative test
         with self.assertRaises(AssertionError):
@@ -258,6 +275,5 @@ class VerifyPacketsOnMultiplePortListsTest(DataplaneBaseTest):
             # pkt1 will not be received on one of ports (0, 2, 3)
             # pkt1 will not be received on one of ports (1, 2, 3); it will be pkt2
             testutils.verify_each_packet_on_multiple_port_lists(
-                self, pkts=[pkt1, pkt1], ports=[[0, 2, 3], [0, 1]],
-                device_number=1)
-
+                self, pkts=[pkt1, pkt1], ports=[[0, 2, 3], [0, 1]], device_number=1
+            )

@@ -5,7 +5,7 @@ specified in config or provided as an agrument.
 The default one is Scapy, but one can develop its own packet manipulation framework and
 then, create an implementation of packet module for it (for Scapy it is packet_scapy.py)
 """
-from __future__ import print_function
+
 from ptf import config
 
 __module = __import__(

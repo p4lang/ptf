@@ -473,7 +473,6 @@ def simple_ipv6_sr_packet(
     srh_nh=0,
     inner_frame=None,
 ):
-
     """
     Return a simple dataplane IPv6 segment routing packet
 

@@ -24,11 +24,9 @@ import nnpy
 import struct
 import argparse
 
-parser = argparse.ArgumentParser(description='PTF Nanomsg tester 1')
-parser.add_argument(
-    "--socket", type=str, dest="socket")
-parser.add_argument(
-    "--receive", dest="receive", action='store_true', default=False)
+parser = argparse.ArgumentParser(description="PTF Nanomsg tester 1")
+parser.add_argument("--socket", type=str, dest="socket")
+parser.add_argument("--receive", dest="receive", action="store_true", default=False)
 args = parser.parse_args()
 
 MSG_TYPE_PORT_ADD = 0
@@ -37,6 +35,7 @@ MSG_TYPE_PORT_SET_STATUS = 2
 MSG_TYPE_PACKET_IN = 3
 MSG_TYPE_PACKET_OUT = 4
 
+
 def receive(socket):
     while True:
         msg = socket.recv()
@@ -44,9 +43,10 @@ def receive(socket):
         msg_type, port_number, length = struct.unpack_from(fmt, msg)
         hdr_size = struct.calcsize(fmt)
         msg = msg[hdr_size:]
-        assert (msg_type == MSG_TYPE_PACKET_OUT)
-        assert (len(msg) == length)
+        assert msg_type == MSG_TYPE_PACKET_OUT
+        assert len(msg) == length
         print("Received:", msg)
+
 
 def main():
     socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)
@@ -56,11 +56,11 @@ def main():
     else:  # send one
         p = "ab" * 20
         port = 1
-        msg = struct.pack("<iii{}s".format(len(p)), MSG_TYPE_PACKET_IN,
-                          port, len(p), p)
+        msg = struct.pack("<iii{}s".format(len(p)), MSG_TYPE_PACKET_IN, port, len(p), p)
         # because nnpy expects unicode when using str
         msg = list(msg)
         socket.send(msg)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -1,4 +1,3 @@
-from __future__ import print_function
 import warnings
 
 from io import StringIO
@@ -38,9 +37,11 @@ class Mask:
                 field
                 for field in hdr_type.fields_desc
                 if field.name
-                in self.exp_pkt[hdr_type]
-                .__class__(bytes(self.exp_pkt[hdr_type]))
-                .fields.keys()
+                in list(
+                    self.exp_pkt[hdr_type]
+                    .__class__(bytes(self.exp_pkt[hdr_type]))
+                    .fields.keys()
+                )
             ]  # build & parse packet to be sure all fields are correctly filled
         except Exception:  # noqa
             self.valid = False

@@ -14,7 +14,7 @@ def platform_config_update(config):
 
     port_map = {}
 
-    for (device, port, interface) in config["interfaces"]:
+    for device, port, interface in config["interfaces"]:
         port_map[(device, port)] = interface
 
     # Default to a veth configuration compatible with the reference switch

@@ -25,7 +25,7 @@ def platform_config_update(config):
 
     port_map = {}
 
-    for (device, ports, socket_addr) in config["device_sockets"]:
+    for device, ports, socket_addr in config["device_sockets"]:
         for port in ports:
             port_map[(device, port)] = socket_addr
 

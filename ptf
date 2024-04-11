@@ -566,7 +566,7 @@ def load_test_modules(config):
                 and hasattr(v, "runTest")
             )
             if tests:
-                for (testname, test) in tests.items():
+                for testname, test in tests.items():
                     # Set default annotation values
                     if not hasattr(test, "_groups"):
                         test._groups = []
@@ -615,8 +615,8 @@ def prune_tests(test_specs, test_modules):
         else:
             negated = False
 
-        for (modname, (mod, tests)) in test_modules.items():
-            for (testname, test) in tests.items():
+        for modname, (mod, tests) in test_modules.items():
+            for testname, test in tests.items():
                 if e in test._groups or e == "%s.%s" % (modname, testname):
                     result.setdefault(modname, (mod, OrderedDict()))
                     if not negated:
@@ -736,12 +736,12 @@ group or their module's test group."""
     )
     print()
     print("Test List:")
-    for (modname, (mod, tests)) in test_modules.items():
+    for modname, (mod, tests) in test_modules.items():
         mod_count += 1
         desc = (mod.__doc__ or "No description").strip().split("\n")[0]
         start_str = "  Module " + mod.__name__ + ": "
         print(start_str + _space_to(22, start_str) + desc)
-        for (testname, test) in list(tests.items()):
+        for testname, test in list(tests.items()):
             try:
                 desc = (test.__doc__ or "").strip()
                 desc = desc.split("\n")[0]
@@ -773,15 +773,15 @@ test_modules = prune_tests(test_specs, test_modules)
 
 # Check if test list is requested; display and exit if so
 if config["list_test_names"]:
-    for (modname, (mod, tests)) in test_modules.items():
-        for (testname, test) in tests.items():
+    for modname, (mod, tests) in test_modules.items():
+        for testname, test in tests.items():
             print("%s.%s" % (modname, testname))
     sys.exit(0)
 
 # Generate the test suite
 test_suite = []
-for (modname, (mod, tests)) in test_modules.items():
-    for (testname, test) in tests.items():
+for modname, (mod, tests) in test_modules.items():
+    for testname, test in tests.items():
         test_suite.append(test())
 
 if config["shard_id"] < 0 or config["shard_id"] >= config["num_shards"]:

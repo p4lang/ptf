@@ -1,6 +1,7 @@
 import socket
 import struct
 
+
 # thrift does not support unsigned integers
 def hex_to_i16(h):
     x = int(h)

@@ -25,12 +25,13 @@ import threading
 import scapy.all as sc
 import time
 
-parser = argparse.ArgumentParser(description='PTF Nanomsg tester bridge')
+parser = argparse.ArgumentParser(description="PTF Nanomsg tester bridge")
 parser.add_argument("-ifrom", type=str)
 parser.add_argument("-ito", type=str)
 args = parser.parse_args()
 
 forwarders = {}
+
 
 class Forwarder(threading.Thread):
     def __init__(self, iface_name, other):
@@ -48,6 +49,7 @@ class Forwarder(threading.Thread):
         other_fwd = forwarders[self.other]
         sc.sniff(iface=self.iface_name, prn=lambda x: other_fwd.forward(x))
 
+
 def main():
     f1 = Forwarder(args.ifrom, args.ito)
     f2 = Forwarder(args.ito, args.ifrom)
@@ -60,5 +62,6 @@ def main():
     except KeyboardInterrupt:
         return
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

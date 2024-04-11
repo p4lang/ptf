@@ -20,6 +20,43 @@ class Mask:
         self.mask = [0] * self.size if dont_care_all else [0xFF] * self.size
         self.ignore_extra_bytes = ignore_extra_bytes
 
+    def _calculate_fields_offset_and_bitwidth(self, hdr_type, field_name):
+        if hdr_type not in self.exp_pkt:
+            self.valid = False
+            raise MaskException("Unknown header type")
+
+        try:
+            fields_desc = [
+                field
+                for field in hdr_type.fields_desc
+                if field.name
+                in self.exp_pkt[hdr_type]
+                .__class__(bytes(self.exp_pkt[hdr_type]))
+                .fields.keys()
+            ]  # build & parse packet to be sure all fields are correctly filled
+        except Exception:  # noqa
+            self.valid = False
+            raise MaskException("Can not build or decode Packet")
+
+        if field_name not in [x.name for x in fields_desc]:
+            self.valid = False
+            raise MaskException("Field %s does not exist in frame" % field_name)
+
+        hdr_offset = self.size - len(self.exp_pkt[hdr_type])
+        offset = 0
+        bitwidth = 0
+        for f in fields_desc:
+            try:
+                bits = f.size
+            except Exception:  # noqa
+                bits = 8 * f.sz
+            if f.name == field_name:
+                bitwidth = bits
+                break
+            else:
+                offset += bits
+        return hdr_offset * 8 + offset, bitwidth
+
     def set_care(self, offset, bitwidth):
         for idx in range(offset, offset + bitwidth):
             offsetB = idx // 8
@@ -80,43 +117,6 @@ class Mask:
             if (exp_pkt[i] & self.mask[i]) != (pkt[i] & self.mask[i]):
                 return False
         return True
-
-    def _calculate_fields_offset_and_bitwidth(self, hdr_type, field_name):
-        if hdr_type not in self.exp_pkt:
-            self.valid = False
-            raise MaskException("Unknown header type")
-
-        try:
-            fields_desc = [
-                field
-                for field in hdr_type.fields_desc
-                if field.name
-                in self.exp_pkt[hdr_type]
-                .__class__(bytes(self.exp_pkt[hdr_type]))
-                .fields.keys()
-            ]  # build & parse packet to be sure all fields are correctly filled
-        except Exception:  # noqa
-            self.valid = False
-            raise MaskException("Can not build or decode Packet")
-
-        if field_name not in [x.name for x in fields_desc]:
-            self.valid = False
-            raise MaskException("Field %s does not exist in frame" % field_name)
-
-        hdr_offset = self.size - len(self.exp_pkt[hdr_type])
-        offset = 0
-        bitwidth = 0
-        for f in fields_desc:
-            try:
-                bits = f.size
-            except Exception:  # noqa
-                bits = 8 * f.sz
-            if f.name == field_name:
-                bitwidth = bits
-                break
-            else:
-                offset += bits
-        return hdr_offset * 8 + offset, bitwidth
 
     def __str__(self):
         old_stdout = sys.stdout

@@ -20,6 +20,21 @@ class Mask:
         self.mask = [0] * self.size if dont_care_all else [0xFF] * self.size
         self.ignore_extra_bytes = ignore_extra_bytes
 
+    def set_care(self, offset, bitwidth):
+        for idx in range(offset, offset + bitwidth):
+            offsetB = idx // 8
+            offsetb = idx % 8
+            self.mask[offsetB] = self.mask[offsetB] | (1 << (7 - offsetb))
+
+    def set_care_all(self):
+        self.mask = [0xFF] * self.size
+
+    def set_care_packet(self, hdr_type, field_name):
+        offset, bitwidth = self._calculate_fields_offset_and_bitwidth(
+            hdr_type, field_name
+        )
+        self.set_care(offset, bitwidth)
+
     def set_do_not_care(self, offset, bitwidth):
         # a very naive but simple method
         # we do it bit by bit :)
@@ -44,21 +59,6 @@ class Mask:
             DeprecationWarning,
         )
         self.set_do_not_care_packet(hdr_type, field_name)
-
-    def set_care(self, offset, bitwidth):
-        for idx in range(offset, offset + bitwidth):
-            offsetB = idx // 8
-            offsetb = idx % 8
-            self.mask[offsetB] = self.mask[offsetB] | (1 << (7 - offsetb))
-
-    def set_care_all(self):
-        self.mask = [0xFF] * self.size
-
-    def set_care_packet(self, hdr_type, field_name):
-        offset, bitwidth = self._calculate_fields_offset_and_bitwidth(
-            hdr_type, field_name
-        )
-        self.set_care(offset, bitwidth)
 
     def set_ignore_extra_bytes(self):
         self.ignore_extra_bytes = True

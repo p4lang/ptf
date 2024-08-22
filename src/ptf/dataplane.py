@@ -861,7 +861,8 @@ class DataPlane(Thread):
                         return []
                     ret = exp_pkt.pkt_match(pkt, with_indexes=True)
                     if type(ret) == bool:
-                        return ret
+                        # something went wrong, don't mark any bytes red
+                        return None
                     else:
                         b, indxs_n_equal = ret
                         return indxs_n_equal

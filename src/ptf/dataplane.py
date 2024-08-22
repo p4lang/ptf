@@ -859,8 +859,12 @@ class DataPlane(Thread):
                 if isinstance(exp_pkt, mask.Mask):
                     if not exp_pkt.is_valid():
                         return []
-                    b, indxs_n_equal = exp_pkt.pkt_match(pkt, with_indexes=True)
-                    return indxs_n_equal
+                    ret = exp_pkt.pkt_match(pkt, with_indexes=True)
+                    if type(ret) == bool:
+                        return ret
+                    else:
+                        b, indxs_n_equal = ret
+                        return indxs_n_equal
 
                 e = bytes(exp_pkt)
                 p = bytes(pkt)

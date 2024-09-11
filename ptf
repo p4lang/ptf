@@ -109,8 +109,7 @@ def import_module(root_path, module_name):
     Python method. Allows for dynamic imports."""
     finder = importlib.machinery.PathFinder()
     module_specs = finder.find_spec(module_name, [root_path])
-    # return module_specs.loader.load_module()
-    return module_specs.loader.exec_module()
+    return module_specs.loader.load_module()
 
 
 def config_setup():

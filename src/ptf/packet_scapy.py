@@ -168,7 +168,7 @@ def hexdump_marked(in_packet, indxs_n_equal):
                     s += "%02X " % scapy.utils.orb(x[i + j])
             else:
                 s += "   "
-        s += " %s\n" % scapy.utils.sane_color(x[i:i + 16])
+        s += " %s\n" % scapy.utils.sane(x[i:i + 16])
         i += 16
     # remove trailing \n
     s = s[:-1] if s.endswith("\n") else s

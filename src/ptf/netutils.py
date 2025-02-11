@@ -1,68 +1,87 @@
-"""
-Network utilities for the OpenFlow test framework
-"""
+# Copyright 2025 Andy Fingerhut
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
 
-###########################################################################
-##                                                                         ##
-## Promiscuous mode enable/disable                                         ##
-##                                                                         ##
-## Based on code from Scapy by Phillippe Biondi                            ##
-##                                                                         ##
-##                                                                         ##
-## This program is free software; you can redistribute it and/or modify it ##
-## under the terms of the GNU General Public License as published by the   ##
-## Free Software Foundation; either version 2, or (at your option) any     ##
-## later version.                                                          ##
-##                                                                         ##
-## This program is distributed in the hope that it will be useful, but     ##
-## WITHOUT ANY WARRANTY; without even the implied warranty of              ##
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU       ##
-## General Public License for more details.                                ##
-##                                                                         ##
-#############################################################################
+# Note: Earlier versions of this file were licensed with a copyleft
+# license.
+#
+# This version has been rewritten from scratch, with no reference to
+# the implementations earlier in the commit log of the repository
+# https://github.com/p4lang/ptf
 
+######################################################################
+# get_mac:
+#
+# The new get_mac is implemented using methods that are part of the
+# Python netifaces package [1], which is released under an MIT-style
+# license.
+#
+# [1] https://pypi.org/project/netifaces/
+
+######################################################################
+# set_promisc:
+#
+# StackOverflow answer explaining one way to do it at [2].
+# [2] https://stackoverflow.com/questions/6067405/python-sockets-enabling-promiscuous-mode-in-linux
+
+######################################################################
+#
+# Promiscuous mode enable/disable
+
+import netifaces
+
+import ctypes
+import fcntl
 import socket
-from fcntl import ioctl
-import struct
 
-# From net/if_arp.h
-ARPHDR_ETHER = 1
-ARPHDR_LOOPBACK = 772
+# Constant from Linux /usr/include/linux/if.h or net/if.h
+IFF_PROMISC = 0x100
 
-# From bits/ioctls.h
-SIOCGIFHWADDR = 0x8927  # Get hardware address
-SIOCGIFINDEX = 0x8933  # name -> if_index mapping
+# Constants from Linux bits/ioctls.h or linux/sockios.h
+SIOCGIFFLAGS = 0x8913
+SIOCSIFFLAGS = 0x8914
 
-# From netpacket/packet.h
-PACKET_ADD_MEMBERSHIP = 1
-PACKET_DROP_MEMBERSHIP = 2
-PACKET_MR_PROMISC = 1
+class ifreq(ctypes.Structure):
+    _fields_ = [("ifr_ifrn", ctypes.c_char * 16),
+                ("ifr_flags", ctypes.c_short)]
 
-# From bits/socket.h
-SOL_PACKET = 263
-
-
-def get_if(iff, cmd):
-    s = socket.socket()
-    ifreq = ioctl(s, cmd, struct.pack("16s16x", iff.encode("utf-8")))
-    s.close()
-    return ifreq
+# Given iff, the name of a network interface (e.g. 'veth0') as a
+# string, return a string of the form 'xx:yy:zz:aa:bb:cc' containing
+# the MAC address of that interface, where all digits are hexadecimal.
+def get_mac(iff: str) -> str:
+    mac_str = netifaces.ifaddresses(iff)[netifaces.AF_LINK][0]['addr']
+    print("dbg jaf get_mac iff='%s' (type %s) returns '%s' (type %s)"
+          "" % (iff, type(iff), mac_str, type(mac_str)))
+    return mac_str
 
 
-def get_if_index(iff):
-    return int(struct.unpack("I", get_if(iff, SIOCGIFINDEX)[16:20])[0])
-
-
-def get_mac(iff):
-    return ":".join(["%02x" % ord(char) for char in get_if(iff, SIOCGIFHWADDR)[18:24]])
-
-
+# Given iff, the name of a network interface (e.g. 'veth0') as a
+# string, and s, a SOCK_RAW socket bound to that interface, set the
+# interface in promiscuous mode if parameter val != 0, or into
+# non-promiscuous mode if val == 0.
 def set_promisc(s, iff, val=1):
-    mreq = struct.pack(
-        "IHH8s", get_if_index(iff), PACKET_MR_PROMISC, 0, "".encode("utf-8")
-    )
-    if val:
-        cmd = PACKET_ADD_MEMBERSHIP
+    ifr = ifreq()
+    ifr.ifr_ifrn = bytes(iff, 'utf-8')
+    # Get current interface flags
+    s_fileno = s.fileno()
+    fcntl.ioctl(s_fileno, SIOCGIFFLAGS, ifr)
+    orig_flags = ifr.ifr_flags
+    if val != 0:
+        ifr.ifr_flags |= IFF_PROMISC
     else:
-        cmd = PACKET_DROP_MEMBERSHIP
-    s.setsockopt(SOL_PACKET, cmd, mreq)
+        ifr.ifr_flags &= ~IFF_PROMISC
+    # Set flags, if they have changed
+    if ifr.ifr_flags != orig_flags:
+        fcntl.ioctl(s_fileno, SIOCSIFFLAGS, ifr)

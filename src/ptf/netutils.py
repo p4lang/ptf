@@ -18,17 +18,14 @@
 # license.
 #
 # This version has been rewritten from scratch, with no reference to
-# the implementations earlier in the commit log of the repository
-# https://github.com/p4lang/ptf
+# the implementations in file netutils.py earlier in the commit log of
+# the repository https://github.com/p4lang/ptf
 
 ######################################################################
 # get_mac:
 #
-# The new get_mac is implemented using methods that are part of the
-# Python netifaces package [1], which is released under an MIT-style
-# license.
-#
-# [1] https://pypi.org/project/netifaces/
+# The new get_mac is copied from the Apache-2.0 implementation
+# in source file ptf_nn_agent.py of this repo.
 
 ######################################################################
 # set_promisc:
@@ -40,8 +37,6 @@
 #
 # Promiscuous mode enable/disable
 
-import netifaces
-
 import ctypes
 import fcntl
 import socket
@@ -50,6 +45,7 @@ import socket
 IFF_PROMISC = 0x100
 
 # Constants from Linux bits/ioctls.h or linux/sockios.h
+SIOCGIFHWADDR = 0x8927  # Get hardware address
 SIOCGIFFLAGS = 0x8913
 SIOCSIFFLAGS = 0x8914
 
@@ -58,12 +54,20 @@ class ifreq(ctypes.Structure):
     _fields_ = [("ifr_ifrn", ctypes.c_char * 16), ("ifr_flags", ctypes.c_short)]
 
 
+def get_if(iff: str, cmd: int) -> bytes:
+    s = socket.socket()
+    ifreq = fcntl.ioctl(s, cmd, struct.pack("16s16x", iff.encode("utf-8")))
+    s.close()
+    return ifreq
+
+
 # Given iff, the name of a network interface (e.g. 'veth0') as a
 # string, return a string of the form 'xx:yy:zz:aa:bb:cc' containing
 # the MAC address of that interface, where all digits are hexadecimal.
 def get_mac(iff: str) -> str:
-    mac_str = netifaces.ifaddresses(iff)[netifaces.AF_LINK][0]["addr"]
-    return mac_str
+    return ":".join(
+        ["%02x" % char for char in bytearray(get_if(iff, SIOCGIFHWADDR)[18:24])]
+    )
 
 
 # Given iff, the name of a network interface (e.g. 'veth0') as a

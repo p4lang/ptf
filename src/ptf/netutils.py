@@ -53,17 +53,16 @@ IFF_PROMISC = 0x100
 SIOCGIFFLAGS = 0x8913
 SIOCSIFFLAGS = 0x8914
 
+
 class ifreq(ctypes.Structure):
-    _fields_ = [("ifr_ifrn", ctypes.c_char * 16),
-                ("ifr_flags", ctypes.c_short)]
+    _fields_ = [("ifr_ifrn", ctypes.c_char * 16), ("ifr_flags", ctypes.c_short)]
+
 
 # Given iff, the name of a network interface (e.g. 'veth0') as a
 # string, return a string of the form 'xx:yy:zz:aa:bb:cc' containing
 # the MAC address of that interface, where all digits are hexadecimal.
 def get_mac(iff: str) -> str:
-    mac_str = netifaces.ifaddresses(iff)[netifaces.AF_LINK][0]['addr']
-    print("dbg jaf get_mac iff='%s' (type %s) returns '%s' (type %s)"
-          "" % (iff, type(iff), mac_str, type(mac_str)))
+    mac_str = netifaces.ifaddresses(iff)[netifaces.AF_LINK][0]["addr"]
     return mac_str
 
 
@@ -73,7 +72,7 @@ def get_mac(iff: str) -> str:
 # non-promiscuous mode if val == 0.
 def set_promisc(s, iff, val=1):
     ifr = ifreq()
-    ifr.ifr_ifrn = bytes(iff, 'utf-8')
+    ifr.ifr_ifrn = bytes(iff, "utf-8")
     # Get current interface flags
     s_fileno = s.fileno()
     fcntl.ioctl(s_fileno, SIOCGIFFLAGS, ifr)

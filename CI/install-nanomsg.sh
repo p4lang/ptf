@@ -23,3 +23,5 @@ cmake .. -DCMAKE_INSTALL_PREFIX=/usr
 cmake --build . --verbose
 sudo cmake --build . --verbose --target install
 cd ..
+
+pip --verbose list

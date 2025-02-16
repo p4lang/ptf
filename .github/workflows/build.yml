@@ -32,7 +32,13 @@ jobs:
         run: | 
           make test
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-latest]
+      # Don't abort other runs when one of them fails, to ease debugging.
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
 

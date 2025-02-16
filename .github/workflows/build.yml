@@ -33,11 +33,7 @@ jobs:
     - name: Dependencies
       run: |
         sudo apt-get install cmake libffi-dev ethtool python3-dev
-        # Install the latest pip version (not python3-pip) as older versions
-        # seem to have issues when installing from source.
-        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        sudo python3 get-pip.py
-        sudo python3 -m pip install --upgrade setuptools nose2 scapy wheel
+        python3 -m pip install --upgrade setuptools nose2 scapy wheel
 
         bash CI/install-nanomsg.sh
         sudo ldconfig
@@ -45,7 +41,7 @@ jobs:
 
     - name: Install
       run: |
-        sudo python3 -m pip install .
+        python3 -m pip install .
         ptf --version
 
     - name: Before_script

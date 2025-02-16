@@ -2,7 +2,8 @@
 
 set -x
 
-PPATH="$HOME/.local/lib/python3.12/site-packages"
+MAJOR_MINOR_VERSION=`python-major-minor-version.py`
+PPATH="$HOME/.local/lib/python${MAJOR_MINOR_VERSION}/site-packages"
 
 sudo PATH=${PATH} PYTHONPATH=${PPATH} python3 ptf_nn/ptf_nn_agent.py \
     --device-socket 0@tcp://127.0.0.1:10001 -i 0-1@veth0 \

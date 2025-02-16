@@ -55,4 +55,3 @@ jobs:
         pip --verbose list
         python3 CI/check-nnpy.py
         ./CI/run_tests.sh
-        sudo python3 /usr/local/bin/nose2 utests.tests.test

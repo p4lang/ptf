@@ -1,7 +1,7 @@
 """ A pluggable packet module
 
 This module dynamically imports definitions from packet manipulation module,
-specified in config or provided as an agrument.
+specified in config or provided as an argument.
 The default one is Scapy, but one can develop its own packet manipulation framework and
 then, create an implementation of packet module for it (for Scapy it is packet_scapy.py)
 """

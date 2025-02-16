@@ -20,8 +20,8 @@ cd build
 # library is installed in /usr/local/lib/x86_64-linux-gnu/ by default, and for
 # some reason ldconfig cannot find it
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr
-cmake --build . --verbose
-sudo cmake --build . --verbose --target install
+cmake --build .
+sudo cmake --build . --target install
 cd ..
 
 pip --verbose list

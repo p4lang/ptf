@@ -40,6 +40,7 @@ jobs:
       # Don't abort other runs when one of them fails, to ease debugging.
       fail-fast: false
 
+    name: run ptf unit tests
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4

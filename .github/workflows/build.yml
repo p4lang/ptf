@@ -34,6 +34,7 @@ jobs:
       run: |
         sudo apt-get install cmake libffi-dev ethtool python3-dev
         python3 -m pip install --upgrade setuptools nose2 wheel
+        python -m pip install scapy==2.5.0
 
         bash CI/install-nanomsg.sh
         sudo ldconfig
@@ -51,6 +52,7 @@ jobs:
 
     - name: Script
       run: |
+        pip --verbose list
         python3 CI/check-nnpy.py
         ./CI/run_tests.sh
         sudo python3 /usr/local/bin/nose2 utests.tests.test

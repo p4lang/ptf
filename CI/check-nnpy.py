@@ -3,6 +3,12 @@
 import nnpy
 import sys
 
+print("----------------------------------------")
+print("sys.path:")
+for path in sys.path:
+    print("    %s" % (path))
+print("----------------------------------------")
+
 pub = nnpy.Socket(nnpy.AF_SP, nnpy.PUB)
 pub.bind("inproc://foo")
 

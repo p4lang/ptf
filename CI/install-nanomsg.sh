@@ -3,6 +3,9 @@
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $THIS_DIR/common.sh
 
+set -x
+cmake --version
+
 # nanomsg is very confusing in how it manages SOVERSION vs VERSION, but this
 # should be okay... (5.0.0 is the SOVERSION)
 check_lib libnanomsg libnanomsg.so.5.0.0

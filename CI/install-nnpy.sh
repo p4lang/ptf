@@ -6,4 +6,3 @@ python3 -m pip install cffi
 python3 -m pip install --upgrade cffi
 python3 -m pip install .
 cd ..
-pip --verbose list

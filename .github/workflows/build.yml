@@ -44,7 +44,6 @@ jobs:
       run: |
         python3 -m pip install .
         ptf --version
-        pip --verbose list
 
     - name: Before_script
       run: |

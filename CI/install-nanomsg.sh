@@ -18,5 +18,5 @@ cd build
 # some reason ldconfig cannot find it
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr
 cmake --build .
-sudo cmake --build . --target install
+cmake --build . --target install
 cd ..

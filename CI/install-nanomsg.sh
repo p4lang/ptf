@@ -17,6 +17,6 @@ cd build
 # library is installed in /usr/local/lib/x86_64-linux-gnu/ by default, and for
 # some reason ldconfig cannot find it
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr
-cmake --build .
-cmake --build . --target install
+cmake --build . --verbose
+cmake --build . --verbose --target install
 cd ..

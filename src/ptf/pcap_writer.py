@@ -92,6 +92,7 @@ def rdpcap_one_packet(f, ppi_len, return_packet_metadata):
         if return_packet_metadata:
             return None, None, None, None, None
         return None
+    assert len(pkt_header_bytes) == PcapPktHeader.size
     pkt_header = PcapPktHeader.unpack(pkt_header_bytes)
     (
         timestamp_sec,
@@ -101,6 +102,7 @@ def rdpcap_one_packet(f, ppi_len, return_packet_metadata):
     ) = pkt_header
     # Consider supporting linktype LINKTYPE_PPI for reading.
     pkt_data = f.read(caplength)
+    assert len(pkt_data) == caplength
     if return_packet_metadata:
         return pkt_data, timestamp_sec, timestamp_micro, caplength, length
     return pkt_data

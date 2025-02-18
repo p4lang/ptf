@@ -106,13 +106,17 @@ cd open-p4studio/pkgsrc/ptf-utils/bf-pktpy
 pip install .
 ```
 
-To make effective use of `bf_pktpy` you should also install these
-additional Python packages.  Both are released under an MIT license,
-which is compatible for releasing with `bf_pktpy`, or for use with
-`scapy`.
+To make effective use of `bf_pktpy` you must also install these
+additional Python packages.  All are released under an MIT or
+BSD-3-Clause license, which are compatible for releasing with
+`bf_pktpy`, or for importing in a project with most licenses,
+including `Apache-2.0`, `BSD-3-Clause`, `GPL-2.0-only`, or many
+others.
 
 ```bash
-pip install getmac scapy_helper
+pip install six getmac scapy_helper psutil
+sudo apt-get install python3-dev
+pip install netifaces
 ```
 
 If you want to use `bf_pktpy` when running the command `ptf` from the

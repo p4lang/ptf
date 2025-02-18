@@ -32,11 +32,13 @@ class PcapWriter(object):
         as the value of the optional parameter 'linktype'.
         """
         self.stream = open(filename, "wb")
-        self.linktype = linktype
-        if self.linktype == LINKTYPE_ETHERNET:
+        if linktype == LINKTYPE_ETHERNET or linktype == LINKTYPE_NULL:
             self.ppi_len = 0
-        elif self.linktype == LINKTYPE_PPI:
+        elif linktype == LINKTYPE_PPI:
             self.ppi_len = PPIPktHeader.size + 2 * PPIAggregateField.size
+        else:
+            raise ValueError("Unsupported linktype %s" % (linktype))
+        self.linktype = linktype
         self.stream.write(
             PcapHeader.pack(
                 PCAP_MAGIC_NUMBER,

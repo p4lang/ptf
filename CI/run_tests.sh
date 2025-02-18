@@ -2,11 +2,7 @@
 
 set -x
 
-THIS_SCRIPT_FILE_MAYBE_RELATIVE="$0"
-THIS_SCRIPT_DIR_MAYBE_RELATIVE="${THIS_SCRIPT_FILE_MAYBE_RELATIVE%/*}"
-THIS_SCRIPT_DIR_ABSOLUTE=`readlink -f "${THIS_SCRIPT_DIR_MAYBE_RELATIVE}"`
-
-MAJOR_MINOR_VERSION=`${THIS_SCRIPT_DIR_ABSOLUTE}/python-major-minor-version.py`
+MAJOR_MINOR_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 PPATH="$HOME/.local/lib/python${MAJOR_MINOR_VERSION}/site-packages"
 
 sudo PATH=${PATH} PYTHONPATH=${PPATH} python3 ptf_nn/ptf_nn_agent.py \

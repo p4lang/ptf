@@ -13,7 +13,7 @@ jobs:
   verify-python:
     strategy:
       matrix:
-        os: [ubuntu-22.04, ubuntu-latest]
+        os: [ubuntu-22.04, ubuntu-24.04]
         scapy_version: [2.5.0, 2.6.1]
       # Don't abort other runs when one of them fails, to ease debugging.
       fail-fast: false
@@ -35,7 +35,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-22.04, ubuntu-latest]
+        os: [ubuntu-22.04, ubuntu-24.04]
         scapy_version: [2.5.0, 2.6.1]
       # Don't abort other runs when one of them fails, to ease debugging.
       fail-fast: false

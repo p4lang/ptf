@@ -1,4 +1,4 @@
-""" A pluggable packet module
+"""A pluggable packet module
 
 This module dynamically imports definitions from packet manipulation module,
 specified in config or provided as an agrument.

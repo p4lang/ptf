@@ -22,6 +22,7 @@ LINKTYPE_NULL = 0
 LINKTYPE_ETHERNET = 1
 LINKTYPE_PPI = 192
 
+
 class PcapWriter(object):
     def __init__(self, filename, linktype=LINKTYPE_PPI):
         """
@@ -75,8 +76,12 @@ class PcapWriter(object):
                     1,  # ethernet dlt
                 )
             )
-            self.stream.write(PPIAggregateField.pack(8, PPIAggregateField.size - 4, port))
-            self.stream.write(PPIAggregateField.pack(8, PPIAggregateField.size - 4, device))
+            self.stream.write(
+                PPIAggregateField.pack(8, PPIAggregateField.size - 4, port)
+            )
+            self.stream.write(
+                PPIAggregateField.pack(8, PPIAggregateField.size - 4, device)
+            )
         self.stream.write(data)
 
     def flush(self):
@@ -94,12 +99,7 @@ def rdpcap_one_packet(f, ppi_len, return_packet_metadata):
         return None
     assert len(pkt_header_bytes) == PcapPktHeader.size
     pkt_header = PcapPktHeader.unpack(pkt_header_bytes)
-    (
-        timestamp_sec,
-        timestamp_microsec,
-        caplength,
-        length
-    ) = pkt_header
+    (timestamp_sec, timestamp_microsec, caplength, length) = pkt_header
     # Consider supporting linktype LINKTYPE_PPI for reading.
     pkt_data = f.read(caplength)
     assert len(pkt_data) == caplength
@@ -110,7 +110,7 @@ def rdpcap_one_packet(f, ppi_len, return_packet_metadata):
 
 def rdpcap(filename, return_packet_metadata=False):
     pkts = []
-    with open(filename, 'rb') as f:
+    with open(filename, "rb") as f:
         file_header_bytes = f.read(PcapHeader.size)
         file_header = PcapHeader.unpack(file_header_bytes)
         (
@@ -120,23 +120,29 @@ def rdpcap(filename, return_packet_metadata=False):
             timezone_offset,
             timezone_accuracy,
             snapshot_length,
-            linktype
+            linktype,
         ) = file_header
         if magic_number != PCAP_MAGIC_NUMBER:
-            raise ValueError("Expecting first 4 bytes of supposed pcap file"
-                             " '%s' to be magic number 0x%08x"
-                             " but found instead 0x%08x"
-                             "" % (filename, PCAP_MAGIC_NUMBER, magic_number))
+            raise ValueError(
+                "Expecting first 4 bytes of supposed pcap file"
+                " '%s' to be magic number 0x%08x"
+                " but found instead 0x%08x"
+                "" % (filename, PCAP_MAGIC_NUMBER, magic_number)
+            )
         if major_version != PCAP_MAJOR_VERSION:
-            raise ValueError("Expecting major version of pcap file"
-                             " '%s' to be 0x%08x"
-                             " but found instead 0x%08x"
-                             "" % (filename, PCAP_MAJOR_VERSION, major_version))
+            raise ValueError(
+                "Expecting major version of pcap file"
+                " '%s' to be 0x%08x"
+                " but found instead 0x%08x"
+                "" % (filename, PCAP_MAJOR_VERSION, major_version)
+            )
         if minor_version != PCAP_MINOR_VERSION:
-            raise ValueError("Expecting minor version of pcap file"
-                             " '%s' to be 0x%08x"
-                             " but found instead 0x%08x"
-                             "" % (filename, PCAP_MINOR_VERSION, minor_version))
+            raise ValueError(
+                "Expecting minor version of pcap file"
+                " '%s' to be 0x%08x"
+                " but found instead 0x%08x"
+                "" % (filename, PCAP_MINOR_VERSION, minor_version)
+            )
         # Ignoring value of timezone offset.
         # Ignoring value of timezone accuracy.
         if linktype == LINKTYPE_ETHERNET or linktype == LINKTYPE_NULL:
@@ -144,26 +150,26 @@ def rdpcap(filename, return_packet_metadata=False):
         elif linktype == LINKTYPE_PPI:
             ppi_len = PPIPktHeader.size + 2 * PPIAggregateField.size
         else:
-            raise ValueError("Found unsupported linktype value %d"
-                             " in pcap file '%s'"
-                             "" % (linktype, filename))
+            raise ValueError(
+                "Found unsupported linktype value %d"
+                " in pcap file '%s'"
+                "" % (linktype, filename)
+            )
         while True:
             if return_packet_metadata:
-                (
-                    pkt_data,
-                    timestamp_sec,
-                    timestamp_usec,
-                    caplength,
-                    length
-                ) = rdpcap_one_packet(f, ppi_len, return_packet_metadata)
+                (pkt_data, timestamp_sec, timestamp_usec, caplength, length) = (
+                    rdpcap_one_packet(f, ppi_len, return_packet_metadata)
+                )
                 if pkt_data is None:
                     pkt = None
                 else:
                     timestamp = timestamp_sec + (timestamp_usec / 1000000.0)
-                    pkt = {'timestamp': timestamp,
-                           'caplength': caplength,
-                           'length': length,
-                           'pkt_data': pkt_data}
+                    pkt = {
+                        "timestamp": timestamp,
+                        "caplength": caplength,
+                        "length": length,
+                        "pkt_data": pkt_data,
+                    }
             else:
                 pkt = rdpcap_one_packet(f, ppi_len, return_packet_metadata)
             if pkt is None:

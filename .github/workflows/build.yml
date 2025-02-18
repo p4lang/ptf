@@ -11,14 +11,21 @@ on:
 
 jobs:
   verify-python:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+        scapy_version: [2.5.0, 2.6.1]
+      # Don't abort other runs when one of them fails, to ease debugging.
+      fail-fast: false
+
     name: Python code verification (src)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: |
           make set-dev
-          python -m pip install scapy==2.4.5
+          python -m pip install scapy==${{ matrix.scapy_version }}
       - name: Verify code (python w/black)
         run: |
           make format-check
@@ -26,18 +33,23 @@ jobs:
         run: | 
           make test
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+        scapy_version: [2.5.0, 2.6.1]
+      # Don't abort other runs when one of them fails, to ease debugging.
+      fail-fast: false
+
+    name: run ptf unit tests
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
 
     - name: Dependencies
       run: |
         sudo apt-get install cmake libffi-dev ethtool python3-dev
-        # Install the latest pip version (not python3-pip) as older versions
-        # seem to have issues when installing from source.
-        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        sudo python3 get-pip.py
-        sudo python3 -m pip install --upgrade setuptools nose2 scapy wheel
+        python3 -m pip install --upgrade setuptools nose2 wheel
+        python -m pip install scapy==${{ matrix.scapy_version }}
 
         bash CI/install-nanomsg.sh
         sudo ldconfig
@@ -45,7 +57,7 @@ jobs:
 
     - name: Install
       run: |
-        sudo python3 -m pip install .
+        python3 -m pip install .
         ptf --version
 
     - name: Before_script
@@ -54,6 +66,6 @@ jobs:
 
     - name: Script
       run: |
+        pip --verbose list
         python3 CI/check-nnpy.py
         ./CI/run_tests.sh
-        sudo python3 /usr/local/bin/nose2 utests.tests.test

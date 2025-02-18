@@ -31,7 +31,7 @@ class PcapWriter(object):
         as the value of the optional parameter 'linktype'.
         """
         self.stream = open(filename, "wb")
-        self.linktype = LINKTYPE_ETHERNET
+        self.linktype = linktype
         if self.linktype == LINKTYPE_ETHERNET:
             self.ppi_len = 0
         elif self.linktype == LINKTYPE_PPI:

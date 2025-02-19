@@ -124,7 +124,7 @@ def rdpcap_one_packet(f, path: str | os.PathLike,
     (timestamp_sec, timestamp_microsec, caplength, length) = pkt_header
     # Consider supporting linktype LINKTYPE_PPI for reading.
     pkt_data = f.read(caplength)
-    if len(pkt_data) != caplength
+    if len(pkt_data) != caplength:
         raise ValueError("Expected a packet body with length %d bytes"
                          " in file %s but file ended after only %d bytes"
                          "" % (caplength, path, len(pkt_data)))

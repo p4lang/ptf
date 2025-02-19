@@ -5,6 +5,7 @@ Pcap file writer
 import os
 import struct
 import time
+from typing import Optional
 
 PcapHeader = struct.Struct("<LHHLLLL")
 PcapPktHeader = struct.Struct("<LLLL")

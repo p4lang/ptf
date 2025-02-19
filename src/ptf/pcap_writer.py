@@ -26,7 +26,7 @@ LINKTYPE_PPI = 192
 
 
 class PcapWriter(object):
-    def __init__(self, path: str | os.PathLike, linktype: int=LINKTYPE_PPI):
+    def __init__(self, path: str | os.PathLike, linktype: int = LINKTYPE_PPI):
         """Open a pcap file for writing at 'path'.
 
         The default link type is LINKTYPE_PPI, for backwards
@@ -54,8 +54,13 @@ class PcapWriter(object):
             )
         )
 
-    def write(self, data: bytes, timestamp: Optional[float]=None,
-              device: Optional[int]=None, port: Optional[int]=None):
+    def write(
+        self,
+        data: bytes,
+        timestamp: Optional[float] = None,
+        device: Optional[int] = None,
+        port: Optional[int] = None,
+    ):
         """Write a packet to a pcap file.
 
         'data' contains the packet data.
@@ -79,13 +84,17 @@ class PcapWriter(object):
         )
         if self.linktype == LINKTYPE_PPI:
             if device is None:
-                raise ValueError("argument 'device' was None.  Must be integer"
-                                 " for PcapWriter with linktype=%d"
-                                 "" % (self.linktype))
+                raise ValueError(
+                    "argument 'device' was None.  Must be integer"
+                    " for PcapWriter with linktype=%d"
+                    "" % (self.linktype)
+                )
             if port is None:
-                raise ValueError("argument 'port' was None.  Must be integer"
-                                 " for PcapWriter with linktype=%d"
-                                 "" % (self.linktype))
+                raise ValueError(
+                    "argument 'port' was None.  Must be integer"
+                    " for PcapWriter with linktype=%d"
+                    "" % (self.linktype)
+                )
             self.stream.write(
                 PPIPktHeader.pack(
                     0,  # version
@@ -109,31 +118,34 @@ class PcapWriter(object):
         self.stream.close()
 
 
-def rdpcap_one_packet(f, path: str | os.PathLike,
-                      return_packet_metadata: bool):
+def rdpcap_one_packet(f, path: str | os.PathLike, return_packet_metadata: bool):
     pkt_header_bytes = f.read(PcapPktHeader.size)
     if len(pkt_header_bytes) == 0:
         if return_packet_metadata:
             return None, None, None, None, None
         return None
     if len(pkt_header_bytes) != PcapPktHeader.size:
-        raise ValueError("Expected a packet header with length %d bytes"
-                         " in file %s but file ended after only %d bytes"
-                         "" % (PcapPktHeader.size, path, len(pkt_header_bytes)))
+        raise ValueError(
+            "Expected a packet header with length %d bytes"
+            " in file %s but file ended after only %d bytes"
+            "" % (PcapPktHeader.size, path, len(pkt_header_bytes))
+        )
     pkt_header = PcapPktHeader.unpack(pkt_header_bytes)
     (timestamp_sec, timestamp_microsec, caplength, length) = pkt_header
     # Consider supporting linktype LINKTYPE_PPI for reading.
     pkt_data = f.read(caplength)
     if len(pkt_data) != caplength:
-        raise ValueError("Expected a packet body with length %d bytes"
-                         " in file %s but file ended after only %d bytes"
-                         "" % (caplength, path, len(pkt_data)))
+        raise ValueError(
+            "Expected a packet body with length %d bytes"
+            " in file %s but file ended after only %d bytes"
+            "" % (caplength, path, len(pkt_data))
+        )
     if return_packet_metadata:
         return pkt_data, timestamp_sec, timestamp_micro, length
     return pkt_data
 
 
-def rdpcap(path: str | os.PathLike, return_packet_metadata: bool=False):
+def rdpcap(path: str | os.PathLike, return_packet_metadata: bool = False):
     """Attempts to open 'path' for reading and interpret its contents
     as a pcap file.  Raises an exception if any unexpected file
     contents are found, or the path cannot be opened for reading.
@@ -200,8 +212,8 @@ def rdpcap(path: str | os.PathLike, return_packet_metadata: bool=False):
             )
         while True:
             if return_packet_metadata:
-                (pkt_data, timestamp_sec, timestamp_usec, length) = (
-                    rdpcap_one_packet(f, path, return_packet_metadata)
+                (pkt_data, timestamp_sec, timestamp_usec, length) = rdpcap_one_packet(
+                    f, path, return_packet_metadata
                 )
                 if pkt_data is None:
                     pkt = None

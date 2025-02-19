@@ -5,7 +5,7 @@ Pcap file writer
 import os
 import struct
 import time
-from typing import Optional
+from typing import Optional, Union
 
 PcapHeader = struct.Struct("<LHHLLLL")
 PcapPktHeader = struct.Struct("<LLLL")
@@ -27,7 +27,7 @@ LINKTYPE_PPI = 192
 
 
 class PcapWriter(object):
-    def __init__(self, path: str, linktype: int = LINKTYPE_PPI):
+    def __init__(self, path: Union[str, os.PathLike], linktype: int = LINKTYPE_PPI):
         """Open a pcap file for writing at 'path'.
 
         The default link type is LINKTYPE_PPI, for backwards
@@ -119,7 +119,7 @@ class PcapWriter(object):
         self.stream.close()
 
 
-def rdpcap_one_packet(f, path: str, return_packet_metadata: bool):
+def rdpcap_one_packet(f, path: Union[str, os.PathLike], return_packet_metadata: bool):
     pkt_header_bytes = f.read(PcapPktHeader.size)
     if len(pkt_header_bytes) == 0:
         if return_packet_metadata:
@@ -146,7 +146,7 @@ def rdpcap_one_packet(f, path: str, return_packet_metadata: bool):
     return pkt_data
 
 
-def rdpcap(path: str, return_packet_metadata: bool = False):
+def rdpcap(path: Union[str, os.PathLike], return_packet_metadata: bool = False):
     """Attempts to open 'path' for reading and interpret its contents
     as a pcap file.  Raises an exception if any unexpected file
     contents are found, or the path cannot be opened for reading.

@@ -2,7 +2,9 @@
 Pcap file writer
 """
 
+import os
 import struct
+import time
 
 PcapHeader = struct.Struct("<LHHLLLL")
 PcapPktHeader = struct.Struct("<LLLL")
@@ -24,14 +26,15 @@ LINKTYPE_PPI = 192
 
 
 class PcapWriter(object):
-    def __init__(self, filename, linktype=LINKTYPE_PPI):
+    def __init__(self, path: str | os.PathLike, linktype: int=LINKTYPE_PPI):
+        """Open a pcap file for writing at 'path'.
+
+        The default link type is LINKTYPE_PPI, for backwards
+        compatibility with callers that have used PcapWriter before it
+        implemented other linktype values.
+
         """
-        Open a pcap file.  The default link type is LINKTYPE_PPI, for
-        backwards compatibility with callers that have used PcapWriter
-        before it implemented LINKTYPE_ETHERNET, which can be supplied
-        as the value of the optional parameter 'linktype'.
-        """
-        self.stream = open(filename, "wb")
+        self.stream = open(path, "wb")
         if linktype == LINKTYPE_ETHERNET or linktype == LINKTYPE_NULL:
             self.ppi_len = 0
         elif linktype == LINKTYPE_PPI:
@@ -51,14 +54,21 @@ class PcapWriter(object):
             )
         )
 
-    def write(self, data, timestamp, device=None, port=None):
-        """
-        Write a packet to a pcap file
+    def write(self, data: bytes, timestamp: Optional[float]=None,
+              device: Optional[int]=None, port: Optional[int]=None):
+        """Write a packet to a pcap file.
 
-        'data' should be type bytes, containing the packet data.
-        'timestamp' should be a float.
-        'port' should be an integer port number.
+        'data' contains the packet data.
+        'timestamp' is optional, defaulting to the current time.
+
+        'device' should be an integer device number, required if the
+        PcapWriter was created with LINKTYPE_PPI, otherwise ignored.
+
+        'port' should be an integer port number, required if the
+        PcapWriter was created with LINKTYPE_PPI, otherwise ignored.
         """
+        if timestamp is None:
+            timestamp = time.time()
         self.stream.write(
             PcapPktHeader.pack(
                 int(timestamp),  # timestamp seconds
@@ -68,8 +78,14 @@ class PcapWriter(object):
             )
         )
         if self.linktype == LINKTYPE_PPI:
-            assert device is not None
-            assert port is not None
+            if device is None:
+                raise ValueError("argument 'device' was None.  Must be integer"
+                                 " for PcapWriter with linktype=%d"
+                                 "" % (self.linktype))
+            if port is None:
+                raise ValueError("argument 'port' was None.  Must be integer"
+                                 " for PcapWriter with linktype=%d"
+                                 "" % (self.linktype))
             self.stream.write(
                 PPIPktHeader.pack(
                     0,  # version
@@ -93,26 +109,55 @@ class PcapWriter(object):
         self.stream.close()
 
 
-def rdpcap_one_packet(f, ppi_len, return_packet_metadata):
+def rdpcap_one_packet(f, path: str | os.PathLike,
+                      return_packet_metadata: bool):
     pkt_header_bytes = f.read(PcapPktHeader.size)
     if len(pkt_header_bytes) == 0:
         if return_packet_metadata:
             return None, None, None, None, None
         return None
-    assert len(pkt_header_bytes) == PcapPktHeader.size
+    if len(pkt_header_bytes) != PcapPktHeader.size:
+        raise ValueError("Expected a packet header with length %d bytes"
+                         " in file %s but file ended after only %d bytes"
+                         "" % (PcapPktHeader.size, path, len(pkt_header_bytes)))
     pkt_header = PcapPktHeader.unpack(pkt_header_bytes)
     (timestamp_sec, timestamp_microsec, caplength, length) = pkt_header
     # Consider supporting linktype LINKTYPE_PPI for reading.
     pkt_data = f.read(caplength)
-    assert len(pkt_data) == caplength
+    if len(pkt_data) != caplength
+        raise ValueError("Expected a packet body with length %d bytes"
+                         " in file %s but file ended after only %d bytes"
+                         "" % (caplength, path, len(pkt_data)))
     if return_packet_metadata:
-        return pkt_data, timestamp_sec, timestamp_micro, caplength, length
+        return pkt_data, timestamp_sec, timestamp_micro, length
     return pkt_data
 
 
-def rdpcap(filename, return_packet_metadata=False):
+def rdpcap(path: str | os.PathLike, return_packet_metadata: bool=False):
+    """Attempts to open 'path' for reading and interpret its contents
+    as a pcap file.  Raises an exception if any unexpected file
+    contents are found, or the path cannot be opened for reading.
+
+    With the default behavior when 'return_packet_metadata' is False,
+    returns a list of elements that are all type bytes, containing
+    only the contents of the packets.
+
+    If 'return_packet_metadata' is True, returns a list of dicts, each
+    dict containing these keys:
+
+    "pkt_data" - bytes.  The content of the packet.  The capture
+    length is len(pkt_data).
+
+    "timestamp" - float.  The timestamp of the packet in units of
+    seconds.
+
+    "length" - int.  The original length of the packet, which can be
+    longer than len(pkt_data) if the packet was truncated before
+    recording its contents in the pcap file.
+
+    """
     pkts = []
-    with open(filename, "rb") as f:
+    with open(path, "rb") as f:
         file_header_bytes = f.read(PcapHeader.size)
         file_header = PcapHeader.unpack(file_header_bytes)
         (
@@ -129,38 +174,34 @@ def rdpcap(filename, return_packet_metadata=False):
                 "Expecting first 4 bytes of supposed pcap file"
                 " '%s' to be magic number 0x%08x"
                 " but found instead 0x%08x"
-                "" % (filename, PCAP_MAGIC_NUMBER, magic_number)
+                "" % (path, PCAP_MAGIC_NUMBER, magic_number)
             )
         if major_version != PCAP_MAJOR_VERSION:
             raise ValueError(
                 "Expecting major version of pcap file"
                 " '%s' to be 0x%08x"
                 " but found instead 0x%08x"
-                "" % (filename, PCAP_MAJOR_VERSION, major_version)
+                "" % (path, PCAP_MAJOR_VERSION, major_version)
             )
         if minor_version != PCAP_MINOR_VERSION:
             raise ValueError(
                 "Expecting minor version of pcap file"
                 " '%s' to be 0x%08x"
                 " but found instead 0x%08x"
-                "" % (filename, PCAP_MINOR_VERSION, minor_version)
+                "" % (path, PCAP_MINOR_VERSION, minor_version)
             )
         # Ignoring value of timezone offset.
         # Ignoring value of timezone accuracy.
-        if linktype == LINKTYPE_ETHERNET or linktype == LINKTYPE_NULL:
-            ppi_len = 0
-        elif linktype == LINKTYPE_PPI:
-            ppi_len = PPIPktHeader.size + 2 * PPIAggregateField.size
-        else:
+        if not (linktype == LINKTYPE_ETHERNET or linktype == LINKTYPE_NULL):
             raise ValueError(
                 "Found unsupported linktype value %d"
                 " in pcap file '%s'"
-                "" % (linktype, filename)
+                "" % (linktype, path)
             )
         while True:
             if return_packet_metadata:
-                (pkt_data, timestamp_sec, timestamp_usec, caplength, length) = (
-                    rdpcap_one_packet(f, ppi_len, return_packet_metadata)
+                (pkt_data, timestamp_sec, timestamp_usec, length) = (
+                    rdpcap_one_packet(f, path, return_packet_metadata)
                 )
                 if pkt_data is None:
                     pkt = None
@@ -168,12 +209,11 @@ def rdpcap(filename, return_packet_metadata=False):
                     timestamp = timestamp_sec + (timestamp_usec / 1000000.0)
                     pkt = {
                         "timestamp": timestamp,
-                        "caplength": caplength,
                         "length": length,
                         "pkt_data": pkt_data,
                     }
             else:
-                pkt = rdpcap_one_packet(f, ppi_len, return_packet_metadata)
+                pkt = rdpcap_one_packet(f, path, return_packet_metadata)
             if pkt is None:
                 break
             pkts.append(pkt)

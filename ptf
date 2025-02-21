@@ -389,32 +389,32 @@ be subtracted from the result by prefixing them with the '^' character.  """
     group.add_argument(
         "--disable-vxlan",
         action="store_true",
-        help="Disable VXLAN (do not import from scapy even if supported)",
+        help="Disable VXLAN (do not import from pktmanip module even if supported)",
     )
     group.add_argument(
         "--disable-geneve",
         action="store_true",
-        help="Disable GENEVE (do not import from scapy even if supported)",
+        help="Disable GENEVE (do not import from pktmanip module even if supported)",
     )
     group.add_argument(
         "--disable-erspan",
         action="store_true",
-        help="Disable ERSPAN (do not import from scapy even if supported)",
+        help="Disable ERSPAN (do not import from pktmanip module even if supported)",
     )
     group.add_argument(
         "--disable-mpls",
         action="store_true",
-        help="Disable MPLS (do not import from scapy even if supported)",
+        help="Disable MPLS (do not import from pktmanip module even if supported)",
     )
     group.add_argument(
         "--disable-nvgre",
         action="store_true",
-        help="Disable NVGRE (do not import from scapy even if supported)",
+        help="Disable NVGRE (do not import from pktmanip module even if supported)",
     )
     group.add_argument(
         "--disable-igmp",
         action="store_true",
-        help="Disable IGMP (do not import from scapy even if supported)",
+        help="Disable IGMP (do not import from pktmanip module even if supported)",
     )
 
     group = parser.add_argument_group("Socket options")
@@ -693,8 +693,9 @@ logging_setup(config)
 xunit_setup(config)
 logging.info("++++++++ " + time.asctime() + " ++++++++")
 
-# import after logging is configured so that scapy error logs (from importing
-# packet.py) are silenced and our own warnings are logged properly.
+# import after logging is configured so that pktmanip module error
+# logs (from importing packet.py) are silenced and our own warnings
+# are logged properly.
 import ptf.testutils
 
 # Try parsing test params and log them

@@ -2,7 +2,7 @@ import warnings
 
 from io import StringIO
 import sys
-from . import packet
+import ptf.packet as pktmanip
 
 
 class MaskException(Exception):
@@ -124,9 +124,9 @@ class Mask:
         sys.stdout = buffer = StringIO()
         print("\npacket status: %s" % "OK" if self.valid else "INVALID")
         print("packet:")
-        packet.hexdump(self.exp_pkt)  # noqa
+        pktmanip.hexdump(self.exp_pkt)  # noqa
         print("\npacket's mask:")
-        packet.hexdump(self.mask)  # noqa
+        pktmanip.hexdump(self.mask)  # noqa
 
         sys.stdout = old_stdout
         return buffer.getvalue()

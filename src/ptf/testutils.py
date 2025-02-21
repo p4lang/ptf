@@ -4,7 +4,7 @@ import logging
 import types
 import time
 import re
-from . import packet
+import ptf.packet as pktmanip
 
 import ptf
 import ptf.dataplane
@@ -46,7 +46,7 @@ def get_filters():
 
 def ether_filter(pkt_str):
     try:
-        pkt = packet.Ether(pkt_str)
+        pkt = pktmanip.Ether(pkt_str)
         return True
     except:
         return False
@@ -54,8 +54,8 @@ def ether_filter(pkt_str):
 
 def ipv6_filter(pkt_str):
     try:
-        pkt = packet.Ether(pkt_str)
-        return packet.IPv6 in pkt
+        pkt = pktmanip.Ether(pkt_str)
+        return pktmanip.IPv6 in pkt
     except:
         return False
 
@@ -133,9 +133,9 @@ def simple_tcp_packet_ext_taglist(
         pktlen = MINSIZE
 
     if with_tcp_chksum:
-        tcp_hdr = packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
+        tcp_hdr = pktmanip.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
     else:
-        tcp_hdr = packet.TCP(
+        tcp_hdr = pktmanip.TCP(
             sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0
         )
 
@@ -143,30 +143,30 @@ def simple_tcp_packet_ext_taglist(
 
     # Note Dot1Q.id is really CFI
     if dl_taglist_enable:
-        pkt = packet.Ether(dst=eth_dst, src=eth_src)
+        pkt = pktmanip.Ether(dst=eth_dst, src=eth_src)
 
         for i in range(0, len(dl_vlanid_list)):
-            pkt = pkt / packet.Dot1Q(
+            pkt = pkt / pktmanip.Dot1Q(
                 prio=dl_vlan_pcp_list[i], id=dl_vlan_cfi_list[i], vlan=dl_vlanid_list[i]
             )
 
         pkt = (
             pkt
-            / packet.IP(
+            / pktmanip.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl
             )
             / tcp_hdr
         )
 
         for i in range(1, len(dl_tpid_list)):
-            pkt[packet.Dot1Q : i].type = dl_tpid_list[i]
+            pkt[pktmanip.Dot1Q : i].type = dl_tpid_list[i]
         pkt.type = dl_tpid_list[0]
 
     else:
         if not ip_options:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -179,8 +179,8 @@ def simple_tcp_packet_ext_taglist(
             )
         else:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -336,13 +336,13 @@ def simple_tcpv6_packet(
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
-    pkt = packet.Ether(dst=eth_dst, src=eth_src)
+    pkt = pktmanip.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
-        pkt /= packet.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
-    pkt /= packet.IPv6(
+        pkt /= pktmanip.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
+    pkt /= pktmanip.IPv6(
         src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
     )
-    pkt /= packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
+    pkt /= pktmanip.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
     pkt /= "D" * (pktlen - len(pkt))
 
     return pkt
@@ -400,18 +400,18 @@ def simple_udp_packet(
         pktlen = MINSIZE
 
     if with_udp_chksum:
-        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport)
+        udp_hdr = pktmanip.UDP(sport=udp_sport, dport=udp_dport)
     else:
-        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+        udp_hdr = pktmanip.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, id=ip_id
             )
             / udp_hdr
@@ -419,8 +419,8 @@ def simple_udp_packet(
     else:
         if not ip_options:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -433,8 +433,8 @@ def simple_udp_packet(
             )
         else:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -489,8 +489,8 @@ def simple_ipv6_sr_packet(
     @param srh_nh IPV6 SRH next header
     """
 
-    pkt = packet.Ether(dst=eth_dst, src=eth_src)
-    pkt /= packet.IPv6(
+    pkt = pktmanip.Ether(dst=eth_dst, src=eth_src)
+    pkt /= pktmanip.IPv6(
         src=ipv6_src,
         dst=ipv6_dst,
         fl=ipv6_fl,
@@ -500,7 +500,7 @@ def simple_ipv6_sr_packet(
         plen=ipv6_plen,
     )
     reserved = (srh_first_seg << 24) + (srh_flags << 8)
-    pkt /= packet.IPv6ExtHdrRouting(
+    pkt /= pktmanip.IPv6ExtHdrRouting(
         nh=srh_nh,
         type=4,
         segleft=srh_seg_left,
@@ -565,9 +565,9 @@ def simple_geneve_packet(
     @param geneve_reserved2 reserved field
     @param inner_frame The inner Ethernet frame
     """
-    if packet.GENEVE is None:
+    if pktmanip.GENEVE is None:
         logging.error(
-            "A GENEVE packet was requested but GENEVE is not supported by your Scapy. See README for more information"
+            "A GENEVE packet was requested but GENEVE is not supported by your pktmanip module. See README for more information"
         )
         return None
 
@@ -577,18 +577,18 @@ def simple_geneve_packet(
         pktlen = MINSIZE
 
     if with_udp_chksum:
-        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport)
+        udp_hdr = pktmanip.UDP(sport=udp_sport, dport=udp_dport)
     else:
-        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+        udp_hdr = pktmanip.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -602,8 +602,8 @@ def simple_geneve_packet(
     else:
         if not ip_options:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -616,8 +616,8 @@ def simple_geneve_packet(
             )
         else:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -630,7 +630,7 @@ def simple_geneve_packet(
                 / udp_hdr
             )
 
-    pkt = pkt / packet.GENEVE(vni=geneve_vni, proto=geneve_proto)
+    pkt = pkt / pktmanip.GENEVE(vni=geneve_vni, proto=geneve_proto)
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -689,25 +689,25 @@ def simple_nvgre_packet(
     Generates a simple GRE packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/NVGRE frame.
     """
-    if packet.NVGRE is None:
+    if pktmanip.NVGRE is None:
         logging.error(
-            "A NVGRE packet was requested but NVGRE is not supported by your Scapy. See README for more information"
+            "A NVGRE packet was requested but NVGRE is not supported by your pktmanip module. See README for more information"
         )
         return None
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    nvgre_hdr = packet.NVGRE(vsid=nvgre_tni, flowid=nvgre_flowid)
+    nvgre_hdr = pktmanip.NVGRE(vsid=nvgre_tni, flowid=nvgre_flowid)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -721,8 +721,8 @@ def simple_nvgre_packet(
     else:
         if not ip_options:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -735,8 +735,8 @@ def simple_nvgre_packet(
             )
         else:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -752,7 +752,7 @@ def simple_nvgre_packet(
     if inner_frame:
         pkt = pkt / inner_frame
     else:
-        pkt = pkt / packet.IP()
+        pkt = pkt / pktmanip.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -816,9 +816,9 @@ def simple_vxlan_packet(
     Generates a simple VXLAN packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/UDP/VXLAN frame.
     """
-    if packet.VXLAN is None:
+    if pktmanip.VXLAN is None:
         logging.error(
-            "A VXLAN packet was requested but VXLAN is not supported by your Scapy. See README for more information"
+            "A VXLAN packet was requested but VXLAN is not supported by your pktmanip module. See README for more information"
         )
         return None
 
@@ -826,18 +826,18 @@ def simple_vxlan_packet(
         pktlen = MINSIZE
 
     if with_udp_chksum:
-        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport)
+        udp_hdr = pktmanip.UDP(sport=udp_sport, dport=udp_dport)
     else:
-        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+        udp_hdr = pktmanip.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -851,8 +851,8 @@ def simple_vxlan_packet(
     else:
         if not ip_options:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -865,8 +865,8 @@ def simple_vxlan_packet(
             )
         else:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -879,7 +879,7 @@ def simple_vxlan_packet(
                 / udp_hdr
             )
 
-    pkt = pkt / packet.VXLAN(
+    pkt = pkt / pktmanip.VXLAN(
         flags=vxlan_flags,
         vni=vxlan_vni,
         reserved0=vxlan_reserved0,
@@ -952,32 +952,32 @@ def simple_vxlanv6_packet(
         pktlen = MINSIZE
 
     if with_udp_chksum:
-        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport)
+        udp_hdr = pktmanip.UDP(sport=udp_sport, dport=udp_dport)
     else:
-        udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+        udp_hdr = pktmanip.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IPv6(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IPv6(
                 src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
             )
             / udp_hdr
         )
     else:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.IPv6(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.IPv6(
                 src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
             )
             / udp_hdr
         )
 
-    pkt = pkt / packet.VXLAN(
+    pkt = pkt / pktmanip.VXLAN(
         flags=vxlan_flags,
         vni=vxlan_vni,
         reserved1=vxlan_reserved1,
@@ -1059,8 +1059,8 @@ def simple_gre_packet(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    # proto (ethertype) is set by Scapy based on the payload
-    gre_hdr = packet.GRE(
+    # proto (ethertype) is set by pktmanip based on the payload
+    gre_hdr = pktmanip.GRE(
         chksum_present=gre_chksum_present,
         routing_present=gre_routing_present,
         key_present=gre_key_present,
@@ -1078,9 +1078,9 @@ def simple_gre_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1094,8 +1094,8 @@ def simple_gre_packet(
     else:
         if not ip_options:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1108,8 +1108,8 @@ def simple_gre_packet(
             )
         else:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1128,7 +1128,7 @@ def simple_gre_packet(
         if (inner_frame_bytes[0] & 0xF0) == 0x60:
             pkt["GRE"].proto = 0x86DD
     else:
-        pkt = pkt / packet.IP()
+        pkt = pkt / pktmanip.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -1197,8 +1197,8 @@ def simple_grev6_packet(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    # proto (ethertype) is set by Scapy based on the payload
-    gre_hdr = packet.GRE(
+    # proto (ethertype) is set by pktmanip based on the payload
+    gre_hdr = pktmanip.GRE(
         chksum_present=gre_chksum_present,
         routing_present=gre_routing_present,
         key_present=gre_key_present,
@@ -1216,9 +1216,9 @@ def simple_grev6_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IPv6(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IPv6(
                 src=ipv6_src,
                 dst=ipv6_dst,
                 fl=ipv6_fl,
@@ -1230,8 +1230,8 @@ def simple_grev6_packet(
         )
     else:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.IPv6(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.IPv6(
                 src=ipv6_src,
                 dst=ipv6_dst,
                 fl=ipv6_fl,
@@ -1248,7 +1248,7 @@ def simple_grev6_packet(
         if (inner_frame_bytes[0] & 0xF0) == 0x60:
             pkt["GRE"].proto = 0x86DD
     else:
-        pkt = pkt / packet.IP()
+        pkt = pkt / pktmanip.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -1329,17 +1329,17 @@ def simple_gre_erspan_packet(
     Generates a simple GRE/ERSPAN packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/GRE/ERSPAN frame.
     """
-    if packet.GRE is None or packet.ERSPAN is None:
+    if pktmanip.GRE is None or pktmanip.ERSPAN is None:
         logging.error(
-            "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information"
+            "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your pktmanip module. See README for more information"
         )
         return None
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    # proto (ethertype) is set by Scapy based on the payload
-    gre_hdr = packet.GRE(
+    # proto (ethertype) is set by pktmanip based on the payload
+    gre_hdr = pktmanip.GRE(
         chksum_present=gre_chksum_present,
         routing_present=gre_routing_present,
         key_present=gre_key_present,
@@ -1352,7 +1352,7 @@ def simple_gre_erspan_packet(
         sequence_number=gre_sequence_number,
     )
 
-    erspan_hdr = packet.ERSPAN(
+    erspan_hdr = pktmanip.ERSPAN(
         vlan=erspan_vlan,
         cos=erspan_cos,
         en=erspan_en,
@@ -1366,9 +1366,9 @@ def simple_gre_erspan_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1383,8 +1383,8 @@ def simple_gre_erspan_packet(
     else:
         if not ip_options:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1398,8 +1398,8 @@ def simple_gre_erspan_packet(
             )
         else:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1416,7 +1416,7 @@ def simple_gre_erspan_packet(
     if inner_frame:
         pkt = pkt / inner_frame
     else:
-        pkt = pkt / packet.IP()
+        pkt = pkt / pktmanip.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -1482,9 +1482,9 @@ def ipv4_erspan_pkt(
     @param erspan_o ERSPAN_III o field
     @param inner_frame payload of the GRE packet
     """
-    if packet.GRE is None or packet.ERSPAN is None or packet.ERSPAN_III is None:
+    if pktmanip.GRE is None or pktmanip.ERSPAN is None or pktmanip.ERSPAN_III is None:
         logging.error(
-            "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information"
+            "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your pktmanip module. See README for more information"
         )
         return None
 
@@ -1492,7 +1492,7 @@ def ipv4_erspan_pkt(
         pktlen = MINSIZE
 
     if version == 2:
-        erspan_hdr = packet.GRE(proto=0x22EB) / packet.ERSPAN_III(
+        erspan_hdr = pktmanip.GRE(proto=0x22EB) / pktmanip.ERSPAN_III(
             session_id=mirror_id,
             sgt_other=sgt_other,
             p=erspan_p,
@@ -1503,16 +1503,16 @@ def ipv4_erspan_pkt(
             o=erspan_o,
         )
     else:
-        erspan_hdr = packet.GRE(proto=0x88BE) / packet.ERSPAN(session_id=mirror_id)
+        erspan_hdr = pktmanip.GRE(proto=0x88BE) / pktmanip.ERSPAN(session_id=mirror_id)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1526,8 +1526,8 @@ def ipv4_erspan_pkt(
     else:
         if not ip_options:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1540,8 +1540,8 @@ def ipv4_erspan_pkt(
             )
         else:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1557,7 +1557,7 @@ def ipv4_erspan_pkt(
     if inner_frame:
         pkt = pkt / inner_frame
     else:
-        pkt = pkt / packet.IP()
+        pkt = pkt / pktmanip.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -1630,13 +1630,13 @@ def ipv4_erspan_platform_pkt(
     @param inner_frame payload of the GRE packet
     """
     if (
-        packet.GRE is None
-        or packet.ERSPAN is None
-        or packet.ERSPAN_III is None
-        or packet.PlatformSpecific is None
+        pktmanip.GRE is None
+        or pktmanip.ERSPAN is None
+        or pktmanip.ERSPAN_III is None
+        or pktmanip.PlatformSpecific is None
     ):
         logging.error(
-            "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information"
+            "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your pktmanip module. See README for more information"
         )
         return None
 
@@ -1644,7 +1644,7 @@ def ipv4_erspan_platform_pkt(
         pktlen = MINSIZE
 
     if version == 2:
-        erspan_hdr = packet.GRE(proto=0x22EB) / packet.ERSPAN_III(
+        erspan_hdr = pktmanip.GRE(proto=0x22EB) / pktmanip.ERSPAN_III(
             session_id=mirror_id,
             sgt_other=sgt_other,
             p=erspan_p,
@@ -1655,20 +1655,20 @@ def ipv4_erspan_platform_pkt(
             o=erspan_o,
         )
         if sgt_other & 0x01 == 1:
-            erspan_hdr = erspan_hdr / packet.PlatformSpecific(
+            erspan_hdr = erspan_hdr / pktmanip.PlatformSpecific(
                 platf_id=platf_id, info1=info1, info2=info2
             )
     else:
-        erspan_hdr = packet.GRE(proto=0x88BE) / packet.ERSPAN(session_id=mirror_id)
+        erspan_hdr = pktmanip.GRE(proto=0x88BE) / pktmanip.ERSPAN(session_id=mirror_id)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1682,8 +1682,8 @@ def ipv4_erspan_platform_pkt(
     else:
         if not ip_options:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1696,8 +1696,8 @@ def ipv4_erspan_platform_pkt(
             )
         else:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -1713,7 +1713,7 @@ def ipv4_erspan_platform_pkt(
     if inner_frame:
         pkt = pkt / inner_frame
     else:
-        pkt = pkt / packet.IP()
+        pkt = pkt / pktmanip.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
 
     return pkt
@@ -1767,16 +1767,16 @@ def simple_udpv6_packet(
         pktlen = MINSIZE
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
-    pkt = packet.Ether(dst=eth_dst, src=eth_src)
+    pkt = pktmanip.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
-        pkt /= packet.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
-    pkt /= packet.IPv6(
+        pkt /= pktmanip.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
+    pkt /= pktmanip.IPv6(
         src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
     )
     if with_udp_chksum:
-        pkt /= packet.UDP(sport=udp_sport, dport=udp_dport)
+        pkt /= pktmanip.UDP(sport=udp_sport, dport=udp_dport)
     else:
-        pkt /= packet.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
+        pkt /= pktmanip.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
     if udp_payload:
         pkt = pkt / udp_payload
     pkt /= "D" * (pktlen - len(pkt))
@@ -1835,9 +1835,9 @@ def simple_ipv4ip_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1849,7 +1849,7 @@ def simple_ipv4ip_packet(
         )
     else:
         if not ip_options:
-            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
+            pkt = pktmanip.Ether(dst=eth_dst, src=eth_src) / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1859,7 +1859,7 @@ def simple_ipv4ip_packet(
                 ihl=ip_ihl,
             )
         else:
-            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
+            pkt = pktmanip.Ether(dst=eth_dst, src=eth_src) / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -1878,7 +1878,7 @@ def simple_ipv4ip_packet(
         elif (inner_frame_bytes[0] & 0xF0) == 0x60:
             pkt["IP"].proto = 41
     else:
-        pkt = pkt / packet.IP()
+        pkt = pkt / pktmanip.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
         pkt["IP"].proto = 4
 
@@ -1932,14 +1932,14 @@ def simple_ipv6ip_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IPv6(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IPv6(
                 src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
             )
         )
     else:
-        pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IPv6(
+        pkt = pktmanip.Ether(dst=eth_dst, src=eth_src) / pktmanip.IPv6(
             src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
         )
 
@@ -1951,7 +1951,7 @@ def simple_ipv6ip_packet(
         elif (inner_frame_bytes[0] & 0xF0) == 0x60:
             pkt["IPv6"].nh = 41
     else:
-        pkt = pkt / packet.IP()
+        pkt = pkt / pktmanip.IP()
         pkt = pkt / ("D" * (pktlen - len(pkt)))
         pkt["IPv6"].nh = 4
 
@@ -2009,17 +2009,17 @@ def simple_icmp_packet(
 
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=0, vlan=vlan_vid)
-            / packet.IP(src=ip_src, dst=ip_dst, ttl=ip_ttl, tos=ip_tos, id=ip_id)
-            / packet.ICMP(type=icmp_type, code=icmp_code)
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=0, vlan=vlan_vid)
+            / pktmanip.IP(src=ip_src, dst=ip_dst, ttl=ip_ttl, tos=ip_tos, id=ip_id)
+            / pktmanip.ICMP(type=icmp_type, code=icmp_code)
             / icmp_data
         )
     else:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.IP(src=ip_src, dst=ip_dst, ttl=ip_ttl, tos=ip_tos, id=ip_id)
-            / packet.ICMP(type=icmp_type, code=icmp_code)
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.IP(src=ip_src, dst=ip_dst, ttl=ip_ttl, tos=ip_tos, id=ip_id)
+            / pktmanip.ICMP(type=icmp_type, code=icmp_code)
             / icmp_data
         )
 
@@ -2074,13 +2074,13 @@ def simple_icmpv6_packet(
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
 
-    pkt = packet.Ether(dst=eth_dst, src=eth_src)
+    pkt = pktmanip.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
-        pkt /= packet.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
-    pkt /= packet.IPv6(
+        pkt /= pktmanip.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
+    pkt /= pktmanip.IPv6(
         src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
     )
-    pkt /= packet.ICMPv6Unknown(type=icmp_type, code=icmp_code)
+    pkt /= pktmanip.ICMPv6Unknown(type=icmp_type, code=icmp_code)
     pkt /= "D" * (pktlen - len(pkt))
 
     return pkt
@@ -2142,9 +2142,9 @@ def simple_ipv6_mld_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IPv6(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IPv6(
                 src=ipv6_src,
                 dst=ipv6_dst,
                 fl=ipv6_fl,
@@ -2154,7 +2154,7 @@ def simple_ipv6_mld_packet(
             )
         )
     else:
-        pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IPv6(
+        pkt = pktmanip.Ether(dst=eth_dst, src=eth_src) / pktmanip.IPv6(
             src=ipv6_src,
             dst=ipv6_dst,
             fl=ipv6_fl,
@@ -2163,7 +2163,7 @@ def simple_ipv6_mld_packet(
             nh=next_header,
         )
 
-    pkt = pkt / packet.ICMPv6MLReport(type=mld_type, mladdr=mld_mladdr, mrd=mld_mrd)
+    pkt = pkt / pktmanip.ICMPv6MLReport(type=mld_type, mladdr=mld_mladdr, mrd=mld_mrd)
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -2206,10 +2206,10 @@ def simple_arp_packet(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    pkt = packet.Ether(dst=eth_dst, src=eth_src)
+    pkt = pktmanip.Ether(dst=eth_dst, src=eth_src)
     if vlan_vid or vlan_pcp:
-        pkt /= packet.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
-    pkt /= packet.ARP(hwsrc=hw_snd, hwdst=hw_tgt, pdst=ip_tgt, psrc=ip_snd, op=arp_op)
+        pkt /= pktmanip.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
+    pkt /= pktmanip.ARP(hwsrc=hw_snd, hwdst=hw_tgt, pdst=ip_tgt, psrc=ip_snd, op=arp_op)
 
     pkt = pkt / ("\0" * (pktlen - len(pkt)))
 
@@ -2223,7 +2223,7 @@ def simple_eth_packet(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    pkt = packet.Ether(dst=eth_dst, src=eth_src, type=eth_type)
+    pkt = pktmanip.Ether(dst=eth_dst, src=eth_src, type=eth_type)
 
     pkt = pkt / ("0" * (pktlen - len(pkt)))
 
@@ -2261,18 +2261,18 @@ def simple_eth_raw_packet_with_taglist(
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    pkt = packet.Ether(dst=eth_dst, src=eth_src)
+    pkt = pktmanip.Ether(dst=eth_dst, src=eth_src)
 
     if dl_taglist_enable:
         for i in range(0, len(dl_vlanid_list)):
-            pkt = pkt / packet.Dot1Q(
+            pkt = pkt / pktmanip.Dot1Q(
                 prio=dl_vlan_pcp_list[i], id=dl_vlan_cfi_list[i], vlan=dl_vlanid_list[i]
             )
 
         for i in range(1, len(dl_tpid_list)):
-            pkt[packet.Dot1Q : i].type = dl_tpid_list[i]
+            pkt[pktmanip.Dot1Q : i].type = dl_tpid_list[i]
         pkt.type = dl_tpid_list[0]
-        pkt[packet.Dot1Q : len(dl_tpid_list)].type = pktlen - len(pkt)
+        pkt[pktmanip.Dot1Q : len(dl_tpid_list)].type = pktlen - len(pkt)
     else:
         pkt.type = pktlen - len(pkt)
 
@@ -2333,9 +2333,9 @@ def simple_ip_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -2347,7 +2347,7 @@ def simple_ip_packet(
         )
     else:
         if not ip_options:
-            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
+            pkt = pktmanip.Ether(dst=eth_dst, src=eth_src) / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -2357,7 +2357,7 @@ def simple_ip_packet(
                 proto=ip_proto,
             )
         else:
-            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
+            pkt = pktmanip.Ether(dst=eth_dst, src=eth_src) / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -2413,9 +2413,9 @@ def simple_ip_only_packet(
         pktlen = MINSIZE
 
     if with_tcp_chksum:
-        tcp_hdr = packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
+        tcp_hdr = pktmanip.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
     else:
-        tcp_hdr = packet.TCP(
+        tcp_hdr = pktmanip.TCP(
             sport=tcp_sport, dport=tcp_dport, flags=tcp_flags, chksum=0
         )
 
@@ -2423,14 +2423,14 @@ def simple_ip_only_packet(
 
     if not ip_options:
         pkt = (
-            packet.IP(
+            pktmanip.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl
             )
             / tcp_hdr
         )
     else:
         pkt = (
-            packet.IP(
+            pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -2475,26 +2475,26 @@ def simple_mpls_packet(
     @param inner_frame The inner frame
 
     """
-    if packet.MPLS is None:
+    if pktmanip.MPLS is None:
         logging.error(
-            "A MPLS packet was requested but MPLS is not supported by your Scapy. See README for more information"
+            "A MPLS packet was requested but MPLS is not supported by your pktmanip module. See README for more information"
         )
         return None
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    pkt = packet.Ether(dst=eth_dst, src=eth_src)
-    pkt[packet.Ether].setfieldval("type", mpls_type)
+    pkt = pktmanip.Ether(dst=eth_dst, src=eth_src)
+    pkt[pktmanip.Ether].setfieldval("type", mpls_type)
 
     if dl_vlan_enable:
-        pkt / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-        pkt[packet.Dot1Q].setfieldval("type", mpls_type)
+        pkt / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+        pkt[pktmanip.Dot1Q].setfieldval("type", mpls_type)
 
     mpls_tags = list(mpls_tags)
     while len(mpls_tags):
         tag = mpls_tags.pop(0)
-        mpls = packet.MPLS()
+        mpls = pktmanip.MPLS()
         if "label" in tag:
             mpls.label = tag["label"]
         if "tc" in tag:
@@ -2567,11 +2567,11 @@ def simple_qinq_tcp_packet(
 
     # Note Dot1Q.id is really CFI
     pkt = (
-        packet.Ether(dst=eth_dst, src=eth_src)
-        / packet.Dot1Q(prio=dl_vlan_pcp_outer, id=dl_vlan_cfi_outer, vlan=dl_vlan_outer)
-        / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-        / packet.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl)
-        / packet.TCP(sport=tcp_sport, dport=tcp_dport)
+        pktmanip.Ether(dst=eth_dst, src=eth_src)
+        / pktmanip.Dot1Q(prio=dl_vlan_pcp_outer, id=dl_vlan_cfi_outer, vlan=dl_vlan_outer)
+        / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+        / pktmanip.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl)
+        / pktmanip.TCP(sport=tcp_sport, dport=tcp_dport)
     )
 
     pkt = pkt / codecs.decode(
@@ -2628,9 +2628,9 @@ def simple_igmp_packet(
     Generates a simple IGMP packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/IGMP frame.
     """
-    if packet.IGMP is None:
+    if pktmanip.IGMP is None:
         logging.error(
-            "An IGMP packet was requested but IGMP is not supported by your Scapy. See README for more information"
+            "An IGMP packet was requested but IGMP is not supported by your pktmanip module. See README for more information"
         )
         return None
 
@@ -2642,19 +2642,19 @@ def simple_igmp_packet(
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl
             )
         )
     else:
         if not ip_options:
-            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
+            pkt = pktmanip.Ether(dst=eth_dst, src=eth_src) / pktmanip.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, id=ip_id, ihl=ip_ihl
             )
         else:
-            pkt = packet.Ether(dst=eth_dst, src=eth_src) / packet.IP(
+            pkt = pktmanip.Ether(dst=eth_dst, src=eth_src) / pktmanip.IP(
                 src=ip_src,
                 dst=ip_dst,
                 tos=ip_tos,
@@ -2664,7 +2664,7 @@ def simple_igmp_packet(
                 options=ip_options,
             )
 
-    pkt = pkt / packet.IGMP(type=igmp_type, gaddr=igmp_gaddr, mrcode=igmp_mrtime)
+    pkt = pkt / pktmanip.IGMP(type=igmp_type, gaddr=igmp_gaddr, mrcode=igmp_mrtime)
 
     if inner_frame:
         pkt = pkt / inner_frame
@@ -2739,10 +2739,10 @@ def dhcp_discover_packet(eth_client="00:01:02:03:04:05", set_broadcast_bit=False
 
     """
 
-    pkt = packet.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
-    pkt /= packet.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
-    pkt /= packet.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
-    pkt /= packet.BOOTP(
+    pkt = pktmanip.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
+    pkt /= pktmanip.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
+    pkt /= pktmanip.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
+    pkt /= pktmanip.BOOTP(
         op=DHCP_BOOTP_OP_REQUEST,
         htype=DHCP_BOOTP_HTYPE_ETHERNET,
         hlen=DHCP_BOOTP_HLEN_ETHERNET,
@@ -2756,7 +2756,7 @@ def dhcp_discover_packet(eth_client="00:01:02:03:04:05", set_broadcast_bit=False
         giaddr=DHCP_IP_DEFAULT_ROUTE,
         chaddr=__dhcp_mac_to_chaddr(eth_client),
     )
-    pkt /= packet.DHCP(options=[("message-type", "discover"), ("end")])
+    pkt /= pktmanip.DHCP(options=[("message-type", "discover"), ("end")])
     return pkt
 
 
@@ -2799,10 +2799,10 @@ def dhcp_offer_packet(
 
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
-    pkt = packet.Ether(dst=eth_dst, src=eth_server, type=DHCP_ETHER_TYPE_IP)
-    pkt /= packet.IP(src=ip_server, dst=ip_dst, tos=ip_tos, ttl=128, id=0)
-    pkt /= packet.UDP(sport=DHCP_PORT_SERVER, dport=port_dst)
-    pkt /= packet.BOOTP(
+    pkt = pktmanip.Ether(dst=eth_dst, src=eth_server, type=DHCP_ETHER_TYPE_IP)
+    pkt /= pktmanip.IP(src=ip_server, dst=ip_dst, tos=ip_tos, ttl=128, id=0)
+    pkt /= pktmanip.UDP(sport=DHCP_PORT_SERVER, dport=port_dst)
+    pkt /= pktmanip.BOOTP(
         op=DHCP_BOOTP_OP_REPLY,
         htype=DHCP_BOOTP_HTYPE_ETHERNET,
         hlen=DHCP_BOOTP_HLEN_ETHERNET,
@@ -2816,7 +2816,7 @@ def dhcp_offer_packet(
         giaddr=ip_gateway,
         chaddr=__dhcp_mac_to_chaddr(eth_client),
     )
-    pkt /= packet.DHCP(
+    pkt /= pktmanip.DHCP(
         options=[
             ("message-type", "offer"),
             ("server_id", ip_server),
@@ -2825,7 +2825,7 @@ def dhcp_offer_packet(
             ("end"),
         ]
     )
-    pkt /= packet.PADDING("\x00" * padding_bytes)
+    pkt /= pktmanip.PADDING("\x00" * padding_bytes)
     return pkt
 
 
@@ -2852,10 +2852,10 @@ def dhcp_request_packet(
 
     """
 
-    pkt = packet.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
-    pkt /= packet.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
-    pkt /= packet.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
-    pkt /= packet.BOOTP(
+    pkt = pktmanip.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
+    pkt /= pktmanip.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
+    pkt /= pktmanip.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
+    pkt /= pktmanip.BOOTP(
         op=DHCP_BOOTP_OP_REQUEST,
         htype=DHCP_BOOTP_HTYPE_ETHERNET,
         hlen=DHCP_BOOTP_HLEN_ETHERNET,
@@ -2869,7 +2869,7 @@ def dhcp_request_packet(
         giaddr=DHCP_IP_DEFAULT_ROUTE,
         chaddr=__dhcp_mac_to_chaddr(eth_client),
     )
-    pkt /= packet.DHCP(
+    pkt /= pktmanip.DHCP(
         options=[
             ("message-type", "request"),
             ("requested_addr", ip_requested),
@@ -2919,10 +2919,10 @@ def dhcp_ack_packet(
 
     ip_tos = ip_make_tos(tos=16, ecn=None, dscp=None)
 
-    pkt = packet.Ether(dst=eth_dst, src=eth_server, type=DHCP_ETHER_TYPE_IP)
-    pkt /= packet.IP(src=ip_server, dst=ip_dst, tos=ip_tos, ttl=128, id=0)
-    pkt /= packet.UDP(sport=DHCP_PORT_SERVER, dport=port_dst)
-    pkt /= packet.BOOTP(
+    pkt = pktmanip.Ether(dst=eth_dst, src=eth_server, type=DHCP_ETHER_TYPE_IP)
+    pkt /= pktmanip.IP(src=ip_server, dst=ip_dst, tos=ip_tos, ttl=128, id=0)
+    pkt /= pktmanip.UDP(sport=DHCP_PORT_SERVER, dport=port_dst)
+    pkt /= pktmanip.BOOTP(
         op=DHCP_BOOTP_OP_REPLY,
         htype=DHCP_BOOTP_HTYPE_ETHERNET,
         hlen=DHCP_BOOTP_HLEN_ETHERNET,
@@ -2936,7 +2936,7 @@ def dhcp_ack_packet(
         giaddr=ip_gateway,
         chaddr=__dhcp_mac_to_chaddr(eth_client),
     )
-    pkt /= packet.DHCP(
+    pkt /= pktmanip.DHCP(
         options=[
             ("message-type", "ack"),
             ("server_id", ip_server),
@@ -2945,7 +2945,7 @@ def dhcp_ack_packet(
             ("end"),
         ]
     )
-    pkt /= packet.PADDING("\x00" * padding_bytes)
+    pkt /= pktmanip.PADDING("\x00" * padding_bytes)
     return pkt
 
 
@@ -2969,11 +2969,11 @@ def dhcp_release_packet(
 
     """
 
-    pkt = packet.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
-    pkt /= packet.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
-    pkt /= packet.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
-    pkt /= packet.BOOTP(ciaddr=ip_client, chaddr=__dhcp_mac_to_chaddr(eth_client))
-    pkt /= packet.DHCP(
+    pkt = pktmanip.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
+    pkt /= pktmanip.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
+    pkt /= pktmanip.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
+    pkt /= pktmanip.BOOTP(ciaddr=ip_client, chaddr=__dhcp_mac_to_chaddr(eth_client))
+    pkt /= pktmanip.DHCP(
         options=[("message-type", "release"), ("server_id", ip_server), ("end")]
     )
     return pkt
@@ -3100,7 +3100,7 @@ def format_packet(pkt):
 
 def inspect_packet(pkt):
     """
-    Wrapper around scapy's show() method.
+    Wrapper around pktmanip's show() method.
     @returns A string showing the dissected packet.
     """
     out = None
@@ -3754,16 +3754,16 @@ def simple_rocev2_packet(
     this packet other than that it is a valid ethernet/IP/UDP/ROCEv2 frame.
     """
 
-    if packet.BTH is None:
+    if pktmanip.BTH is None:
         logging.error(
-            "A ROCEv2 packet was requested but ROCEv2 is not supported by your Scapy. See README for more information"
+            "A ROCEv2 packet was requested but ROCEv2 is not supported by your pktmanip module. See README for more information"
         )
         return None
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    bth_hdr = packet.BTH(
+    bth_hdr = pktmanip.BTH(
         opcode=bth_opcode,
         solicited=bth_se,
         migreq=bth_migration_req,
@@ -3777,16 +3777,16 @@ def simple_rocev2_packet(
         psn=bth_psn,
     )
 
-    udp_hdr = packet.UDP(sport=udp_sport, dport=udp_dport)
+    udp_hdr = pktmanip.UDP(sport=udp_sport, dport=udp_dport)
 
     ip_tos = ip_make_tos(ip_tos, ip_ecn, ip_dscp)
 
     # Note Dot1Q.id is really CFI
     if dl_vlan_enable:
         pkt = (
-            packet.Ether(dst=eth_dst, src=eth_src)
-            / packet.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
-            / packet.IP(
+            pktmanip.Ether(dst=eth_dst, src=eth_src)
+            / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
+            / pktmanip.IP(
                 src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl, id=ip_id
             )
             / udp_hdr
@@ -3795,8 +3795,8 @@ def simple_rocev2_packet(
     else:
         if not ip_options:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -3810,8 +3810,8 @@ def simple_rocev2_packet(
             )
         else:
             pkt = (
-                packet.Ether(dst=eth_dst, src=eth_src)
-                / packet.IP(
+                pktmanip.Ether(dst=eth_dst, src=eth_src)
+                / pktmanip.IP(
                     src=ip_src,
                     dst=ip_dst,
                     tos=ip_tos,
@@ -3904,16 +3904,16 @@ def simple_rocev2v6_packet(
     this packet other than that it is a valid ethernet/IP/UDP/ROCEv2 frame.
     """
 
-    if packet.BTH is None:
+    if pktmanip.BTH is None:
         logging.error(
-            "A ROCEv2 packet was requested but ROCEv2 is not supported by your Scapy. See README for more information"
+            "A ROCEv2 packet was requested but ROCEv2 is not supported by your pktmanip module. See README for more information"
         )
         return None
 
     if MINSIZE > pktlen:
         pktlen = MINSIZE
 
-    bth_hdr = packet.BTH(
+    bth_hdr = pktmanip.BTH(
         opcode=bth_opcode,
         solicited=bth_se,
         migreq=bth_migration_req,
@@ -3928,13 +3928,13 @@ def simple_rocev2v6_packet(
     )
 
     ipv6_tc = ip_make_tos(ipv6_tc, ipv6_ecn, ipv6_dscp)
-    pkt = packet.Ether(dst=eth_dst, src=eth_src)
+    pkt = pktmanip.Ether(dst=eth_dst, src=eth_src)
     if dl_vlan_enable or vlan_vid or vlan_pcp:
-        pkt /= packet.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
-    pkt /= packet.IPv6(
+        pkt /= pktmanip.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
+    pkt /= pktmanip.IPv6(
         src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
     )
-    pkt /= packet.UDP(sport=udp_sport, dport=udp_dport)
+    pkt /= pktmanip.UDP(sport=udp_sport, dport=udp_dport)
     pkt /= bth_hdr
 
     if rocev2_payload:

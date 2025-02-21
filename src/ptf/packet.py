@@ -1,9 +1,12 @@
 """A pluggable packet module
 
-This module dynamically imports definitions from packet manipulation module,
-specified in config or provided as an agrument.
-The default one is Scapy, but one can develop its own packet manipulation framework and
-then, create an implementation of packet module for it (for Scapy it is packet_scapy.py)
+This module dynamically imports definitions from a designated packet
+manipulation module, specified in config or provided as an argument.
+
+The default one is Scapy, but one can develop their own packet
+manipulation framework and then, create an implementation of a packet
+module for it (for Scapy it is packet_scapy.py)
+
 """
 
 from ptf import config
@@ -13,8 +16,8 @@ __module = __import__(
 )
 __keys = []
 
-# import logic - everything from __all__ if provided, otherwise everything not starting
-# with underscore
+# import logic - everything from __all__ if provided, otherwise
+# everything not starting with underscore
 print("Using packet manipulation module: %s" % __module.__name__)
 if "__all__" in __module.__dict__:
     __keys = __module.__dict__["__all__"]

@@ -30,7 +30,7 @@ from threading import Condition
 from . import ptfutils
 from . import netutils
 from . import mask
-from . import packet
+import ptf.packet as pktmanip
 from .pcap_writer import PcapWriter
 from io import StringIO
 
@@ -805,22 +805,23 @@ class DataPlane(Thread):
         def format(self):
             """
             Returns a string containing a nice (but verbose) representation of
-            this packet. If the expected packet is a scapy packet, it's used to
+            this packet. If the expected packet is a pktmanip.Packet object, it's used to
             include detailed information about the fields in the packet.
             """
             try:
                 stdout_save = sys.stdout
-                # The scapy packet dissection methods print directly to stdout,
-                # so we have to redirect stdout to a string.
+                # The pktmanip packet dissection methods print
+                # directly to stdout, so we have to redirect stdout to
+                # a string.
                 sys.stdout = StringIO()
 
                 print("========== RECEIVED ==========")
-                if isinstance(self.expected_packet, packet.Packet):
+                if isinstance(self.expected_packet, pktmanip.Packet):
                     # Dissect this packet as if it were an instance of
                     # the expected packet's class.
-                    packet.ls(self.expected_packet.__class__(self.packet))
+                    pktmanip.ls(self.expected_packet.__class__(self.packet))
                     print("--")
-                packet.hexdump(self.packet)
+                pktmanip.hexdump(self.packet)
                 print("==============================")
 
                 return sys.stdout.getvalue()
@@ -852,26 +853,27 @@ class DataPlane(Thread):
             """
             Returns a string containing a nice (but verbose) error report based
             on this PollFailure. If there was an expected packet, it's included
-            in the output. If the expected packet is a scapy packet object, the
+            in the output. If the expected packet is a pktmanip.Packet object, the
             output will include information about the fields in the packet.
             """
             try:
                 stdout_save = sys.stdout
-                # The scapy packet dissection methods print directly to stdout,
-                # so we have to redirect stdout to a string.
+                # The pktmanip packet dissection methods print
+                # directly to stdout, so we have to redirect stdout to
+                # a string.
                 sys.stdout = StringIO()
 
                 if self.expected_packet is not None:
                     print("========== EXPECTED ==========")
-                    if isinstance(self.expected_packet, packet.Packet):
-                        packet.ls(self.expected_packet)
+                    if isinstance(self.expected_packet, pktmanip.Packet):
+                        pktmanip.ls(self.expected_packet)
                         print("--")
-                        packet.hexdump(self.expected_packet)
+                        pktmanip.hexdump(self.expected_packet)
                     elif isinstance(self.expected_packet, mask.Mask):
                         print("Mask:")
                         print(self.expected_packet)
                     else:
-                        packet.hexdump(self.expected_packet)
+                        pktmanip.hexdump(self.expected_packet)
 
                 print("========== RECEIVED ==========")
                 if self.recent_packets:
@@ -881,12 +883,12 @@ class DataPlane(Thread):
                     )
                     for recent_packet in self.recent_packets:
                         print("------------------------------")
-                        if isinstance(self.expected_packet, packet.Packet):
+                        if isinstance(self.expected_packet, pktmanip.Packet):
                             # Dissect this packet as if it were an instance of
                             # the expected packet's class.
-                            packet.ls(self.expected_packet.__class__(recent_packet))
+                            pktmanip.ls(self.expected_packet.__class__(recent_packet))
                             print("--")
-                        packet.hexdump(recent_packet)
+                        pktmanip.hexdump(recent_packet)
                 else:
                     print("%d total packets." % self.packet_count)
                 print("==============================")

@@ -22,7 +22,7 @@
 
 import argparse
 import threading
-import scapy.all as sc
+import ptf.packet as pktmanip
 import time
 
 parser = argparse.ArgumentParser(description="PTF Nanomsg tester bridge")
@@ -43,11 +43,11 @@ class Forwarder(threading.Thread):
 
     def forward(self, p):
         print("forwarding", p, "---", self.other, "->", self.iface_name)
-        sc.sendp(p, iface=self.iface_name, verbose=0)
+        pktmanip.sendp(p, iface=self.iface_name, verbose=0)
 
     def run(self):
         other_fwd = forwarders[self.other]
-        sc.sniff(iface=self.iface_name, prn=lambda x: other_fwd.forward(x))
+        pktmanip.sniff(iface=self.iface_name, prn=lambda x: other_fwd.forward(x))
 
 
 def main():

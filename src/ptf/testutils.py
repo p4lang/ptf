@@ -2568,7 +2568,9 @@ def simple_qinq_tcp_packet(
     # Note Dot1Q.id is really CFI
     pkt = (
         pktmanip.Ether(dst=eth_dst, src=eth_src)
-        / pktmanip.Dot1Q(prio=dl_vlan_pcp_outer, id=dl_vlan_cfi_outer, vlan=dl_vlan_outer)
+        / pktmanip.Dot1Q(
+            prio=dl_vlan_pcp_outer, id=dl_vlan_cfi_outer, vlan=dl_vlan_outer
+        )
         / pktmanip.Dot1Q(prio=vlan_pcp, id=dl_vlan_cfi, vlan=vlan_vid)
         / pktmanip.IP(src=ip_src, dst=ip_dst, tos=ip_tos, ttl=ip_ttl, ihl=ip_ihl)
         / pktmanip.TCP(sport=tcp_sport, dport=tcp_dport)
@@ -2739,7 +2741,9 @@ def dhcp_discover_packet(eth_client="00:01:02:03:04:05", set_broadcast_bit=False
 
     """
 
-    pkt = pktmanip.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
+    pkt = pktmanip.Ether(
+        dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP
+    )
     pkt /= pktmanip.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
     pkt /= pktmanip.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
     pkt /= pktmanip.BOOTP(
@@ -2852,7 +2856,9 @@ def dhcp_request_packet(
 
     """
 
-    pkt = pktmanip.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
+    pkt = pktmanip.Ether(
+        dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP
+    )
     pkt /= pktmanip.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
     pkt /= pktmanip.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
     pkt /= pktmanip.BOOTP(
@@ -2969,7 +2975,9 @@ def dhcp_release_packet(
 
     """
 
-    pkt = pktmanip.Ether(dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP)
+    pkt = pktmanip.Ether(
+        dst=DHCP_MAC_BROADCAST, src=eth_client, type=DHCP_ETHER_TYPE_IP
+    )
     pkt /= pktmanip.IP(src=DHCP_IP_DEFAULT_ROUTE, dst=DHCP_IP_BROADCAST)
     pkt /= pktmanip.UDP(sport=DHCP_PORT_CLIENT, dport=DHCP_PORT_SERVER)
     pkt /= pktmanip.BOOTP(ciaddr=ip_client, chaddr=__dhcp_mac_to_chaddr(eth_client))

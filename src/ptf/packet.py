@@ -28,15 +28,14 @@ if "packet_manipulation_module" in config:
     _packet_manipulation_module = config["packet_manipulation_module"]
 else:
     import os
+
     env_val = os.getenv("PTF_PACKET_MANIPULATION_MODULE")
     if env_val:
         _packet_manipulation_module = env_val
     else:
         _packet_manipulation_module = "ptf.packet_scapy"
 
-__module = __import__(
-    _packet_manipulation_module, fromlist=["*"]
-)
+__module = __import__(_packet_manipulation_module, fromlist=["*"])
 __keys = []
 
 # import logic - everything from __all__ if provided, otherwise

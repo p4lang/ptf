@@ -48,7 +48,7 @@ jobs:
     - name: Dependencies
       run: |
         sudo apt-get install cmake libffi-dev ethtool python3-dev
-        python3 -m pip install --upgrade setuptools nose2 wheel
+        python3 -m pip install --upgrade pip setuptools nose2 wheel
         python -m pip install scapy==${{ matrix.scapy_version }}
 
         bash CI/install-nanomsg.sh

@@ -2,7 +2,6 @@ PTF Packet Testing Framework
 
 ---
 
-
 # Introduction
 
 PTF is a Python based dataplane test framework. It is based on unittest, which

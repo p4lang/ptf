@@ -57,6 +57,7 @@ jobs:
 
     - name: Install
       run: |
+        pip --verbose list
         python3 -m pip install .
         ptf --version
 

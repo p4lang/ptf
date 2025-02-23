@@ -97,8 +97,6 @@ config_default = {
     "test_case_timeout": None,
     # Socket options
     "socket_recv_size": 4096,
-    # Packet manipulation provider module
-    "packet_manipulation_module": "ptf.packet_scapy",
     # Other configuration
     "port_map": None,
 }
@@ -434,25 +432,25 @@ be subtracted from the result by prefixing them with the '^' character.  """
     # Convert args from a Namespace to a plain dictionary
     config = config_default.copy()
 
+    for key in config.keys():
+        config[key] = getattr(args, key)
     # For selecting the packet manipulation module when running the
     # `ptf` command, the order of precedence is:
     # (1) If the `--packet-manipulation-module` command line option is
     #     present, use its value.
     # (2) Otherwise, if the environment variable
     #     PTF_PACKET_MANIPULATION_MODULE is defined, use its value.
-    # (3) Otherwise, use the value of the key
-    #     "packet_manipulation_module" in the `config_default` dict in
-    #     this program.
-    for key in config.keys():
-        config[key] = getattr(args, key)
+    # (3) Otherwise, use "ptf.packet_scapy"
     pmm_key = "packet_manipulation_module"
     if getattr(args, pmm_key):
         # Then use the value from the command line option.
-        pass
+        config[pmm_key] = getattr(args, pmm_key)
     else:
         env_val = os.getenv("PTF_PACKET_MANIPULATION_MODULE")
         if env_val:
             config[pmm_key] = env_val
+        else:
+            config[pmm_key] = "ptf.packet_scapy"
 
     return (config, args)
 

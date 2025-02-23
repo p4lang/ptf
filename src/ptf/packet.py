@@ -6,6 +6,7 @@ The default one is Scapy, but one can develop its own packet manipulation framew
 then, create an implementation of packet module for it (for Scapy it is packet_scapy.py)
 """
 
+import os as _os
 from ptf import config
 
 # When module ptf.packet is imported, this is the order of precedence for
@@ -27,11 +28,9 @@ from ptf import config
 if "packet_manipulation_module" in config:
     _packet_manipulation_module = config["packet_manipulation_module"]
 else:
-    import os
-
-    env_val = os.getenv("PTF_PACKET_MANIPULATION_MODULE")
-    if env_val:
-        _packet_manipulation_module = env_val
+    _env_val = _os.getenv("PTF_PACKET_MANIPULATION_MODULE")
+    if _env_val:
+        _packet_manipulation_module = _env_val
     else:
         _packet_manipulation_module = "ptf.packet_scapy"
 

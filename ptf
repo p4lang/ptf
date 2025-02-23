@@ -431,7 +431,6 @@ be subtracted from the result by prefixing them with the '^' character.  """
 
     # Convert args from a Namespace to a plain dictionary
     config = config_default.copy()
-
     for key in config.keys():
         config[key] = getattr(args, key)
     # For selecting the packet manipulation module when running the

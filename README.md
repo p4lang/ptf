@@ -48,7 +48,7 @@ The following software is required to run PTF:
 
 Root/sudo privilege is required on the host, in order to run `ptf`.
 
-The default packet manipulator tool for `ptf` is `Scapy`. To install it use:
+The default packet manipulation module for `ptf` is `Scapy`. To install it use:
 ```text
 pip install scapy==2.5.0
 ```
@@ -71,6 +71,94 @@ yum install tcpdump
 # on Debian base
 apt-get install tcpdump
 ```
+
+### Using `bf_pktpy` as an alternate packet manipulation module
+
+The Python module `bf_pktpy` is included as part of the
+`open-p4studio` repository:
+
++ https://github.com/p4lang/open-p4studio/tree/main/pkgsrc/ptf-modules/bf-pktpy
+
+It was developed as an alternative to `scapy`.  The tradeoffs of using
+`bf_pktpy` vs. `scapy` are:
+
++ `scapy` implements more functionality, but is licensed under the
+  copyleft GNU General Public License v2.0 (see
+  https://github.com/secdev/scapy/blob/master/LICENSE), so may be
+  undesirable in use cases where you wish your tests to be released
+  under a different license.
++ `bf_pktpy` implements only a small subset of the functionality of
+  `scapy`, but it does include support for very commonly-used packet
+  headers.  It is released under an Apache 2.0 license (see
+  https://github.com/p4lang/open-p4studio/blob/main/pkgsrc/ptf-modules/bf-pktpy/LICENSE).
+
+The package `bf_pktpy` is not currently available from PyPI.  To
+install `bf_pktpy` from source code, choose one of these methods:
+
+```bash
+pip install "bf-pktpy@git+https://github.com/p4lang/open-p4studio#subdirectory=pkgsrc/ptf-utils/bf-pktpy"
+```
+
+```bash
+git clone https://github.com/p4lang/open-p4studio
+cd open-p4studio/pkgsrc/ptf-utils/bf-pktpy
+pip install .
+```
+
+To make effective use of `bf_pktpy` you must also install these
+additional Python packages.  All are released under an MIT or
+BSD-3-Clause license, which are compatible for releasing with
+`bf_pktpy`, or for importing in a project with most licenses,
+including `Apache-2.0`, `BSD-3-Clause`, `GPL-2.0-only`, or many
+others.
+
+```bash
+pip install six getmac scapy_helper psutil
+sudo apt-get install python3-dev
+pip install netifaces
+```
+
+If you want to use `bf_pktpy` when running the command `ptf` from the
+command line, provide the `-pmm` option as shown below.
+
+```bash
+ptf -pmm bf_pktpy.ptf.packet_pktpy <other command line arguments>
+```
+
+If you want to write a Python program that imports `ptf` and causes it
+to use `bf_pktpy` instead of the default `scapy`, you can do so as
+follows in your Python code:
+
+```python
+import ptf
+ptf.config["packet_manipulation_module"] = "bf_pktpy.ptf.packet_pktpy"
+import ptf.packet
+```
+
+The above methods are the highest precedence way of choosing the
+packet manipulation module used by `ptf`.  If you do not use those
+methods, another way is to assign the packet manipulation module name
+to the environment variable `PTF_PACKET_MANIPULATION_MODULE`, e.g. in
+Bash:
+
+```bash
+export PTF_PACKET_MANIPULATION_MODULE="bf_pktpy.ptf.packet_pktpy"
+```
+
+When running such a program, you should see the following line printed
+to standard output confirming that it is using `bf_pktpy` instead of
+`scapy`:
+
+```text
+Using packet manipulation module: bf_pktpy.ptf.packet_pktpy
+```
+
+If instead you see this line of output, `ptf` is using `scapy`:
+
+```text
+Using packet manipulation module: ptf.packet_scapy
+```
+
 
 ## Run PTF
 

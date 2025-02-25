@@ -1,5 +1,4 @@
 import pytest
-
 from scapy.layers.inet import IP, UDP, TCP
 from scapy.layers.l2 import Ether
 from scapy.layers.vxlan import VXLAN

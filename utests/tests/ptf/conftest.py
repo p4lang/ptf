@@ -1,10 +1,13 @@
 import pytest
 
-from ptf.packet import Ether, IP, UDP, TCP, VXLAN, Packet
+from scapy.layers.inet import IP, UDP, TCP
+from scapy.layers.l2 import Ether
+from scapy.layers.vxlan import VXLAN
+from scapy.packet import Packet
 
 
 @pytest.fixture
-def pktmanip_simple_tcp_packet():  # type: () -> Packet
+def scapy_simple_tcp_packet():  # type: () -> Packet
     return (
         Ether(
             dst="00:01:02:03:04:05",
@@ -16,7 +19,7 @@ def pktmanip_simple_tcp_packet():  # type: () -> Packet
 
 
 @pytest.fixture
-def pktmanip_simple_vxlan_packet():  # type: () -> Packet
+def scapy_simple_vxlan_packet():  # type: () -> Packet
     return (
         Ether(
             dst="00:01:02:03:04:05",

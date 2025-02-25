@@ -1,12 +1,14 @@
 import pytest
+from scapy.layers.inet import IP, TCP, UDP
+from scapy.layers.vxlan import VXLAN
+from scapy.packet import Packet
 
-from ptf.packet import IP, UDP, TCP, VXLAN, Packet
 from ptf.mask import Mask, MaskException
 
 
 class TestMask:
-    def test_mask__mask_simple_packet(self, pktmanip_simple_tcp_packet):
-        packet = pktmanip_simple_tcp_packet
+    def test_mask__mask_simple_packet(self, scapy_simple_tcp_packet):
+        packet = scapy_simple_tcp_packet
         mask_packet = Mask(packet)
         assert mask_packet.pkt_match(packet)
 
@@ -61,8 +63,8 @@ class TestMask:
         mask.set_care_packet(IP, "src")
         assert not mask.pkt_match(packet)
 
-    def test_mask__check_masking_conditional_field(self, pktmanip_simple_vxlan_packet):
-        simple_vxlan = pktmanip_simple_vxlan_packet
+    def test_mask__check_masking_conditional_field(self, scapy_simple_vxlan_packet):
+        simple_vxlan = scapy_simple_vxlan_packet
         simple_vxlan[VXLAN].flags = "G"
 
         masked_simple_vxlan = Mask(simple_vxlan)
@@ -92,9 +94,9 @@ class TestMask:
         ], "Only gpid field should be masked"
 
     def test_mask__conditional_field__gpid_should_be_masked_correctly(
-        self, pktmanip_simple_vxlan_packet
+        self, scapy_simple_vxlan_packet
     ):
-        simple_vxlan = pktmanip_simple_vxlan_packet  # type: Packet
+        simple_vxlan = scapy_simple_vxlan_packet  # type: Packet
         simple_vxlan[VXLAN].flags = "G"
         masked_simple_vxlan = Mask(simple_vxlan)  # type: Mask
         masked_simple_vxlan.set_do_not_care_packet(VXLAN, "gpid")
@@ -112,17 +114,17 @@ class TestMask:
         "elements_to_ignore", ((UDP, "sport"), (IP, "not_existing_field"))
     )
     def test_mask__negative__try_to_mask_not_existing_layer_or_field(
-        self, elements_to_ignore, pktmanip_simple_tcp_packet
+        self, elements_to_ignore, scapy_simple_tcp_packet
     ):
-        masked_packet = Mask(pktmanip_simple_tcp_packet)  # type: Mask
+        masked_packet = Mask(scapy_simple_tcp_packet)  # type: Mask
         with pytest.raises(MaskException):
             masked_packet.set_do_not_care_packet(
                 elements_to_ignore[0], elements_to_ignore[1]
             )
         assert not masked_packet.valid
 
-    def test_mask__validate_str_conversion(self, pktmanip_simple_tcp_packet):
-        masked_packet = Mask(pktmanip_simple_tcp_packet)  # type: Mask
+    def test_mask__validate_str_conversion(self, scapy_simple_tcp_packet):
+        masked_packet = Mask(scapy_simple_tcp_packet)  # type: Mask
         masked_packet.set_do_not_care_packet(IP, "chksum")
         assert str(masked_packet) == EXPECTED_MASKED_PACKET
 

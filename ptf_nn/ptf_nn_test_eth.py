@@ -21,7 +21,7 @@
 #
 
 import argparse
-import ptf.packet as pktmanip
+import scapy.all as sc
 
 parser = argparse.ArgumentParser(description="PTF Nanomsg tester 2")
 parser.add_argument("--interface", type=str, dest="interface")
@@ -33,7 +33,7 @@ def receive(interface):
     def printp(p):
         print("Received:", p)
 
-    pktmanip.sniff(iface=interface, prn=lambda x: printp(x))
+    sc.sniff(iface=interface, prn=lambda x: printp(x))
 
 
 def main():
@@ -41,7 +41,7 @@ def main():
         receive(args.interface)
     else:  # send one
         p = "ab" * 20
-        pktmanip.sendp(p, iface=args.interface, verbose=0)
+        sc.sendp(p, iface=args.interface, verbose=0)
 
 
 if __name__ == "__main__":

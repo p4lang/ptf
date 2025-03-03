@@ -1,3 +1,4 @@
 #!/bin/sh
 set -e
-pip3 install nnpy cffi
+python3 -m pip install cffi
+python3 -m pip install nnpy

@@ -881,10 +881,10 @@ class DataPlane(Thread):
                     )
                     for recent_packet in self.recent_packets:
                         print("------------------------------")
-                        if isinstance(self.expected_packet, packet.Packet):
+                        if isinstance(self.recent_packet, packet.Packet):
                             # Dissect this packet as if it were an instance of
                             # the expected packet's class.
-                            packet.ls(self.expected_packet.__class__(recent_packet))
+                            packet.ls(self.recent_packet.__class__(recent_packet))
                             print("--")
                         packet.hexdump(recent_packet)
                 else:

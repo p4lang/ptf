@@ -72,6 +72,8 @@ jobs:
 
     - name: Install
       run: |
+        echo "==================== source $HOME/ptf-test-venv/bin/activate"
+        source $HOME/ptf-test-venv/bin/activate
         echo "==================== pip list --verbose"
         pip list --verbose
         echo "==================== python3 -m pip install ."
@@ -87,6 +89,9 @@ jobs:
 
     - name: Script
       run: |
+        echo "==================== source $HOME/ptf-test-venv/bin/activate"
+        source $HOME/ptf-test-venv/bin/activate
+        echo "==================== pip --verbose list"
         pip --verbose list
         python3 CI/check-nnpy.py
         ./CI/run_tests.sh

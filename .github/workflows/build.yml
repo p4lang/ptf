@@ -47,17 +47,33 @@ jobs:
 
     - name: Dependencies
       run: |
+        echo "==================== sudo apt-get install cmake libffi-dev ethtool python3-dev"
         sudo apt-get install cmake libffi-dev ethtool python3-dev
+        echo "==================== python3 -m pip install --upgrade pip setuptools nose2 wheel"
         python3 -m pip install --upgrade pip setuptools nose2 wheel
+        echo "==================== pip list --verbose"
+        pip list --verbose
+        echo "==================== python -m pip install scapy==${{ matrix.scapy_version }}"
         python -m pip install scapy==${{ matrix.scapy_version }}
+        echo "==================== bash CI/install-nanomsg.sh"
 
         bash CI/install-nanomsg.sh
+        echo "==================== pip list --verbose"
+        pip list --verbose
+        echo "==================== sudo ldconfig"
         sudo ldconfig
+        echo "==================== bash CI/install-nnpy.sh"
         bash CI/install-nnpy.sh
+        echo "==================== pip list --verbose"
+        pip list --verbose
 
     - name: Install
       run: |
+        echo "==================== python3 -m pip install ."
         python3 -m pip install .
+        echo "==================== pip list --verbose"
+        pip list --verbose
+        echo "==================== ptf --version"
         ptf --version
 
     - name: Before_script

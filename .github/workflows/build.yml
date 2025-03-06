@@ -47,40 +47,20 @@ jobs:
 
     - name: Dependencies
       run: |
-        echo "==================== sudo apt-get install cmake libffi-dev ethtool python3-dev python3-venv"
         sudo apt-get install cmake libffi-dev ethtool python3-dev python3-venv
-        echo "==================== python3 -m venv $HOME/ptf-test-venv"
         python3 -m venv $HOME/ptf-test-venv
         source $HOME/ptf-test-venv/bin/activate
-        echo "==================== python3 -m pip install --upgrade pip setuptools nose2 wheel"
         python3 -m pip install --upgrade pip setuptools nose2 wheel
-        echo "==================== pip list --verbose"
-        pip list --verbose
-        echo "==================== python -m pip install scapy==${{ matrix.scapy_version }}"
         python -m pip install scapy==${{ matrix.scapy_version }}
-        echo "==================== bash CI/install-nanomsg.sh"
 
         bash CI/install-nanomsg.sh
-        echo "==================== pip list --verbose"
-        pip list --verbose
-        echo "==================== sudo ldconfig"
         sudo ldconfig
-        echo "==================== bash CI/install-nnpy.sh"
         bash CI/install-nnpy.sh
-        echo "==================== pip list --verbose"
-        pip list --verbose
 
     - name: Install
       run: |
-        echo "==================== source $HOME/ptf-test-venv/bin/activate"
         source $HOME/ptf-test-venv/bin/activate
-        echo "==================== pip list --verbose"
-        pip list --verbose
-        echo "==================== python3 -m pip install ."
         python3 -m pip install .
-        echo "==================== pip list --verbose"
-        pip list --verbose
-        echo "==================== ptf --version"
         ptf --version
 
     - name: Before_script
@@ -89,9 +69,7 @@ jobs:
 
     - name: Script
       run: |
-        echo "==================== source $HOME/ptf-test-venv/bin/activate"
         source $HOME/ptf-test-venv/bin/activate
-        echo "==================== pip --verbose list"
         pip --verbose list
         python3 CI/check-nnpy.py
         ./CI/run_tests.sh

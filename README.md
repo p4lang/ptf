@@ -92,13 +92,12 @@ It was developed as an alternative to `scapy`.  The tradeoffs of using
   headers.  It is released under an Apache 2.0 license (see
   https://github.com/p4lang/open-p4studio/blob/main/pkgsrc/ptf-modules/bf-pktpy/LICENSE).
 
-To install `bf_pktpy` from PyPI:
+The package `bf_pktpy` is not currently available from PyPI.  To
+install `bf_pktpy` from source code, choose one of these methods:
 
 ```bash
-pip install bf-pktpy
+pip install "bf-pktpy@git+https://github.com/p4lang/open-p4studio#subdirectory=pkgsrc/ptf-utils/bf-pktpy"
 ```
-
-To install `bf_pktpy` from source code:
 
 ```bash
 git clone https://github.com/p4lang/open-p4studio
@@ -134,6 +133,16 @@ follows in your Python code:
 import ptf
 ptf.config["packet_manipulation_module"] = "bf_pktpy.ptf.packet_pktpy"
 import ptf.packet
+```
+
+The above methods are the highest precedence way of choosing the
+packet manipulation module used by `ptf`.  If you do not use those
+methods, another way is to assign the packet manipulation module name
+to the environment variable `PTF_PACKET_MANIPULATION_MODULE`, e.g. in
+Bash:
+
+```bash
+export PTF_PACKET_MANIPULATION_MODULE="bf_pktpy.ptf.packet_pktpy"
 ```
 
 When running such a program, you should see the following line printed

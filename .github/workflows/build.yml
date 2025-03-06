@@ -72,6 +72,8 @@ jobs:
 
     - name: Install
       run: |
+        echo "==================== pip list --verbose"
+        pip list --verbose
         echo "==================== python3 -m pip install ."
         python3 -m pip install .
         echo "==================== pip list --verbose"

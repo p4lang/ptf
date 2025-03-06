@@ -19,6 +19,7 @@ try:
     import scapy.packet
     import scapy.main
     import scapy.fields
+    import scapy.sendrecv
     import scapy.utils
 
     if not config.get("disable_ipv6", False):
@@ -151,3 +152,31 @@ if not config.get("disable_igmp", False):
 # Scapy has its own hexdump
 hexdump = scapy.utils.hexdump
 ls = scapy.packet.ls
+
+# The names below are assigned here so that, like the other names
+# above, they can be used by importers of the ptf.packet module as if
+# they were defined inside of ptf.packet, and they are commonly
+# available as ptf.packet.<name> regardless whether you use scapy or
+# bf-pktpy as the packet manipulation module.
+#
+# Commented-out lines are so because they have no equivalent function
+# implemented in bf-pktpy yet.
+
+#sndrcv = scapy.sendrecv.sndrcv
+send = scapy.sendrecv.send
+sendp = scapy.sendrecv.sendp
+#sendpfast = scapy.sendrecv.sendpfast
+sr = scapy.sendrecv.sr
+sr1 = scapy.sendrecv.sr1
+srp = scapy.sendrecv.srp
+srp1 = scapy.sendrecv.srp1
+srloop = scapy.sendrecv.srloop
+srploop = scapy.sendrecv.srploop
+#sndrcvflood = scapy.sendrecv.sndrcvflood
+#srflood = scapy.sendrecv.srflood
+#sr1flood = scapy.sendrecv.sr1flood
+#srpflood = scapy.sendrecv.srpflood
+#srp1flood = scapy.sendrecv.srp1flood
+sniff = scapy.sendrecv.sniff
+bridge_and_sniff = scapy.sendrecv.bridge_and_sniff
+#tshark = scapy.sendrecv.tshark

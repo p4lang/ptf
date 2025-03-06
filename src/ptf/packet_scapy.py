@@ -162,21 +162,21 @@ ls = scapy.packet.ls
 # Commented-out lines are so because they have no equivalent function
 # implemented in bf-pktpy yet.
 
-#sndrcv = scapy.sendrecv.sndrcv
+# sndrcv = scapy.sendrecv.sndrcv
 send = scapy.sendrecv.send
 sendp = scapy.sendrecv.sendp
-#sendpfast = scapy.sendrecv.sendpfast
+# sendpfast = scapy.sendrecv.sendpfast
 sr = scapy.sendrecv.sr
 sr1 = scapy.sendrecv.sr1
 srp = scapy.sendrecv.srp
 srp1 = scapy.sendrecv.srp1
 srloop = scapy.sendrecv.srloop
 srploop = scapy.sendrecv.srploop
-#sndrcvflood = scapy.sendrecv.sndrcvflood
-#srflood = scapy.sendrecv.srflood
-#sr1flood = scapy.sendrecv.sr1flood
-#srpflood = scapy.sendrecv.srpflood
-#srp1flood = scapy.sendrecv.srp1flood
+# sndrcvflood = scapy.sendrecv.sndrcvflood
+# srflood = scapy.sendrecv.srflood
+# sr1flood = scapy.sendrecv.sr1flood
+# srpflood = scapy.sendrecv.srpflood
+# srp1flood = scapy.sendrecv.srp1flood
 sniff = scapy.sendrecv.sniff
 bridge_and_sniff = scapy.sendrecv.bridge_and_sniff
-#tshark = scapy.sendrecv.tshark
+# tshark = scapy.sendrecv.tshark

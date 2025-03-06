@@ -6,15 +6,39 @@ The default one is Scapy, but one can develop its own packet manipulation framew
 then, create an implementation of packet module for it (for Scapy it is packet_scapy.py)
 """
 
+import os as _os
 from ptf import config
 
-__module = __import__(
-    config.get("packet_manipulation_module", "ptf.packet_scapy"), fromlist=["*"]
-)
+# When module ptf.packet is imported, this is the order of precedence for
+# deciding which packet manipulation module is used:
+# (1) If the key "packet_manipulation_module" is present in dict
+#     'config', then its value should be a string, and it will be used
+#     as the name of the module to use.
+# (2) Otherwise, if the environment variable
+#     PTF_PACKET_MANIPULATION_MODULE is defined, use its value.
+# (3) Otherwise, the default module name "ptf.packet_scapy" is used.
+
+# Note: Applications using ptf.packet can control the choice of packet
+# manipulation module in any way they wish by doing the following:
+#
+# import ptf
+# ptf.config["packet_manipulation_module"] = my_app_choice_of_pmm
+# import ptf.packet
+
+if "packet_manipulation_module" in config:
+    _packet_manipulation_module = config["packet_manipulation_module"]
+else:
+    _env_val = _os.getenv("PTF_PACKET_MANIPULATION_MODULE")
+    if _env_val:
+        _packet_manipulation_module = _env_val
+    else:
+        _packet_manipulation_module = "ptf.packet_scapy"
+
+__module = __import__(_packet_manipulation_module, fromlist=["*"])
 __keys = []
 
-# import logic - everything from __all__ if provided, otherwise everything not starting
-# with underscore
+# import logic - everything from __all__ if provided, otherwise
+# everything not starting with underscore.
 print("Using packet manipulation module: %s" % __module.__name__)
 if "__all__" in __module.__dict__:
     __keys = __module.__dict__["__all__"]

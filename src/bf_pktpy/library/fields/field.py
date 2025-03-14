@@ -41,9 +41,11 @@ class Field(object):
         return "{}(name={}, default_value={}, length={})".format(
             type(self).__name__,
             self.name,
-            self._default_value.__name__
-            if callable(self._default_value)
-            else self.default_value,
+            (
+                self._default_value.__name__
+                if callable(self._default_value)
+                else self.default_value
+            ),
             self.size,
         )
 

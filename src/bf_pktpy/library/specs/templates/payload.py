@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Payload template """
+"""Payload template"""
 from bf_pktpy.library.specs.base import Base
 
 

@@ -11,7 +11,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" IP helpers """
+"""IP helpers"""
 import platform
 import re
 import six

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" VXLAN template """
+"""VXLAN template"""
 from bf_pktpy.library.specs.base import Base
 
 

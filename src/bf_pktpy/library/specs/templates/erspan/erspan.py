@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" ERSPAN template """
+"""ERSPAN template"""
 from bf_pktpy.library.specs.templates.erspan.erspan_ii import ERSPAN_II
 
 

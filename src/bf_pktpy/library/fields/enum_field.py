@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" EnumField """
+"""EnumField"""
 import math
 from operator import attrgetter
 import six

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" TCP template """
+"""TCP template"""
 import math
 
 from bf_pktpy.library.specs.base import Base

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" ERSPAN_II template """
+"""ERSPAN_II template"""
 from bf_pktpy.library.specs.packet import Packet
 from bf_pktpy.library.fields import BitField
 

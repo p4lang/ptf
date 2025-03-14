@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Frame template """
+"""Frame template"""
 from bf_pktpy.library.specs.base import Base
 
 

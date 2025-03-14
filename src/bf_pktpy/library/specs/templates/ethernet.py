@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Ether template """
+"""Ether template"""
 from bf_pktpy.library.helpers.ether_types import ETYPES
 from bf_pktpy.library.specs.packet import Packet
 from bf_pktpy.library.fields import SourceMACField, DestMACField, XShortEnumField

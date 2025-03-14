@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" IPv6 template """
+"""IPv6 template"""
 import ipaddress
 import six
 

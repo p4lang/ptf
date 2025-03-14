@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" MACField """
+"""MACField"""
 import six
 
 from bf_pktpy.library.helpers.mac import correct_mac

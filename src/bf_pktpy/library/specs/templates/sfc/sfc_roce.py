@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" RoCE headers """
+"""RoCE headers"""
 
 from enum import Enum
 

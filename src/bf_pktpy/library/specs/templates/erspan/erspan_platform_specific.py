@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" ERSPAN_OLD Platform Specific template """
+"""ERSPAN_OLD Platform Specific template"""
 from bf_pktpy.library.specs.packet import Packet
 from bf_pktpy.library.fields import BitField, XIntField
 

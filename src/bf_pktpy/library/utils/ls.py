@@ -120,9 +120,11 @@ def _ls_packet(layer):
             type(field).__name__,
             field.size(layer) if callable(field.size) else field.size,
             getattr(layer, field.name),
-            field.default_value(layer)
-            if callable(field.default_value)
-            else field.default_value,
+            (
+                field.default_value(layer)
+                if callable(field.default_value)
+                else field.default_value
+            ),
         )
         for field in layer.fields_desc
     ]

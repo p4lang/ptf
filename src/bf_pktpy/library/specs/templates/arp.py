@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" ARP template """
+"""ARP template"""
 import ipaddress
 import six
 

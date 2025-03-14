@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" FabricUnicastHeader template """
+"""FabricUnicastHeader template"""
 from bf_pktpy.library.specs.packet import Packet
 from bf_pktpy.library.fields import BitField, ShortField
 

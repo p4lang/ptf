@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" IP template """
+"""IP template"""
 import six
 
 from bf_pktpy.library.helpers.bin import to_bin

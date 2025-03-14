@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Stream control template """
+"""Stream control template"""
 from bf_pktpy.library.specs.base import Base
 
 

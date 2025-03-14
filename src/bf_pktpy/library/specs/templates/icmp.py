@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" ICMP template """
+"""ICMP template"""
 from bf_pktpy.library.specs.base import Base
 
 

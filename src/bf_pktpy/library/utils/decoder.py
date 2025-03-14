@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Decoder module """
+"""Decoder module"""
 from bf_pktpy.library.specs.templates.ethernet import Ether
 from bf_pktpy.library.specs.templates.ipv4 import IP
 from bf_pktpy.library.specs.templates.icmp import ICMP

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Sniffer module """
+"""Sniffer module"""
 import binascii
 from six.moves import queue
 import socket

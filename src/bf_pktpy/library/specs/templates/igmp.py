@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" IGMP template """
+"""IGMP template"""
 import ipaddress
 import six
 

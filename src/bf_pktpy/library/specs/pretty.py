@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Pretty module to transform code output """
+"""Pretty module to transform code output"""
 import json
 import re
 import six

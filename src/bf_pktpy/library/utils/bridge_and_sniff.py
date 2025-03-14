@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" BridgeSniff module """
+"""BridgeSniff module"""
 import socket
 import time
 import threading

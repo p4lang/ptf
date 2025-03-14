@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" UDP template """
+"""UDP template"""
 from bf_pktpy.library.helpers.bin import to_bin
 from bf_pktpy.library.helpers.chksum import checksum
 from bf_pktpy.library.specs.packet import Packet

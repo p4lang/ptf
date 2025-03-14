@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Dot1Q template """
+"""Dot1Q template"""
 
 from bf_pktpy.library.fields import BitField, XShortEnumField
 from bf_pktpy.library.helpers.ether_types import ETYPES

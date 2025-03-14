@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" ICMPv6Unknown template """
+"""ICMPv6Unknown template"""
 from bf_pktpy.library.specs.base import Base
 
 

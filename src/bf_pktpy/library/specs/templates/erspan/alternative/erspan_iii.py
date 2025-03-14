@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" ERSPAN_III template """
+"""ERSPAN_III template"""
 from bf_pktpy.library.specs.base import Base
 from bf_pktpy.library.specs.validate import ToBeBitField, ToBeIntegerField
 

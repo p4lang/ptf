@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" DHCP template """
+"""DHCP template"""
 from bf_pktpy.library.specs.base import Base
 import ipaddress
 

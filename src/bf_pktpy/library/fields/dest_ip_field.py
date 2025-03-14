@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" DestIPField """
+"""DestIPField"""
 from bf_pktpy.library.fields.ip_field import IPField
 
 

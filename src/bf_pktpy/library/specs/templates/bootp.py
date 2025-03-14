@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" BOOTP template """
+"""BOOTP template"""
 from bf_pktpy.library.specs.base import Base
 
 

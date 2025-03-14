@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" TCPOption template """
+"""TCPOption template"""
 
 from bf_pktpy.library.specs.base import Base
 

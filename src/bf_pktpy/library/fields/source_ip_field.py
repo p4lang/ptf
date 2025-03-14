@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" SourceIPField """
+"""SourceIPField"""
 from bf_pktpy.library.helpers.ip import get_src_ip_addr
 from bf_pktpy.library.fields.ip_field import IPField
 

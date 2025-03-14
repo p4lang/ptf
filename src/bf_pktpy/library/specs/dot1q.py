@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Dot1Q class """
+"""Dot1Q class"""
 from bf_pktpy.library.specs.container import Container
 from bf_pktpy.library.specs.templates.dot1q import Dot1Q as Dot1QTemplate
 

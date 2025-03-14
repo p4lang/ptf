@@ -10,8 +10,10 @@ class XBitField(BitField):
         return "{}(name={}, default_value={}, length={})".format(
             type(self).__name__,
             self.name,
-            self.default_value
-            if self.default_value is None
-            else hex(self.default_value),
+            (
+                self.default_value
+                if self.default_value is None
+                else hex(self.default_value)
+            ),
             self.size,
         )

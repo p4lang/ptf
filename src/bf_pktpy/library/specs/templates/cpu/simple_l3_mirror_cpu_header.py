@@ -14,7 +14,7 @@
 #  implied warranties, other than those that are expressly stated in the License.
 
 ###############################################################################
-""" SimpleL3SwitchCpuHeader template """
+"""SimpleL3SwitchCpuHeader template"""
 import six
 from bf_pktpy.library.specs.packet import Packet
 from bf_pktpy.library.fields import ShortEnumField, ShortField

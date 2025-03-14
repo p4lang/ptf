@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" bf_pktpy python library """
+"""bf_pktpy python library"""
 import socket
 
 

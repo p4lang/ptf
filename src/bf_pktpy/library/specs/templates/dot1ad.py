@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Dot1AD template """
+"""Dot1AD template"""
 
 from bf_pktpy.library.specs.templates.dot1q import Dot1Q
 

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Listener module """
+"""Listener module"""
 import binascii
 import socket
 import threading

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" IPv6ExtHdrRouting template """
+"""IPv6ExtHdrRouting template"""
 from bf_pktpy.library.specs.base import Base
 
 

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Packet class """
+"""Packet class"""
 import six
 import warnings
 

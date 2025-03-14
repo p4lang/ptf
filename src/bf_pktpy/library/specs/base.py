@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Base class """
+"""Base class"""
 import abc
 import binascii
 from collections import OrderedDict

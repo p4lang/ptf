@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" Interface module """
+"""Interface module"""
 import socket
 import subprocess
 from collections import namedtuple

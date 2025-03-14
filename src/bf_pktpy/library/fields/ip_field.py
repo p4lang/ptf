@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" IPField """
+"""IPField"""
 import ipaddress
 import six
 import socket

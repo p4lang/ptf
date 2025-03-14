@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" FabricCpuHeader template """
+"""FabricCpuHeader template"""
 from bf_pktpy.library.specs.packet import Packet
 from bf_pktpy.library.fields import BitField, ShortField
 

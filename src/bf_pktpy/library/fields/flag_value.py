@@ -14,7 +14,7 @@
 # limitations under the License.
 
 ###############################################################################
-""" FlagValue class """
+"""FlagValue class"""
 
 
 class FlagValue(object):

@@ -444,12 +444,10 @@ be subtracted from the result by prefixing them with the '^' character.  """
     if getattr(args, pmm_key):
         # Then use the value from the command line option.
         config[pmm_key] = getattr(args, pmm_key)
+    elif os.getenv("PTF_PACKET_MANIPULATION_MODULE"):
+        config[pmm_key] = os.getenv("PTF_PACKET_MANIPULATION_MODULE"):
     else:
-        env_val = os.getenv("PTF_PACKET_MANIPULATION_MODULE")
-        if env_val:
-            config[pmm_key] = env_val
-        else:
-            config[pmm_key] = "ptf.packet_scapy"
+        config[pmm_key] = "ptf.packet_scapy"
 
     return (config, args)
 

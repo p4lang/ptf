@@ -42,9 +42,12 @@ More information about Black, you find at
 The following software is required to run PTF:
 
  * Python 3.x
- * Scapy 2.5.0 (unless you provide another packet manipulation module)
- * pypcap (optional - VLAN tests will fail without this)
- * tcpdump (optional - Scapy will complain if it's missing)
+
+The following packages are optional for running PTF:
+
+ * Scapy 2.5.0 (you may also use the included `bf_pktpy` module instead)
+ * pypcap (VLAN tests will fail without this)
+ * tcpdump (Scapy will complain if it's missing)
 
 Root/sudo privilege is required on the host, in order to run `ptf`.
 
@@ -74,11 +77,7 @@ apt-get install tcpdump
 
 ### Using `bf_pktpy` as an alternate packet manipulation module
 
-The Python module `bf_pktpy` is included as part of the
-`open-p4studio` repository:
-
-+ https://github.com/p4lang/open-p4studio/tree/main/pkgsrc/ptf-modules/bf-pktpy
-
+The Python module `bf_pktpy` is included as part of the ptf package.
 It was developed as an alternative to `scapy`.  The tradeoffs of using
 `bf_pktpy` vs. `scapy` are:
 
@@ -89,34 +88,7 @@ It was developed as an alternative to `scapy`.  The tradeoffs of using
   under a different license.
 + `bf_pktpy` implements only a small subset of the functionality of
   `scapy`, but it does include support for very commonly-used packet
-  headers.  It is released under an Apache 2.0 license (see
-  https://github.com/p4lang/open-p4studio/blob/main/pkgsrc/ptf-modules/bf-pktpy/LICENSE).
-
-The package `bf_pktpy` is not currently available from PyPI.  To
-install `bf_pktpy` from source code, choose one of these methods:
-
-```bash
-pip install "bf-pktpy@git+https://github.com/p4lang/open-p4studio#subdirectory=pkgsrc/ptf-utils/bf-pktpy"
-```
-
-```bash
-git clone https://github.com/p4lang/open-p4studio
-cd open-p4studio/pkgsrc/ptf-utils/bf-pktpy
-pip install .
-```
-
-To make effective use of `bf_pktpy` you must also install these
-additional Python packages.  All are released under an MIT or
-BSD-3-Clause license, which are compatible for releasing with
-`bf_pktpy`, or for importing in a project with most licenses,
-including `Apache-2.0`, `BSD-3-Clause`, `GPL-2.0-only`, or many
-others.
-
-```bash
-pip install six getmac scapy_helper psutil
-sudo apt-get install python3-dev
-pip install netifaces
-```
+  headers.  It is released under an Apache 2.0 license.
 
 If you want to use `bf_pktpy` when running the command `ptf` from the
 command line, provide the `-pmm` option as shown below.
@@ -274,9 +246,9 @@ timeout takes precedence over the global timeout passed on the command line.
 ## Pluggable packet manipulation module
 
 By default, `ptf` uses `Scapy` as the packet manipulation module, but it can 
-also operate on a different one. 
+also operate on a different one, e.g. the included `bf_pktpy` module.
 
-Such module **must define/implement the same symbols**, as defined in `Scapy` 
+Such a module **must define/implement the same symbols**, as defined in `Scapy` 
 implementation of packet. Most of them are just names of most common frame 
 headers (Ether, IP, TCP, UDP, ...).
 

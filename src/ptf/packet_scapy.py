@@ -149,6 +149,32 @@ if not config.get("disable_igmp", False):
         pass
 
 
+# modified scapy.utils.hexdump(packet)
+# https://github.com/secdev/scapy/blob/master/scapy/utils.py
+def hexdump_marked(in_packet, indxs_n_equal):
+    def red(inp_str):
+        return '\x1b[1;31m' + inp_str + '\x1b[0m'
+
+    s = ""
+    x = scapy.utils.bytes_encode(in_packet)
+    x_len = len(x)
+    i = 0
+    while i < x_len:
+        s += "%04x  " % i
+        for j in range(16):
+            if i + j < x_len:
+                if indxs_n_equal is not None and i + j in indxs_n_equal:
+                    s += red("%02X " % scapy.utils.orb(x[i + j]))
+                else:
+                    s += "%02X " % scapy.utils.orb(x[i + j])
+            else:
+                s += "   "
+        s += " %s\n" % scapy.utils.sane(x[i:i + 16])
+        i += 16
+    # remove trailing \n
+    s = s[:-1] if s.endswith("\n") else s
+    print(s)
+
 # Scapy has its own hexdump
 hexdump = scapy.utils.hexdump
 ls = scapy.packet.ls

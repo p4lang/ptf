@@ -95,7 +95,7 @@ def simple_tcp_packet_ext_taglist(
     tcp_dport=80,
     tcp_flags="S",
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     with_tcp_chksum=True,
 ):
     """
@@ -219,7 +219,7 @@ def simple_tcp_packet(
     tcp_dport=80,
     tcp_flags="S",
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     with_tcp_chksum=True,
 ):
     """
@@ -365,7 +365,7 @@ def simple_udp_packet(
     udp_sport=1234,
     udp_dport=80,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     ip_flag=0,
     ip_id=1,
     with_udp_chksum=True,
@@ -532,7 +532,7 @@ def simple_geneve_packet(
     udp_sport=1234,
     with_udp_chksum=True,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     geneve_ver=0x0,
     geneve_reserved=0x0,
     geneve_vni=0x1234,
@@ -657,7 +657,7 @@ def simple_nvgre_packet(
     ip_id=0x0001,
     ip_flags=0x0,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     nvgre_version=0,
     nvgre_tni=None,
     nvgre_flowid=0,
@@ -778,7 +778,7 @@ def simple_vxlan_packet(
     udp_dport=4789,
     with_udp_chksum=True,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     vxlan_flags=0x08,
     vxlan_reserved0=0,
     vxlan_reserved1=0x000000,
@@ -1009,7 +1009,7 @@ def simple_gre_packet(
     ip_id=0x0001,
     ip_flags=0x0,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     gre_chksum_present=0,
     gre_routing_present=0,  # begin reserved0
     gre_key_present=0,
@@ -1271,7 +1271,7 @@ def simple_gre_erspan_packet(
     ip_id=0x0001,
     ip_flags=0x0,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     gre_chksum_present=0,
     gre_routing_present=0,  # begin reserved0
     gre_key_present=0,
@@ -1439,7 +1439,7 @@ def ipv4_erspan_pkt(
     ip_id=0x0001,
     ip_flags=0x0,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     version=2,
     mirror_id=0x3FF,
     sgt_other=0,
@@ -1580,7 +1580,7 @@ def ipv4_erspan_platform_pkt(
     ip_id=0x0001,
     ip_flags=0x0,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     version=2,
     mirror_id=0x3FF,
     sgt_other=1,
@@ -1801,7 +1801,7 @@ def simple_ipv4ip_packet(
     ip_id=0x0001,
     ip_flags=0x0,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     inner_frame=None,
 ):
     """
@@ -2299,7 +2299,7 @@ def simple_ip_packet(
     ip_ttl=64,
     ip_id=0x0001,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     ip_proto=0,
 ):
     """
@@ -2385,7 +2385,7 @@ def simple_ip_only_packet(
     ip_ttl=64,
     ip_id=0x0001,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     tcp_sport=1234,
     tcp_dport=80,
     tcp_flags="S",
@@ -2532,7 +2532,7 @@ def simple_qinq_tcp_packet(
     tcp_sport=1234,
     tcp_dport=80,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
 ):
     """
     Return a doubly tagged dataplane TCP packet
@@ -2597,7 +2597,7 @@ def simple_igmp_packet(
     ip_ttl=64,
     ip_id=0x0001,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     igmp_type=0x12,
     igmp_gaddr="224.2.3.4",
     igmp_mrtime=64,
@@ -3701,7 +3701,7 @@ def simple_rocev2_packet(
     udp_sport=1234,
     udp_dport=4791,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     ip_flag=0,
     ip_id=1,
     bth_opcode=0x81,
@@ -3852,7 +3852,7 @@ def simple_rocev2v6_packet(
     udp_sport=1234,
     udp_dport=4791,
     ip_ihl=None,
-    ip_options=False,
+    ip_options=None,
     ip_flag=0,
     ip_id=1,
     bth_opcode=0x81,

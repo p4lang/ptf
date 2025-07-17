@@ -855,6 +855,33 @@ class DataPlane(Thread):
             in the output. If the expected packet is a scapy packet object, the
             output will include information about the fields in the packet.
             """
+            # returns list of indexes of bytes not matching the expected packet
+            def get_indexes_not_equal(exp_pkt, pkt):
+                if isinstance(exp_pkt, mask.Mask):
+                    if not exp_pkt.is_valid():
+                        return []
+                    ret = exp_pkt.pkt_match(pkt, with_indexes=True)
+                    if type(ret) == bool:
+                        # something went wrong, don't mark any bytes red
+                        return None
+                    else:
+                        b, indxs_n_equal = ret
+                        return indxs_n_equal
+
+                e = bytes(exp_pkt)
+                p = bytes(pkt)
+                if len(e) < 60:
+                    p = p[:len(e)]
+
+                indxs_n_equal = []
+                i = 0
+                for b in p:
+                    if b != e[i]:
+                        indxs_n_equal.append(i)
+                    i = i + 1
+
+                return indxs_n_equal
+
             try:
                 stdout_save = sys.stdout
                 # The scapy packet dissection methods print directly to stdout,
@@ -886,7 +913,8 @@ class DataPlane(Thread):
                             # the expected packet's class.
                             packet.ls(self.expected_packet.__class__(recent_packet))
                             print("--")
-                        packet.hexdump(recent_packet)
+                        indxs_n_equal = get_indexes_not_equal(self.expected_packet, recent_packet)
+                        packet.hexdump_marked(recent_packet, indxs_n_equal)
                 else:
                     print("%d total packets." % self.packet_count)
                 print("==============================")

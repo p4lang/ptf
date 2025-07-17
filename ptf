@@ -832,7 +832,8 @@ platform_mod = None
 try:
     platform_mod = import_module(config["platform_dir"], platform_name)
 except:
-    logging.warn("Failed to import " + platform_name + " platform module")
+    logging.warning("Failed to import " + platform_name + " platform module")
+    # logging.warn("Failed to import " + platform_name + " platform module")
     raise
 
 try:

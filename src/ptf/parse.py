@@ -4,7 +4,7 @@ Utility parsing functions
 
 import sys
 import socket
-from . import packet as scapy
+import ptf.packet as pktmanip
 
 
 def parse_mac(mac_str):
@@ -47,32 +47,32 @@ def parse_ipv6(ip_str):
 
 def packet_type_classify(ether):
     try:
-        dot1q = ether[scapy.Dot1Q]
+        dot1q = ether[pktmanip.Dot1Q]
     except:
         dot1q = None
 
     try:
-        ip = ether[scapy.IP]
+        ip = ether[pktmanip.IP]
     except:
         ip = None
 
     try:
-        tcp = ether[scapy.TCP]
+        tcp = ether[pktmanip.TCP]
     except:
         tcp = None
 
     try:
-        udp = ether[scapy.UDP]
+        udp = ether[pktmanip.UDP]
     except:
         udp = None
 
     try:
-        icmp = ether[scapy.ICMP]
+        icmp = ether[pktmanip.ICMP]
     except:
         icmp = None
 
     try:
-        arp = ether[scapy.ARP]
+        arp = ether[pktmanip.ARP]
     except:
         arp = None
     return (dot1q, ip, tcp, udp, icmp, arp)

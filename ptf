@@ -447,7 +447,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
     elif os.getenv("PTF_PACKET_MANIPULATION_MODULE"):
         config[pmm_key] = os.getenv("PTF_PACKET_MANIPULATION_MODULE")
     else:
-        config[pmm_key] = "ptf.packet_scapy"
+        config[pmm_key] = "bf_pktpy.ptf.packet_pktpy"
 
     return (config, args)
 

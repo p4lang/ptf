@@ -1,0 +1,28 @@
+# .github/release.yml
+
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+    - title: Breaking Changes
+      labels:
+        - breaking-change
+    - title: Bug Fixes
+      labels:
+        - bug
+    - title: Enhancements
+      labels:
+        - enhancement
+    - title: Python Changes
+      labels:
+        - python
+    - title: Dependencies
+      labels:
+        - dependencies
+    - title: CI/Infrastructure
+      labels:
+        - github_actions
+    - title: Other Changes
+      labels:
+        - "*"

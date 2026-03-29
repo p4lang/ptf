@@ -20,7 +20,7 @@
 #
 #
 
-import nnpy
+import pynng
 import struct
 import argparse
 
@@ -49,16 +49,14 @@ def receive(socket):
 
 
 def main():
-    socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)
-    socket.connect(args.socket)
+    socket = pynng.Pair0()
+    socket.dial(args.socket)
     if args.receive:
         receive(socket)
     else:  # send one
-        p = "ab" * 20
+        p = b"ab" * 20
         port = 1
         msg = struct.pack("<iii{}s".format(len(p)), MSG_TYPE_PACKET_IN, port, len(p), p)
-        # because nnpy expects unicode when using str
-        msg = list(msg)
         socket.send(msg)
 
 

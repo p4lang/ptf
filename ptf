@@ -824,9 +824,9 @@ logging.info("Importing platform: " + platform_name)
 # TODO(antonin): put this check in platforms/nn.py ?
 if platform_name == "nn":
     try:
-        import nnpy
+        import pynng
     except:
-        die("Cannot use 'nn' platform if nnpy package is not installed")
+        die("Cannot use 'nn' platform if pynng package is not installed")
 
 platform_mod = None
 try:

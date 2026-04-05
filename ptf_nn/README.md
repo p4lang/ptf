@@ -10,18 +10,17 @@ the host running PTF).
 
 ## Dependencies
 
-We rely on [nanomsg](http://nanomsg.org/) (a messaging library) to forward
+We rely on [NNG](https://nng.nanomsg.org/) (a messaging library and modern
+successor to nanomsg) to forward
 packets between the PTF agent and the PTF test runner. You will therefore need
 to install the following:
 
-  - [nanomsg](https://github.com/nanomsg/nanomsg/releases): we recommend
-    installing the `1.0.0` production release.
-  - [nnpy](https://github.com/nanomsg/nnpy): these are the Python bindings for
-    nanomsg. You may use the provided (install-nnpy.sh)[install-nnpy.sh] script
-    to install nnpy. It will install a version of nnpy that we have tested.
+  - [pynng](https://github.com/codypiersall/pynng): these are the Python
+    bindings for NNG. You may use the provided
+    [install-pynng.sh](../CI/install-pynng.sh) script to install pynng.
 
-We provide a [check-nnpy.py](check-nnpy.py) script that you can run to check
-that nanomsg and nnpy are running properly.
+We provide a [check-pynng.py](../CI/check-pynng.py) script that you can run to
+check that pynng is running properly.
 
 ## Overview
 
@@ -34,7 +33,7 @@ tester. Packets received on an interface (from the switch) will be tagged with
 the port number and forwarded to the PTF tester. Packets received from the PTF
 tester will be forwarded to the switch using the appropriate
 interface. Communications between the PTF tester and each agent are done over
-TCP using the nanomsg messaging library.
+TCP using the NNG messaging library.
 
 ## Demo
 
@@ -64,7 +63,7 @@ runs on the PTF host. The second PTF agent runs on the remote host. For each
 host we need to use a separate device id (0 for the PTF host, 1 for the remote
 host). The "switch" is connected to the PTF host through veth0-veth1 and to the
 remote host through veth2-veth3. When running `ptf`, we need to use the `nn`
-platform and provide the nanomsg TCP address for each of the 2 devices.
+platform and provide the NNG TCP address for each of the 2 devices.
 
 In our test, we send a packet to port 1 of device 0 and receive the exact same
 packet on port 1 of device 1, as expected.

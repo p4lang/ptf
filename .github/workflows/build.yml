@@ -53,9 +53,7 @@ jobs:
         python3 -m pip install --upgrade pip setuptools nose2 wheel
         python -m pip install scapy==${{ matrix.scapy_version }}
 
-        bash CI/install-nanomsg.sh
-        sudo ldconfig
-        bash CI/install-nnpy.sh
+        bash CI/install-pynng.sh
 
     - name: Install
       run: |
@@ -71,5 +69,5 @@ jobs:
       run: |
         source $HOME/ptf-test-venv/bin/activate
         pip --verbose list
-        python3 CI/check-nnpy.py
+        python3 CI/check-pynng.py
         ./CI/run_tests.sh

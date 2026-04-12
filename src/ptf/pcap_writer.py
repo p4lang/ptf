@@ -132,7 +132,7 @@ def rdpcap_one_packet(f, path: Union[str, os.PathLike], return_packet_metadata: 
             "" % (PcapPktHeader.size, path, len(pkt_header_bytes))
         )
     pkt_header = PcapPktHeader.unpack(pkt_header_bytes)
-    (timestamp_sec, timestamp_microsec, caplength, length) = pkt_header
+    timestamp_sec, timestamp_microsec, caplength, length = pkt_header
     # Consider supporting linktype LINKTYPE_PPI for reading.
     pkt_data = f.read(caplength)
     if len(pkt_data) != caplength:
@@ -213,7 +213,7 @@ def rdpcap(path: Union[str, os.PathLike], return_packet_metadata: bool = False):
             )
         while True:
             if return_packet_metadata:
-                (pkt_data, timestamp_sec, timestamp_usec, length) = rdpcap_one_packet(
+                pkt_data, timestamp_sec, timestamp_usec, length = rdpcap_one_packet(
                     f, path, return_packet_metadata
                 )
                 if pkt_data is None:

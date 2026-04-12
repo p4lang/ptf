@@ -17,6 +17,7 @@
 
 ###############################################################################
 """Ether class"""
+
 from bf_pktpy.library.specs.container import Container
 from bf_pktpy.library.specs.templates import clone
 from bf_pktpy.library.specs.templates.ethernet import Ether as EtherTemplate

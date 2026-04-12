@@ -17,13 +17,13 @@
 
 ###############################################################################
 """IPv6 template"""
+
 import ipaddress
 import six
 
 from bf_pktpy.library.helpers.bin import to_bin
 from bf_pktpy.library.helpers.chksum import checksum
 from bf_pktpy.library.specs.base import Base
-
 
 # =============================================================================
 from bf_pktpy.library.specs.validate_src_dst import ValidateSrcDst

@@ -17,6 +17,7 @@
 
 ###############################################################################
 """EnumField"""
+
 import math
 from operator import attrgetter
 import six

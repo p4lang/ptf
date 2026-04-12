@@ -17,6 +17,7 @@
 
 ###############################################################################
 """Stream module"""
+
 import time
 
 from bf_pktpy.library.utils.interface import Interface

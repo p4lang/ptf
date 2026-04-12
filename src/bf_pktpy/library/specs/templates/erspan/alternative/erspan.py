@@ -17,6 +17,7 @@
 
 ###############################################################################
 """ERSPAN template"""
+
 from bf_pktpy.library.specs.base import Base
 from bf_pktpy.library.specs.validate import ToBeBitField, ToBeIntegerField
 

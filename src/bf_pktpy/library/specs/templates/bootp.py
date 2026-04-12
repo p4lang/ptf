@@ -17,8 +17,8 @@
 
 ###############################################################################
 """BOOTP template"""
-from bf_pktpy.library.specs.base import Base
 
+from bf_pktpy.library.specs.base import Base
 
 # =============================================================================
 _magic = 0x63825363

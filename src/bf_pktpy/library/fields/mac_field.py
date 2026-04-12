@@ -17,6 +17,7 @@
 
 ###############################################################################
 """MACField"""
+
 import six
 
 from bf_pktpy.library.helpers.mac import correct_mac

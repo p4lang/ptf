@@ -17,6 +17,7 @@
 
 ###############################################################################
 """Sniffer module"""
+
 import binascii
 from six.moves import queue
 import socket

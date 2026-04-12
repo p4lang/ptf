@@ -17,6 +17,7 @@
 
 ###############################################################################
 """IPOption templates"""
+
 import six
 
 from bf_pktpy.library.specs.packet import Packet

@@ -17,6 +17,7 @@
 
 ###############################################################################
 """Enforce module to validate instance variables"""
+
 import ipaddress
 import re
 import six

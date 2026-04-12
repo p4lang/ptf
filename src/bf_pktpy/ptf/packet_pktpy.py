@@ -20,11 +20,11 @@
 Bf_pktpy implementation of packet manipulation module. For more information,
 see PTF documentation (section "Pluggable packet manipulation module").
 """
+
 import bf_pktpy.packets
 import bf_pktpy.commands
 from bf_pktpy.all import hexdump as bf_pktpy_hexdump, ls as bf_pktpy_ls
 from ptf import config
-
 
 # Headers set to None are not yet implemented (or conditionally being set)
 Packet = bf_pktpy.packets.Packet

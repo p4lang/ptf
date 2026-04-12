@@ -17,6 +17,7 @@
 
 ###############################################################################
 """Pretty module to transform code output"""
+
 import json
 import re
 import six

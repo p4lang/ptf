@@ -17,6 +17,7 @@
 
 ###############################################################################
 """ICMPv6Unknown template"""
+
 from bf_pktpy.library.specs.base import Base
 
 

@@ -17,6 +17,7 @@
 
 ###############################################################################
 """GRE template"""
+
 from bf_pktpy.library.helpers.bin import to_bin
 from bf_pktpy.library.helpers.chksum import checksum
 from bf_pktpy.library.helpers.ether_types import ETYPES

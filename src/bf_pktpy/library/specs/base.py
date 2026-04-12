@@ -17,6 +17,7 @@
 
 ###############################################################################
 """Base class"""
+
 import abc
 import binascii
 from collections import OrderedDict

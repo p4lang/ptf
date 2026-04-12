@@ -17,6 +17,7 @@
 
 ###############################################################################
 """Interface module"""
+
 import socket
 import subprocess
 from collections import namedtuple

@@ -17,6 +17,7 @@
 
 ###############################################################################
 """Stream control template"""
+
 from bf_pktpy.library.specs.base import Base
 
 

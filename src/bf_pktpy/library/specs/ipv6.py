@@ -17,6 +17,7 @@
 
 ###############################################################################
 """IPv6 class"""
+
 from bf_pktpy.library.specs.container import Container
 from bf_pktpy.library.specs.templates.ipv6 import IPv6 as IPv6Template
 

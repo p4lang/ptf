@@ -12,16 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
 
 ###############################################################################
 """IPv6 template"""
+
 import ipaddress
 import six
 
 from bf_pktpy.library.helpers.bin import to_bin
 from bf_pktpy.library.helpers.chksum import checksum
 from bf_pktpy.library.specs.base import Base
-
 
 # =============================================================================
 from bf_pktpy.library.specs.validate_src_dst import ValidateSrcDst

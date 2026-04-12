@@ -9,6 +9,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
 
 from bf_pktpy.library.specs.templates.xnt.int_meta import XntIntMeta
 from bf_pktpy.library.specs.templates.xnt.int_l45_head import XntIntL45Head

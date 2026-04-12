@@ -12,9 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
 
 ###############################################################################
 """Define constants"""
+
 IP_PATTERN = "^([0-9][0-9]{0,2}\\.){3}[0-9][0-9]{0,2}$"
 MASK_PATTERN = "^255\\.255\\.[0-9][0-9]{0,2}\\.0$"
 MAC_PATTERN = "^([a-z0-9]{2}:){5}[a-z0-9]{2}$"

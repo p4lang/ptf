@@ -526,7 +526,7 @@ class DataPlanePortPcap:
         return self.pcap.fileno()
 
     def recv(self):
-        (timestamp, pkt) = next(self.pcap)
+        timestamp, pkt = next(self.pcap)
         return (self.device_number, self.port_number, pkt[:], timestamp)
 
     def get_packet_source(self):

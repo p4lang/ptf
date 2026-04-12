@@ -11,7 +11,6 @@ from bf_pktpy.library.fields import (
     ConditionalField,
 )
 
-
 GTPMessageType = {
     1: "Echo Request",
     2: "Echo Response",

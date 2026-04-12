@@ -4,6 +4,7 @@
 """
 Scapy implementation of packet manipulation module
 """
+
 import ptf
 from ptf import config
 import sys

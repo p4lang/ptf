@@ -3585,7 +3585,7 @@ def verify_each_packet_on_multiple_port_lists(
     for port_list, pkt in zip(ports, pkts):
         rcv_ports = set()
         for port in port_list:
-            (rcv_device, rcv_port, rcv_pkt, _) = dp_poll(
+            rcv_device, rcv_port, rcv_pkt, _ = dp_poll(
                 test, device_number=device_number, port_number=port, timeout=timeout
             )
             if rcv_device != device_number:

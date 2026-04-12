@@ -12,11 +12,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
 
 ###############################################################################
 """BOOTP template"""
-from bf_pktpy.library.specs.base import Base
 
+from bf_pktpy.library.specs.base import Base
 
 # =============================================================================
 _magic = 0x63825363

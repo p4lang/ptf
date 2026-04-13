@@ -14,7 +14,8 @@ https://github.com/floodlight/oftest/blob/master/LICENSE
 ```
 
 A copy of the OpenFlow Software License is also included in the file
-[`LICENSE.OFTest`](LICENSE.OFTest) in the `ptf` repository.
+[`LICENSES/LicenseRef-OpenFlow-Software-License.txt`](LicenseRef-OpenFlow-Software-License.txt)
+in the `ptf` repository.
 
 Most files in this repository that were derived from `oftest` files
 have the same file name in both repositories, and are listed below

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Andy Fingerhut
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Files in `ptf` repository derived from `oftest` repository code
 
 Some source files in the `ptf` repository were derived from code in the

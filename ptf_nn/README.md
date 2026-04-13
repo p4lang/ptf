@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2016 Antonin Bas
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # PTF Nanomsg Agent
 
 ---

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 Nex Sabre
+#
+# SPDX-License-Identifier: Apache-2.0
+
 .PHONY: format-check
 format-check:
 	@echo "Checking format..."

@@ -3657,14 +3657,19 @@ def count_matched_packets(test, exp_packet, port, device_number=0, timeout=None)
             "%s() requires positive timeout value." % sys._getframe().f_code.co_name
         )
 
+    last_matched_packet_time = time.time()
     total_rcv_pkt_cnt = 0
     while True:
+        if (time.time() - last_matched_packet_time) > timeout:
+            break
+
         result = dp_poll(
             test, device_number=device_number, port_number=port, timeout=timeout
         )
         if isinstance(result, test.dataplane.PollSuccess):
             if ptf.dataplane.match_exp_pkt(exp_packet, result.packet):
                 total_rcv_pkt_cnt += 1
+                last_matched_packet_time = time.time()
         else:
             break
 

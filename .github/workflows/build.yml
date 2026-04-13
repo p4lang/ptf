@@ -1,5 +1,4 @@
 # Config file for automatic testing using github actions
-#
 
 name: Unit_Tests
 
@@ -31,7 +30,10 @@ jobs:
           make format-check
       - name: Run pytests (utests/tests)
         run: | 
-          make test
+          make coverage
+      - name: Check coverage (src/)
+        run: |
+          make coverage-check
   test:
     strategy:
       matrix:

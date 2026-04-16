@@ -707,7 +707,7 @@ def test_params_parse(config):
 #
 
 # Setup global configuration
-(new_config, args) = config_setup()
+new_config, args = config_setup()
 ptf.config.update(new_config)
 
 logging_setup(config)
@@ -743,18 +743,14 @@ if config["list"]:
     mod_count = 0
     test_count = 0
     all_groups = set()
-    print(
-        """\
+    print("""\
 Tests are shown grouped by module. If a test is in any groups beyond "standard"
-and its module's group then they are shown in parentheses."""
-    )
+and its module's group then they are shown in parentheses.""")
     print()
-    print(
-        """\
+    print("""\
 Tests marked with '!' are disabled because they are experimental, special-purpose,
 or are too long to be run normally. These are not part of the "standard" test
-group or their module's test group."""
-    )
+group or their module's test group.""")
     print()
     print("Test List:")
     for modname, (mod, tests) in test_modules.items():

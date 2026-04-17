@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install REUSE
         run: |
-          python -m pip install reuse
+          python3 -m pip install reuse
       - name: Validate presence of copyright and license info (python w/reuse)
         run: |
           reuse lint
@@ -40,7 +40,7 @@ jobs:
       - name: Install dependencies
         run: |
           make set-dev
-          python -m pip install scapy==${{ matrix.scapy_version }}
+          python3 -m pip install scapy==${{ matrix.scapy_version }}
       - name: Verify code (python w/black)
         run: |
           make format-check

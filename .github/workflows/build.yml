@@ -15,6 +15,7 @@ on:
 
 jobs:
   verify-licenses:
+    runs-on: ubuntu-latest
     name: Use REUSE to validate all files have copyright and license info
     steps:
       - uses: actions/checkout@v6

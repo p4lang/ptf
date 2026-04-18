@@ -33,9 +33,11 @@ jobs:
           uv pip install scapy==${{ matrix.scapy_version }}
       - name: Verify code (python w/black)
         run: |
+          source ./CI/uv-setup-env.bash
           make format-check
       - name: Run pytests (utests/tests)
         run: | 
+          source ./CI/uv-setup-env.bash
           make test
   test:
     strategy:

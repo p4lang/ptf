@@ -5,6 +5,8 @@
 
 set -x
 
+. CI/uv-setup-env.bash
+
 sudo -E PATH=${PATH} "${UV_VENV_BIN_DIR}/python3" ptf_nn/ptf_nn_agent.py \
     --device-socket 0@tcp://127.0.0.1:10001 -i 0-1@veth0 \
     &

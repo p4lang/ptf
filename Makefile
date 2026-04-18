@@ -15,7 +15,13 @@ format:
 .PHONY: set-dev
 set-dev:
 	@echo "Installing dev-dependencies..."
-	python -m pip install -r requirements-dev.txt
+	# Set up uv for Python dependency management.
+	# TODO: Consider using a system-provided package here.
+	sudo apt-get install -y python3-venv curl
+	curl -LsSf https://astral.sh/uv/0.6.12/install.sh | sh
+        source tools/uv-setup-env.bash
+	uv sync
+	uv pip install -r requirements-dev.txt
 
 .PHONY: test
 test:

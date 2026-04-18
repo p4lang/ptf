@@ -29,7 +29,8 @@ jobs:
       - name: Install dependencies
         run: |
           make set-dev
-          python -m pip install scapy==${{ matrix.scapy_version }}
+          source ./CI/uv-setup-env.bash
+          uv pip install scapy==${{ matrix.scapy_version }}
       - name: Verify code (python w/black)
         run: |
           make format-check
@@ -52,17 +53,17 @@ jobs:
     - name: Dependencies
       run: |
         sudo apt-get install cmake libffi-dev ethtool python3-dev python3-venv
-        python3 -m venv $HOME/ptf-test-venv
-        source $HOME/ptf-test-venv/bin/activate
-        python3 -m pip install --upgrade pip setuptools nose2 wheel
-        python -m pip install scapy==${{ matrix.scapy_version }}
+        make set-dev
+        source ./CI/uv-setup-env.bash
+        uv pip install --upgrade pip setuptools nose2 wheel
+        uv pip install scapy==${{ matrix.scapy_version }}
 
         bash CI/install-pynng.sh
 
     - name: Install
       run: |
-        source $HOME/ptf-test-venv/bin/activate
-        python3 -m pip install .
+        source ./CI/uv-setup-env.bash
+        uv pip install .
         ptf --version
 
     - name: Before_script
@@ -71,7 +72,7 @@ jobs:
 
     - name: Script
       run: |
-        source $HOME/ptf-test-venv/bin/activate
-        pip --verbose list
+        source ./CI/uv-setup-env.bash
+        uv pip --verbose list
         python3 CI/check-pynng.py
         ./CI/run_tests.sh

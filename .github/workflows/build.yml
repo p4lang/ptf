@@ -66,7 +66,7 @@ jobs:
       run: |
         source ./CI/uv-setup-env.bash
         uv pip install .
-        ptf --version
+        uv run ptf --version
 
     - name: Before_script
       run: |
@@ -76,5 +76,5 @@ jobs:
       run: |
         source ./CI/uv-setup-env.bash
         uv pip --verbose list
-        python3 CI/check-pynng.py
+        uv run CI/check-pynng.py
         ./CI/run_tests.sh

@@ -19,7 +19,7 @@ set-dev:
 	# TODO: Consider using a system-provided package here.
 	sudo apt-get install -y python3-venv curl
 	curl -LsSf https://astral.sh/uv/0.6.12/install.sh | sh
-        source tools/uv-setup-env.bash
+	source tools/uv-setup-env.bash
 	uv sync
 	uv pip install -r requirements-dev.txt
 

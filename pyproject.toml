@@ -10,6 +10,32 @@ requires = [
 ]
 build-backend = 'setuptools.build_meta'
 
+[project]
+name = "ptf"
+description = "The P4 Testing Framework"
+authors = [{name = "P4 Developers", email = "p4-dev@lists.p4.org"}]
+license = {text = "Apache-2.0"}
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+urls = {Homepage = "https://github.com/p4lang/ptf"}
+requires-python = ">=3.4"
+dependencies = [
+    "six",
+    "getmac",
+    "scapy_helper",
+    "netifaces",
+    "psutil",
+    "pynng",
+]
+dynamic = ["version"]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown; charset=UTF-8"
+
 [tool.setuptools_scm]
 root = "./"
 # use current tag and not next one

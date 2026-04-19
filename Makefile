@@ -19,7 +19,7 @@ set-dev:
 	# TODO: Consider using a system-provided package here.
 	sudo apt-get install -y curl
 	curl -LsSf https://astral.sh/uv/0.6.12/install.sh | sh
-	. CI/uv-setup-env.bash && echo "UV_VENV_BIN_DIR=${UV_VENV_BIN_DIR}" && echo "PATH=${PATH}" && uv sync && uv tool update-shell && uv pip install -r requirements-dev.txt
+	export PATH="${PATH}:${HOME}/.local/bin" && uv sync && uv tool update-shell && uv pip install -r requirements-dev.txt
 
 .PHONY: test
 test:

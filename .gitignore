@@ -11,5 +11,6 @@ dist
 build
 *.egg-info
 .eggs
+uv.lock
 
 src/ptf/_version.py

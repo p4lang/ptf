@@ -14,6 +14,18 @@ on:
     branches: [ main ]
 
 jobs:
+  verify-licenses:
+    runs-on: ubuntu-latest
+    name: Validate that all files have copyright and license info
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install REUSE
+        run: |
+          make set-dev
+          uv pip install reuse
+      - name: Validate presence of copyright and license info (python w/reuse)
+        run: |
+          uv run reuse lint
   verify-python:
     strategy:
       matrix:

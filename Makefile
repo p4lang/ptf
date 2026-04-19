@@ -5,19 +5,23 @@
 .PHONY: format-check
 format-check:
 	@echo "Checking format..."
-	python -m black --check src/ ptf
+	uv run black --check src/ ptf
 
 .PHONY: format
 format:
 	@echo "Formatting..."
-	python -m black src/ ptf
+	uv run black src/ ptf
 
 .PHONY: set-dev
 set-dev:
 	@echo "Installing dev-dependencies..."
-	python -m pip install -r requirements-dev.txt
+	# Set up uv for Python dependency management.
+	# TODO: Consider using a system-provided package here.
+	sudo apt-get install -y curl
+	curl -LsSf https://astral.sh/uv/0.6.12/install.sh | sh
+	export PATH="${PATH}:${HOME}/.local/bin" && uv sync && uv tool update-shell && uv pip install -r requirements-dev.txt
 
 .PHONY: test
 test:
 	@echo "Running tests..."
-	export PYTHONPATH=${PWD}/src && python -m pytest utests/
+	export PYTHONPATH=${PWD}/src && uv run pytest utests/

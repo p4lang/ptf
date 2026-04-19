@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set -e
-python3 -m pip install --upgrade pynng
+uv pip install --upgrade pynng

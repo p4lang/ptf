@@ -656,6 +656,59 @@ def prune_tests(test_specs, test_modules):
     return result
 
 
+class PtfTestSuite(unittest.TestSuite):
+    def __init__(self, tests=(), default_test_case_timeout=None):
+        super(PtfTestSuite, self).__init__(tests)
+        self.default_test_case_timeout = default_test_case_timeout
+
+    def _run_test(self, test, result):
+        from ptf.ptfutils import Timeout
+
+        test_case_timeout = getattr(test, "_testtimeout", None)
+        if test_case_timeout is None:
+            test_case_timeout = self.default_test_case_timeout
+
+        if test_case_timeout:
+            with Timeout(test_case_timeout):
+                test(result)
+        else:
+            test(result)
+
+    def run(self, result, debug=False):
+        top_level = False
+        if getattr(result, "_testRunEntered", False) is False:
+            result._testRunEntered = top_level = True
+
+        for index, test in enumerate(self):
+            if result.shouldStop:
+                break
+
+            if unittest.suite._isnotsuite(test):
+                self._tearDownPreviousClass(test, result)
+                self._handleModuleFixture(test, result)
+                self._handleClassSetUp(test, result)
+                result._previousTestClass = test.__class__
+
+                if getattr(test.__class__, "_classSetupFailed", False) or getattr(
+                    result, "_moduleSetUpFailed", False
+                ):
+                    continue
+
+            if not debug:
+                self._run_test(test, result)
+            else:
+                test.debug()
+
+            if self._cleanup:
+                self._removeTestAtIndex(index)
+
+        if top_level:
+            self._tearDownPreviousClass(None, result)
+            self._handleModuleTearDown(result)
+            result._testRunEntered = False
+        return result
+
+
 def die(msg, exit_val=1):
     logging.critical(msg)
     sys.exit(exit_val)
@@ -812,6 +865,10 @@ elif config["test_order"] == "rand":
     random.seed(seed)
     random.shuffle(test_suite)
 
+test_suite = PtfTestSuite(
+    test_suite, default_test_case_timeout=config["test_case_timeout"]
+)
+
 
 if config["platform_dir"] is None:
     from ptf import platforms
@@ -894,38 +951,16 @@ if __name__ == "__main__":
         )
     else:
         runner = unittest.TextTestRunner(verbosity=2)
-    test_case_timeout = config["test_case_timeout"]
-    run_failures = []
-    run_errors = []
+    result = runner.run(test_suite)
+    run_failures = result.failures
+    run_errors = result.errors
     run_timeouts = []
-    from ptf.ptfutils import Timeout
-
-    for t in test_suite:
-        if t._testtimeout is not None:
-            this_test_timeout = t._testtimeout
-        else:
-            this_test_timeout = test_case_timeout
-
-        if this_test_timeout:
-            with Timeout(this_test_timeout):
-                result = runner.run(t)
-        else:
-            result = runner.run(t)
-
-        run_failures.extend(result.failures)
-        run_errors.extend(result.errors)
-
-        if this_test_timeout:
-            for case in result.errors:
-                traceback_str = case[1]
-                # TODO: hacky? could not think of a better way
-                if "raise Timeout.TimeoutError()" in traceback_str:
-                    logging.info("Test case failed because of timeout")
-                    run_timeouts.append(case)
-
-        if config["failfast"] and not result.wasSuccessful():
-            logging.info("Test failed and failfast mode enabled, stopping")
-            break
+    for case in result.errors:
+        traceback_str = case[1]
+        # TODO: hacky? could not think of a better way
+        if "raise Timeout.TimeoutError()" in traceback_str:
+            logging.info("Test case failed because of timeout")
+            run_timeouts.append(case)
 
     ptf.open_logfile("main")
     if ptf.testutils.skipped_test_count > 0:

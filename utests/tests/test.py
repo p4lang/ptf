@@ -87,3 +87,30 @@ class TestParamsTestCase(BaseTestCase):
         testspec = "test.TestParamGet"
         out = self.do_test_params(testspec, test_params_str)
         self.assertIn("Error when parsing test params", out)
+
+
+class FixturesTestCase(BaseTestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.testdir = "utests/specs"
+
+    def test_module_and_class_fixtures_run(self):
+        rc, out = self.run_ptf(
+            args=[
+                "--test-dir",
+                self.testdir,
+                "--platform",
+                "dummy",
+                "fixtures.ModuleFixtureProbeOne",
+                "fixtures.ModuleFixtureProbeTwo",
+            ]
+        )
+        self.assertEqual(rc, 0)
+        self.assertEqual(out.count(">>>setUpModule"), 1)
+        self.assertEqual(out.count(">>>tearDownModule"), 1)
+        self.assertEqual(out.count(">>>ModuleFixtureProbeOne.setUpClass"), 1)
+        self.assertEqual(out.count(">>>ModuleFixtureProbeOne.tearDownClass"), 1)
+        self.assertEqual(out.count(">>>ModuleFixtureProbeTwo.setUpClass"), 1)
+        self.assertEqual(out.count(">>>ModuleFixtureProbeTwo.tearDownClass"), 1)
+        self.assertIn(">>>ModuleFixtureProbeOne.runTest", out)
+        self.assertIn(">>>ModuleFixtureProbeTwo.runTest", out)

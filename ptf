@@ -29,6 +29,7 @@ import random
 import signal
 import fnmatch
 import copy
+import types
 from collections import OrderedDict
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
@@ -656,57 +657,23 @@ def prune_tests(test_specs, test_modules):
     return result
 
 
-class PtfTestSuite(unittest.TestSuite):
-    def __init__(self, tests=(), default_test_case_timeout=None):
-        super(PtfTestSuite, self).__init__(tests)
-        self.default_test_case_timeout = default_test_case_timeout
+def apply_test_timeout(test, default_test_case_timeout=None):
+    original_run = test.run
 
-    def _run_test(self, test, result):
+    def run_with_timeout(self, result=None):
         from ptf.ptfutils import Timeout
 
-        test_case_timeout = getattr(test, "_testtimeout", None)
+        test_case_timeout = getattr(self, "_testtimeout", None)
         if test_case_timeout is None:
-            test_case_timeout = self.default_test_case_timeout
+            test_case_timeout = default_test_case_timeout
 
         if test_case_timeout:
             with Timeout(test_case_timeout):
-                test(result)
-        else:
-            test(result)
+                return original_run(result)
+        return original_run(result)
 
-    def run(self, result, debug=False):
-        top_level = False
-        if getattr(result, "_testRunEntered", False) is False:
-            result._testRunEntered = top_level = True
-
-        for index, test in enumerate(self):
-            if result.shouldStop:
-                break
-
-            if unittest.suite._isnotsuite(test):
-                self._tearDownPreviousClass(test, result)
-                self._handleModuleFixture(test, result)
-                self._handleClassSetUp(test, result)
-                result._previousTestClass = test.__class__
-
-                if getattr(test.__class__, "_classSetupFailed", False) or getattr(
-                    result, "_moduleSetUpFailed", False
-                ):
-                    continue
-
-            if not debug:
-                self._run_test(test, result)
-            else:
-                test.debug()
-
-            if self._cleanup:
-                self._removeTestAtIndex(index)
-
-        if top_level:
-            self._tearDownPreviousClass(None, result)
-            self._handleModuleTearDown(result)
-            result._testRunEntered = False
-        return result
+    test.run = types.MethodType(run_with_timeout, test)
+    return test
 
 
 def die(msg, exit_val=1):
@@ -865,9 +832,10 @@ elif config["test_order"] == "rand":
     random.seed(seed)
     random.shuffle(test_suite)
 
-test_suite = PtfTestSuite(
-    test_suite, default_test_case_timeout=config["test_case_timeout"]
-)
+test_suite = [
+    apply_test_timeout(test, config["test_case_timeout"]) for test in test_suite
+]
+test_suite = unittest.TestSuite(test_suite)
 
 
 if config["platform_dir"] is None:

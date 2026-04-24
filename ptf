@@ -29,6 +29,7 @@ import random
 import signal
 import fnmatch
 import copy
+import types
 from collections import OrderedDict
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
@@ -656,6 +657,25 @@ def prune_tests(test_specs, test_modules):
     return result
 
 
+def apply_test_timeout(test, default_test_case_timeout=None):
+    original_run = test.run
+
+    def run_with_timeout(self, result=None):
+        from ptf.ptfutils import Timeout
+
+        test_case_timeout = getattr(self, "_testtimeout", None)
+        if test_case_timeout is None:
+            test_case_timeout = default_test_case_timeout
+
+        if test_case_timeout:
+            with Timeout(test_case_timeout):
+                return original_run(result)
+        return original_run(result)
+
+    test.run = types.MethodType(run_with_timeout, test)
+    return test
+
+
 def die(msg, exit_val=1):
     logging.critical(msg)
     sys.exit(exit_val)
@@ -812,6 +832,11 @@ elif config["test_order"] == "rand":
     random.seed(seed)
     random.shuffle(test_suite)
 
+test_suite = [
+    apply_test_timeout(test, config["test_case_timeout"]) for test in test_suite
+]
+test_suite = unittest.TestSuite(test_suite)
+
 
 if config["platform_dir"] is None:
     from ptf import platforms
@@ -894,38 +919,16 @@ if __name__ == "__main__":
         )
     else:
         runner = unittest.TextTestRunner(verbosity=2)
-    test_case_timeout = config["test_case_timeout"]
-    run_failures = []
-    run_errors = []
+    result = runner.run(test_suite)
+    run_failures = result.failures
+    run_errors = result.errors
     run_timeouts = []
-    from ptf.ptfutils import Timeout
-
-    for t in test_suite:
-        if t._testtimeout is not None:
-            this_test_timeout = t._testtimeout
-        else:
-            this_test_timeout = test_case_timeout
-
-        if this_test_timeout:
-            with Timeout(this_test_timeout):
-                result = runner.run(t)
-        else:
-            result = runner.run(t)
-
-        run_failures.extend(result.failures)
-        run_errors.extend(result.errors)
-
-        if this_test_timeout:
-            for case in result.errors:
-                traceback_str = case[1]
-                # TODO: hacky? could not think of a better way
-                if "raise Timeout.TimeoutError()" in traceback_str:
-                    logging.info("Test case failed because of timeout")
-                    run_timeouts.append(case)
-
-        if config["failfast"] and not result.wasSuccessful():
-            logging.info("Test failed and failfast mode enabled, stopping")
-            break
+    for case in result.errors:
+        traceback_str = case[1]
+        # TODO: hacky? could not think of a better way
+        if "raise Timeout.TimeoutError()" in traceback_str:
+            logging.info("Test case failed because of timeout")
+            run_timeouts.append(case)
 
     ptf.open_logfile("main")
     if ptf.testutils.skipped_test_count > 0:

@@ -19,13 +19,14 @@ jobs:
     name: Validate that all files have copyright and license info
     steps:
       - uses: actions/checkout@v6
-      - name: Install REUSE
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+      - name: Install dev dependencies
         run: |
           make set-dev
-          uv pip install reuse
       - name: Validate presence of copyright and license info (python w/reuse)
         run: |
-          uv run reuse lint
+          uvx reuse lint
   verify-python:
     strategy:
       matrix:
@@ -38,6 +39,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
       - name: Install dependencies
         run: |
           make set-dev
@@ -60,19 +63,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v6
 
     - name: Dependencies
       run: |
         sudo apt-get install cmake libffi-dev ethtool python3-dev
         make set-dev
-        uv pip install --upgrade pip setuptools nose2 wheel
         uv pip install scapy==${{ matrix.scapy_version }}
-
-        bash CI/install-pynng.sh
 
     - name: Install
       run: |
-        uv pip install .
         uv run ptf --version
 
     - name: Before_script

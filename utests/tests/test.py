@@ -54,6 +54,7 @@ class TestParamsTestCase(BaseTestCase):
                 "--test-params={}".format(test_params_str),
                 "--platform",
                 "dummy",
+                "--allow-user",
                 testspec,
             ]
         )

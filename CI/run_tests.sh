@@ -26,5 +26,3 @@ sudo -E env PATH="$PATH" uv run ptf --test-dir ptf_nn/ptf_nn_test \
     --device-socket 0-{0-64}@tcp://127.0.0.1:10001 \
     --device-socket 1-{0-64}@tcp://127.0.0.1:10002 \
     --platform nn
-
-sudo -E env PATH="$PATH" uv run nose2 utests.tests.test

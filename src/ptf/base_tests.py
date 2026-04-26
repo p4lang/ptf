@@ -20,7 +20,6 @@ import os
 
 import ptf
 from ptf import config
-import ptf.dataplane as dataplane
 
 
 class BaseTest(unittest.TestCase):

@@ -257,31 +257,6 @@ wheels = [
 ]
 
 [[package]]
-name = "nose2"
-version = "0.14.2"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version == '3.8.*'",
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d2/e7/084c294770299519d55441626b4e1c7beb34831b803c4d3aba993c327374/nose2-0.14.2.tar.gz", hash = "sha256:29e581efcef01a1aba391e817b121a681e9841b3299c1110bba8b1cd1d4074bf", size = 167874 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/2a/dd458425b28c79ec9e70fed6661b994605ff19d8881972ff0a639074a87b/nose2-0.14.2-py3-none-any.whl", hash = "sha256:50cd5f5d025dcf4b6b7c8ada9849ba9a5ffb544fc46f8740da1059502c4b7f92", size = 209255 },
-]
-
-[[package]]
-name = "nose2"
-version = "0.16.0"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version == '3.9.*'",
-    "python_full_version >= '3.10'",
-]
-sdist = { url = "https://files.pythonhosted.org/packages/51/b2/73553c0e19c4bfe174940de03c2e1814f407e3524628690800f2536bf7f7/nose2-0.16.0.tar.gz", hash = "sha256:19db5ad20e264501a8ee64e3e157a3766a5e744170e54ceecb4e5ca09b08655a", size = 172667 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/3b/e93d177001ac3ba3cb2ebed7727442e1ee61990271f2bf39caef63798ead/nose2-0.16.0-py3-none-any.whl", hash = "sha256:a637c508b1fff5882c5f0f573226abe6f43b2f8005fef8896f57174d7d0e0c31", size = 213451 },
-]
-
-[[package]]
 name = "packaging"
 version = "24.0"
 source = { registry = "https://pypi.org/simple" }
@@ -387,7 +362,7 @@ wheels = [
 
 [[package]]
 name = "ptf"
-version = "0.11.0.post13+gad3c816d4.d20260424"
+version = "0.11.0.post15+g6347e2256.d20260426"
 source = { editable = "." }
 dependencies = [
     { name = "getmac" },
@@ -403,8 +378,6 @@ dependencies = [
 dev = [
     { name = "black", version = "23.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "black", version = "26.3.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "nose2", version = "0.14.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.8.*'" },
-    { name = "nose2", version = "0.16.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "pytest", version = "7.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "pytest", version = "9.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
 ]
@@ -424,8 +397,6 @@ requires-dist = [
 dev = [
     { name = "black", marker = "python_full_version < '3.10'", specifier = "==23.3.0" },
     { name = "black", marker = "python_full_version >= '3.10'", specifier = "==26.3.1" },
-    { name = "nose2", marker = "python_full_version == '3.8.*'", specifier = "==0.14.2" },
-    { name = "nose2", marker = "python_full_version >= '3.9'", specifier = "==0.16.0" },
     { name = "pytest", marker = "python_full_version < '3.10'", specifier = "==7.4.4" },
     { name = "pytest", marker = "python_full_version >= '3.10'", specifier = "==9.0.3" },
 ]

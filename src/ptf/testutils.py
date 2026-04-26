@@ -13,14 +13,25 @@ import logging
 import types
 import time
 import re
-from . import packet
+import importlib
 
 import ptf
-import ptf.dataplane
-import ptf.parse
-import ptf.ptfutils
 import codecs
 from io import StringIO
+
+
+class _LazyModule:
+    def __init__(self, module_name):
+        self._module_name = module_name
+
+    def __getattr__(self, name):
+        module = importlib.import_module(self._module_name)
+        return getattr(module, name)
+
+
+packet = _LazyModule("ptf.packet")
+dataplane = _LazyModule("ptf.dataplane")
+ptfutils = _LazyModule("ptf.ptfutils")
 
 global skipped_test_count
 skipped_test_count = 0
@@ -3248,7 +3259,7 @@ def verify_packet(test, pkt, port_id, timeout=None):
     or a tuple of 2 integers (device_number, port_number)
     """
     if not timeout:
-        timeout = ptf.ptfutils.default_timeout
+        timeout = ptfutils.default_timeout
     device, port = port_to_tuple(port_id)
     logging.debug("Checking for pkt on device %d, port %d", device, port)
     result = dp_poll(
@@ -3268,7 +3279,7 @@ def verify_no_packet(test, pkt, port_id, timeout=None):
     or a tuple of 2 integers (device_number, port_number)
     """
     if timeout is None:
-        timeout = ptf.ptfutils.default_negative_timeout
+        timeout = ptfutils.default_negative_timeout
     device, port = port_to_tuple(port_id)
     logging.debug("Negative check for pkt on device %d, port %d", device, port)
     result = dp_poll(
@@ -3290,7 +3301,7 @@ def verify_no_other_packets(test, device_number=0, timeout=None):
     if ptf.config["relax"]:
         return
     if timeout is None:
-        timeout = ptf.ptfutils.default_negative_timeout
+        timeout = ptfutils.default_negative_timeout
     logging.debug(
         "Checking for unexpected packets on all ports of device %d" % device_number
     )
@@ -3324,9 +3335,9 @@ def verify_packets(test, pkt, ports=[], device_number=0, timeout=None, n_timeout
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
     if not timeout:
-        timeout = ptf.ptfutils.default_timeout
+        timeout = ptfutils.default_timeout
     if not n_timeout:
-        n_timeout = ptf.ptfutils.default_negative_timeout
+        n_timeout = ptfutils.default_negative_timeout
     for device, port in ptf_ports():
         if device != device_number:
             continue
@@ -3372,9 +3383,9 @@ def verify_packets_any(
     received = False
     failures = []
     if not timeout:
-        timeout = ptf.ptfutils.default_timeout
+        timeout = ptfutils.default_timeout
     if not n_timeout:
-        n_timeout = ptf.ptfutils.default_negative_timeout
+        n_timeout = ptfutils.default_negative_timeout
     for device, port in ptf_ports():
         if device != device_number:
             continue
@@ -3427,9 +3438,9 @@ def verify_packet_any_port(
     -ve timeout here means timeout for which we will wait for to check for unexpected pkts
     """
     if not timeout:
-        timeout = ptf.ptfutils.default_timeout
+        timeout = ptfutils.default_timeout
     if not n_timeout:
-        n_timeout = ptf.ptfutils.default_negative_timeout
+        n_timeout = ptfutils.default_negative_timeout
     logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
     result = dp_poll(test, device_number=device_number, timeout=timeout, exp_pkt=pkt)
     verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
@@ -3473,9 +3484,9 @@ def verify_any_packet_any_port(
     The function may verify both: not masked and masked packets
     """
     if not timeout:
-        timeout = ptf.ptfutils.default_timeout
+        timeout = ptfutils.default_timeout
     if not n_timeout:
-        n_timeout = ptf.ptfutils.default_negative_timeout
+        n_timeout = ptfutils.default_negative_timeout
 
     if timeout <= 0 or n_timeout <= 0:
         raise Exception(
@@ -3489,7 +3500,7 @@ def verify_any_packet_any_port(
 
     if isinstance(result, test.dataplane.PollSuccess) and result.port in ports:
         for pkt in pkts:
-            if ptf.dataplane.match_exp_pkt(pkt, result.packet):
+            if dataplane.match_exp_pkt(pkt, result.packet):
                 match_index = ports.index(result.port)
                 received = True
     verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
@@ -3535,9 +3546,9 @@ def verify_each_packet_on_each_port(
         len(pkts) == len(ports), "packet list count does not match port list count"
     )
     if not timeout:
-        timeout = ptf.ptfutils.default_timeout
+        timeout = ptfutils.default_timeout
     if not n_timeout:
-        n_timeout = ptf.ptfutils.default_negative_timeout
+        n_timeout = ptfutils.default_negative_timeout
     for port, pkt in zip(ports, pkts):
         logging.debug("Checking for pkt on device %d, port %d", device_number, port)
         result = dp_poll(
@@ -3580,9 +3591,9 @@ def verify_each_packet_on_multiple_port_lists(
     )
 
     if not timeout:
-        timeout = ptf.ptfutils.default_timeout
+        timeout = ptfutils.default_timeout
     if not n_timeout:
-        n_timeout = ptf.ptfutils.default_negative_timeout
+        n_timeout = ptfutils.default_negative_timeout
 
     if timeout <= 0 or n_timeout <= 0:
         raise Exception(
@@ -3600,7 +3611,7 @@ def verify_each_packet_on_multiple_port_lists(
             if rcv_device != device_number:
                 continue
             logging.debug("Checking for pkt on device %d, port %d", device_number, port)
-            if ptf.dataplane.match_exp_pkt(pkt, rcv_pkt):
+            if dataplane.match_exp_pkt(pkt, rcv_pkt):
                 pkt_cnt += 1
                 rcv_ports.add(port_list.index(rcv_port))
                 break
@@ -3621,7 +3632,7 @@ def verify_packet_prefix(test, pkt, port, len, device_number=0, timeout=None):
     """
     logging.debug("Checking for pkt on port %r", port)
     if timeout is None:
-        timeout = ptf.ptfutils.default_timeout
+        timeout = ptfutils.default_timeout
     result = test.dataplane.poll(
         port_number=port, timeout=timeout, exp_pkt=bytes(pkt)[:len]
     )
@@ -3638,7 +3649,7 @@ def count_matched_packets(test, exp_packet, port, device_number=0, timeout=None)
     returns the counter. Therefore, this function requires a positive timeout value.
     """
     if timeout is None:
-        timeout = ptf.ptfutils.default_timeout
+        timeout = ptfutils.default_timeout
     if timeout <= 0:
         raise Exception(
             "%s() requires positive timeout value." % sys._getframe().f_code.co_name
@@ -3650,7 +3661,7 @@ def count_matched_packets(test, exp_packet, port, device_number=0, timeout=None)
             test, device_number=device_number, port_number=port, timeout=timeout
         )
         if isinstance(result, test.dataplane.PollSuccess):
-            if ptf.dataplane.match_exp_pkt(exp_packet, result.packet):
+            if dataplane.match_exp_pkt(exp_packet, result.packet):
                 total_rcv_pkt_cnt += 1
         else:
             break
@@ -3668,7 +3679,7 @@ def count_matched_packets_all_ports(
     requires a positive timeout value.
     """
     if timeout is None:
-        timeout = ptf.ptfutils.default_timeout
+        timeout = ptfutils.default_timeout
     if timeout <= 0:
         raise Exception(
             "%s() requires positive timeout value." % sys._getframe().f_code.co_name
@@ -3682,7 +3693,7 @@ def count_matched_packets_all_ports(
 
         result = dp_poll(test, device_number=device_number, timeout=timeout)
         if isinstance(result, test.dataplane.PollSuccess):
-            if result.port in ports and ptf.dataplane.match_exp_pkt(
+            if result.port in ports and dataplane.match_exp_pkt(
                 exp_packet, result.packet
             ):
                 total_rcv_pkt_cnt += 1

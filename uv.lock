@@ -362,7 +362,7 @@ wheels = [
 
 [[package]]
 name = "ptf"
-version = "0.11.0.post15+g6347e2256.d20260426"
+version = "0.11.0.post15+gbabc73011.d20260426"
 source = { editable = "." }
 dependencies = [
     { name = "getmac" },

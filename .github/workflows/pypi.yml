@@ -16,8 +16,8 @@ jobs:
     runs-on: [ubuntu-22.04]
     steps:
     - uses: actions/checkout@v6
-    - name: Set up uv
-      uses: astral-sh/setup-uv@v6
+    - name: Install uv
+      run: ./CI/install-uv.sh
     - name: Build a binary wheel and a source tarball
       run: uv build --out-dir dist/
     - name: Publish distribution to PyPI

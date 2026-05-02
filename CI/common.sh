@@ -1,3 +1,6 @@
+# Copyright 2023 Antonin Bas
+# SPDX-License-Identifier: Apache-2.0
+
 force=0
 while [[ $# -gt 0 ]]; do
 key="$1"

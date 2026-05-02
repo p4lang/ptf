@@ -1,3 +1,6 @@
+# Copyright 2019 Antonin Bas
+# SPDX-License-Identifier: Apache-2.0
+
 """
 A dummy platform that returns an empty port map. Cannot be used for any
 meaningful dataplane testing (unless ports are added dynamically as part of the

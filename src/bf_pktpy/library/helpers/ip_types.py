@@ -1,3 +1,6 @@
+# Copyright 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 ITYPES = {
     0x00: "HOPOPT",
     0x01: "ICMP",

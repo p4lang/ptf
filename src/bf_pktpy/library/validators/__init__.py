@@ -1,5 +1,7 @@
-import warnings
+# Copyright 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
 
+import warnings
 
 warnings.warn(
     '"validators" has been renamed into "fields" and now is deprecated, please '

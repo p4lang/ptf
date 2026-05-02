@@ -1,4 +1,7 @@
 #!/bin/sh
+# Copyright 2023 Antonin Bas
+# SPDX-License-Identifier: Apache-2.0
+
 
 THIS_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $THIS_DIR/common.sh

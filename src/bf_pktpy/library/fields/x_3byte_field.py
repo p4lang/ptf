@@ -1,3 +1,6 @@
+# Copyright 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from bf_pktpy.library.fields.x_bit_field import XBitField
 
 

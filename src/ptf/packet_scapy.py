@@ -1,9 +1,18 @@
-# Distributed under the OpenFlow Software License (see LICENSE)
-# Copyright (c) 2010 The Board of Trustees of The Leland Stanford Junior University
+# Copyright 2010 The Board of Trustees of The Leland Stanford Junior University
 # Copyright (c) 2012, 2013 Big Switch Networks, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+# It is not clear whether this file was derived from code in the
+# Floodlight OFTest repository https://github.com/floodlight/oftest,
+# or developed independently and then released under the OpenFlow
+# Software License:
+# https://github.com/floodlight/oftest/blob/master/LICENSE
+# See file README-oftest.md in the ptf repository for more details.
+
 """
 Scapy implementation of packet manipulation module
 """
+
 import ptf
 from ptf import config
 import sys

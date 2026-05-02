@@ -1,3 +1,12 @@
+# Copyright 2010 The Board of Trustees of The Leland Stanford Junior University
+# SPDX-License-Identifier: Apache-2.0
+
+# This file was derived from code in the Floodlight OFTest repository
+# https://github.com/floodlight/oftest released under the OpenFlow
+# Software License:
+# https://github.com/floodlight/oftest/blob/master/LICENSE
+# See file README-oftest.md in the ptf repository for more details.
+
 """
 Base classes for test cases
 
@@ -11,7 +20,6 @@ import os
 
 import ptf
 from ptf import config
-import ptf.dataplane as dataplane
 
 
 class BaseTest(unittest.TestCase):

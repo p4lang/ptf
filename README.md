@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2015 Antonin Bas
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 PTF Packet Testing Framework
 
 ---
@@ -28,8 +34,8 @@ Two separate targets in makefile were prepared to make our work easier.
 If you want to run a check, type `make format-check`, but if you want to
 reformat your code, please use `make format`.
 
-`Black` is listed in the `requirements-dev.txt`. To install it locally, you
-can use `make set-dev` or `pip install -r requirements-dev.txt`.
+Developer tooling is managed through `uv`. To create the local development
+environment, use `make set-dev` or `uv sync --dev`.
 More information about Black, you find at
 [Black's GitHub Page](https://github.com/psf/black)
 
@@ -61,9 +67,9 @@ To enable VLAN tests, you need to install `pypcap`:
 pip install pypcap
 ```
 
-For developer purpose, you should install `requirements-dev.txt` with:
+For development, create the local environment with:
 ```text
-pip install -r requirements-dev.txt
+uv sync --dev
 ```
 
 The `tcpdump` is optional, but to install it use:
@@ -152,7 +158,16 @@ on which to inject packets (along with the corresponding port number).
 
 ## Install PTF
 
-PTF can be installed with `pip`:
+PTF can be installed with `uv`:
+
+```bash
+# Install the latest version in an isolated tool environment
+uv tool install ptf
+# Install a specific version
+uv tool install ptf==0.9.1
+```
+
+If you prefer `pip`, that still works:
 
 ```bash
 # Install the latest version
@@ -161,7 +176,8 @@ pip install ptf
 pip install ptf==0.9.1
 ```
 
-You can also install a local copy of PTF with `pip install .`.
+You can also install a local editable copy of PTF with `uv sync`, or build
+distributions locally with `uv build`.
 
 ---
 
@@ -315,12 +331,12 @@ NICs on the host running PTF, like so:
 
 ### `nn`
 
-We introduce a new platform, `nn`, which uses [nanomsg] (http://nanomsg.org/) to
-send and receive packet to the switch. We support IPC and TCP nanomsg
-sockets. When using this platform, you need to make sure that the Python package
-[nnpy] (https://github.com/nanomsg/nnpy) is installed. With `nn`, do not use
+We introduce a new platform, `nn`, which uses [NNG] (https://nng.nanomsg.org/)
+to send and receive packet to the switch. We support IPC and TCP sockets. When
+using this platform, you need to make sure that the Python package
+[pynng] (https://github.com/codypiersall/pynng) is installed. With `nn`, do not use
 `--interface`, instead use `--device-socket`. For each device, you need to
-provide a list of enabled ports and a nanomsg socket address. For example:
+provide a list of enabled ports and a socket address. For example:
 
     --device-socket 0-{1,2,5-8}@ipc:///tmp/bmv2_packets_1.ipc
 

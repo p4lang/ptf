@@ -1,26 +1,14 @@
 #!/usr/bin/env python
 
-# Copyright 2013-present Barefoot Networks, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# Copyright 2013 Barefoot Networks, Inc.
+# SPDX-License-Identifier: Apache-2.0
 
 #
 # Antonin Bas (antonin@barefootnetworks.com)
 #
 #
 
-import nnpy
+import pynng
 import struct
 import argparse
 
@@ -49,16 +37,14 @@ def receive(socket):
 
 
 def main():
-    socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)
-    socket.connect(args.socket)
+    socket = pynng.Pair0()
+    socket.dial(args.socket)
     if args.receive:
         receive(socket)
     else:  # send one
-        p = "ab" * 20
+        p = b"ab" * 20
         port = 1
         msg = struct.pack("<iii{}s".format(len(p)), MSG_TYPE_PACKET_IN, port, len(p), p)
-        # because nnpy expects unicode when using str
-        msg = list(msg)
         socket.send(msg)
 
 

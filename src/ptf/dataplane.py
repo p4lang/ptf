@@ -1,3 +1,12 @@
+# Copyright 2010 The Board of Trustees of The Leland Stanford Junior University
+# SPDX-License-Identifier: Apache-2.0
+
+# This file was derived from code in the Floodlight OFTest repository
+# https://github.com/floodlight/oftest released under the OpenFlow
+# Software License:
+# https://github.com/floodlight/oftest/blob/master/LICENSE
+# See file README-oftest.md in the ptf repository for more details.
+
 """
 OpenFlow Test Framework
 
@@ -35,11 +44,11 @@ from .pcap_writer import PcapWriter
 from io import StringIO
 
 try:
-    import nnpy
+    import pynng
 
-    with_nnpy = True
+    with_pynng = True
 except ImportError:
-    with_nnpy = False
+    with_pynng = False
 
 if "linux" in sys.platform:
     from . import afpacket
@@ -200,9 +209,9 @@ class DataPlanePortLinux(DataPlanePortIface, DataPlanePacketSourceIface):
 
 class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     """
-    Wrapper class around nnpy used to capture data packets, send data packets
+    Wrapper class around pynng used to capture data packets, send data packets
     and send port status messages. It implements DataPlanePacketSourceIface by
-    exposing nanomsg receive file descriptor (RCVFD).
+    exposing NNG receive file descriptor (recv_fd).
     Note that there has to be a 1-1 mapping between device and nanomsg
     socket. This is because the device number is not included in the PACKET_OUT
     messages. Maybe something to add in the future?
@@ -228,11 +237,11 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     def __init__(self, device_number, socket_addr, rcv_timeout, snd_timeout):
         self.device_number = device_number
         self.socket_addr = socket_addr
-        self.socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)
-        self.socket.connect(socket_addr)
+        self.socket = pynng.Pair0()
+        self.socket.recv_timeout = rcv_timeout
+        self.socket.send_timeout = snd_timeout
+        self.socket.dial(socket_addr)
         self.rcv_timeout = rcv_timeout
-        self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.RCVTIMEO, rcv_timeout)
-        self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.SNDTIMEO, snd_timeout)
         self.buffers = defaultdict(list)
         self.cvar = Condition()
         self.mac_addresses = {}
@@ -240,14 +249,15 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         self.ports = set()
 
     def close(self):
-        # TODO(antonin): something to do?
-        pass
+        if self.socket:
+            self.socket.close()
+            self.socket = None
 
     def fileno(self):
         """
         Return an integer file descriptor that can be passed to select(2).
         """
-        return self.socket.getsockopt(nnpy.SOL_SOCKET, nnpy.RCVFD)
+        return self.socket.recv_fd
 
     def __send_port_msg(self, msg_type, port_number, more):
         hdr = struct.pack("<iii", msg_type, port_number, more)
@@ -320,10 +330,7 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
             len(packet),
             packet,
         )
-        # because nnpy expects unicode when using str
-        msg = bytearray(msg)
         self.socket.send(msg)
-        # nnpy does not return the number of bytes sent
         return len(packet)
 
     def get_info(self, port_number, cache, send_request, timeout=2):
@@ -528,7 +535,7 @@ class DataPlanePortPcap:
         return self.pcap.fileno()
 
     def recv(self):
-        (timestamp, pkt) = next(self.pcap)
+        timestamp, pkt = next(self.pcap)
         return (self.device_number, self.port_number, pkt[:], timestamp)
 
     def get_packet_source(self):
@@ -602,7 +609,7 @@ class DataPlane(Thread):
         #
         if self.config["platform"] == "nn":
             # assert is ok here because this is caught earlier in ptf
-            assert with_nnpy == True
+            assert with_pynng == True
             self.dppclass = DataPlanePortNN
         elif "dataplane" in self.config and "portclass" in self.config["dataplane"]:
             self.dppclass = self.config["dataplane"]["portclass"]

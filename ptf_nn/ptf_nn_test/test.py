@@ -1,3 +1,6 @@
+# Copyright 2016 Antonin Bas
+# SPDX-License-Identifier: Apache-2.0
+
 import ptf
 from ptf.base_tests import BaseTest
 from ptf.mask import Mask

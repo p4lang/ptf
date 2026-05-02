@@ -1,11 +1,56 @@
+# Copyright 2023 Antonin Bas
+# SPDX-License-Identifier: Apache-2.0
+
 [build-system]
 requires = [
     "setuptools",
     "setuptools_scm[toml]",
     "setuptools_scm_git_archive",
-    "wheel",
 ]
 build-backend = 'setuptools.build_meta'
+
+[project]
+name = "ptf"
+description = "The P4 Testing Framework"
+authors = [{name = "P4 Developers", email = "p4-dev@lists.p4.org"}]
+license = {text = "Apache-2.0"}
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+urls = {Homepage = "https://github.com/p4lang/ptf"}
+requires-python = ">=3.7"
+dependencies = [
+    "six",
+    "getmac",
+    "scapy>=2.5.0",
+    "scapy_helper",
+    "netifaces",
+    "psutil",
+    "pynng",
+]
+dynamic = ["version"]
+
+[dependency-groups]
+dev = [
+    "black==23.3.0; python_version < '3.10'",
+    "black==26.3.1; python_version >= '3.10'",
+    "pytest==7.4.4; python_version < '3.10'",
+    "pytest==9.0.3; python_version >= '3.10'",
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown; charset=UTF-8"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+script-files = ["ptf", "ptf_nn/ptf_nn_agent.py"]
+license-files = ["LICENSE.OFTest", "LICENSES/Apache-2.0.txt"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools_scm]
 root = "./"

@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright 2016 Antonin Bas
+# SPDX-License-Identifier: Apache-2.0
+
 for idx in 0 1; do
     intf0="veth$(($idx*2))"
     intf1="veth$(($idx*2+1))"

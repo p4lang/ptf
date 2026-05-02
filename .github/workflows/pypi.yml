@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Antonin Bas
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: Publish releases to Pypi
 
 on:
@@ -11,25 +15,11 @@ jobs:
     if: ${{ github.repository == 'p4lang/ptf' }}
     runs-on: [ubuntu-22.04]
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.x'
-    - name: Install pypa/build
-      run: >-
-        python -m
-        pip install
-        build
-        --user
+    - uses: actions/checkout@v6
+    - name: Install uv
+      run: ./CI/install-uv.sh
     - name: Build a binary wheel and a source tarball
-      run: >-
-        python -m
-        build
-        --sdist
-        --wheel
-        --outdir dist/
-        .
+      run: uv build --out-dir dist/
     - name: Publish distribution to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:

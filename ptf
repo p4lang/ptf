@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+# Copyright 2010 The Board of Trustees of The Leland Stanford Junior University
+# SPDX-License-Identifier: Apache-2.0
+
+# This file was derived from code in the Floodlight OFTest repository
+# https://github.com/floodlight/oftest released under the OpenFlow
+# Software License:
+# https://github.com/floodlight/oftest/blob/master/LICENSE
+# See file README-oftest.md in the ptf repository for more details.
 """
 @package ptf
 
@@ -21,6 +29,7 @@ import random
 import signal
 import fnmatch
 import copy
+import types
 from collections import OrderedDict
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
@@ -648,6 +657,25 @@ def prune_tests(test_specs, test_modules):
     return result
 
 
+def apply_test_timeout(test, default_test_case_timeout=None):
+    original_run = test.run
+
+    def run_with_timeout(self, result=None):
+        from ptf.ptfutils import Timeout
+
+        test_case_timeout = getattr(self, "_testtimeout", None)
+        if test_case_timeout is None:
+            test_case_timeout = default_test_case_timeout
+
+        if test_case_timeout:
+            with Timeout(test_case_timeout):
+                return original_run(result)
+        return original_run(result)
+
+    test.run = types.MethodType(run_with_timeout, test)
+    return test
+
+
 def die(msg, exit_val=1):
     logging.critical(msg)
     sys.exit(exit_val)
@@ -699,7 +727,7 @@ def test_params_parse(config):
 #
 
 # Setup global configuration
-(new_config, args) = config_setup()
+new_config, args = config_setup()
 ptf.config.update(new_config)
 
 logging_setup(config)
@@ -709,6 +737,7 @@ logging.info("++++++++ " + time.asctime() + " ++++++++")
 # import after logging is configured so that scapy error logs (from importing
 # packet.py) are silenced and our own warnings are logged properly.
 import ptf.testutils
+import ptf.ptfutils
 
 # Try parsing test params and log them
 # We do this before importing the test modules in case test parameters are being
@@ -735,18 +764,14 @@ if config["list"]:
     mod_count = 0
     test_count = 0
     all_groups = set()
-    print(
-        """\
+    print("""\
 Tests are shown grouped by module. If a test is in any groups beyond "standard"
-and its module's group then they are shown in parentheses."""
-    )
+and its module's group then they are shown in parentheses.""")
     print()
-    print(
-        """\
+    print("""\
 Tests marked with '!' are disabled because they are experimental, special-purpose,
 or are too long to be run normally. These are not part of the "standard" test
-group or their module's test group."""
-    )
+group or their module's test group.""")
     print()
     print("Test List:")
     for modname, (mod, tests) in test_modules.items():
@@ -808,6 +833,11 @@ elif config["test_order"] == "rand":
     random.seed(seed)
     random.shuffle(test_suite)
 
+test_suite = [
+    apply_test_timeout(test, config["test_case_timeout"]) for test in test_suite
+]
+test_suite = unittest.TestSuite(test_suite)
+
 
 if config["platform_dir"] is None:
     from ptf import platforms
@@ -824,9 +854,9 @@ logging.info("Importing platform: " + platform_name)
 # TODO(antonin): put this check in platforms/nn.py ?
 if platform_name == "nn":
     try:
-        import nnpy
+        import pynng
     except:
-        die("Cannot use 'nn' platform if nnpy package is not installed")
+        die("Cannot use 'nn' platform if pynng package is not installed")
 
 platform_mod = None
 try:
@@ -870,12 +900,17 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 if __name__ == "__main__":
     profiler = profiler_setup(config)
 
-    # Set up the dataplane
-    ptf.dataplane_instance = ptf.dataplane.DataPlane(config)
-    pcap_setup(config)
-    for port_id, ifname in config["port_map"].items():
-        device, port = port_id
-        ptf.dataplane_instance.port_add(ifname, device, port)
+    if config["port_map"]:
+        import ptf.dataplane
+
+        # Set up the dataplane only when the selected platform exposes ports.
+        ptf.dataplane_instance = ptf.dataplane.DataPlane(config)
+        pcap_setup(config)
+        for port_id, ifname in config["port_map"].items():
+            device, port = port_id
+            ptf.dataplane_instance.port_add(ifname, device, port)
+    else:
+        ptf.dataplane_instance = None
 
     logging.info("*** TEST RUN START: " + time.asctime())
     if config["xunit"]:
@@ -890,38 +925,16 @@ if __name__ == "__main__":
         )
     else:
         runner = unittest.TextTestRunner(verbosity=2)
-    test_case_timeout = config["test_case_timeout"]
-    run_failures = []
-    run_errors = []
+    result = runner.run(test_suite)
+    run_failures = result.failures
+    run_errors = result.errors
     run_timeouts = []
-    from ptf.ptfutils import Timeout
-
-    for t in test_suite:
-        if t._testtimeout is not None:
-            this_test_timeout = t._testtimeout
-        else:
-            this_test_timeout = test_case_timeout
-
-        if this_test_timeout:
-            with Timeout(this_test_timeout):
-                result = runner.run(t)
-        else:
-            result = runner.run(t)
-
-        run_failures.extend(result.failures)
-        run_errors.extend(result.errors)
-
-        if this_test_timeout:
-            for case in result.errors:
-                traceback_str = case[1]
-                # TODO: hacky? could not think of a better way
-                if "raise Timeout.TimeoutError()" in traceback_str:
-                    logging.info("Test case failed because of timeout")
-                    run_timeouts.append(case)
-
-        if config["failfast"] and not result.wasSuccessful():
-            logging.info("Test failed and failfast mode enabled, stopping")
-            break
+    for case in result.errors:
+        traceback_str = case[1]
+        # TODO: hacky? could not think of a better way
+        if "raise Timeout.TimeoutError()" in traceback_str:
+            logging.info("Test case failed because of timeout")
+            run_timeouts.append(case)
 
     ptf.open_logfile("main")
     if ptf.testutils.skipped_test_count > 0:
@@ -933,9 +946,10 @@ if __name__ == "__main__":
     logging.info("*** TEST RUN END  : " + time.asctime())
 
     # Shutdown the dataplane
-    ptf.dataplane_instance.stop_pcap()  # no-op is pcap not started
-    ptf.dataplane_instance.kill()
-    ptf.dataplane_instance = None
+    if ptf.dataplane_instance is not None:
+        ptf.dataplane_instance.stop_pcap()  # no-op is pcap not started
+        ptf.dataplane_instance.kill()
+        ptf.dataplane_instance = None
 
     profiler_teardown(profiler)
 

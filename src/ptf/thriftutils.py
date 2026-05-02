@@ -1,3 +1,6 @@
+# Copyright 2015 Antonin Bas
+# SPDX-License-Identifier: Apache-2.0
+
 import socket
 import struct
 

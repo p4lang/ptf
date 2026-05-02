@@ -1,19 +1,7 @@
 #!/usr/bin/env python
 
-# Copyright 2013-present Barefoot Networks, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# Copyright 2013 Barefoot Networks, Inc.
+# SPDX-License-Identifier: Apache-2.0
 
 #
 # Antonin Bas (antonin@barefootnetworks.com)
@@ -28,9 +16,9 @@ import struct
 import socket
 
 try:
-    import nnpy
+    import pynng
 except ImportError:
-    print("Cannot find nnpy package, please install")
+    print("Cannot find pynng package, please install")
     sys.exit(1)
 import threading
 import os
@@ -369,20 +357,17 @@ class NanomsgMgr(threading.Thread):
         self.daemon = True
         self.dev = dev
         self.socket_addr = socket_addr
-        self.socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)
+        self.socket = pynng.Pair0()
         if nn_rcv_buf != 0:
-            self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.RCVBUF, nn_rcv_buf)
+            self.socket.recv_buffer_size = nn_rcv_buf
         if nn_snd_buf != 0:
-            self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.SNDBUF, nn_snd_buf)
-        self.socket.bind(socket_addr)
+            self.socket.send_buffer_size = nn_snd_buf
+        self.socket.listen(socket_addr)
 
     def forward(self, p, port):
         msg = struct.pack(
             "<iii{}s".format(len(p)), self.MSG_TYPE_PACKET_OUT, port, len(p), p
         )
-        # because nnpy expects unicode when using str
-        msg = bytearray(msg)
-
         self.socket.send(msg)
 
     def handle_info_req(self, port_number, info_id, msg):

@@ -1,3 +1,7 @@
+# Copyright 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+
 class Container(list):
     """Container class to contain protocols"""
 

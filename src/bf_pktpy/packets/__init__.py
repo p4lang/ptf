@@ -1,3 +1,6 @@
+# Copyright 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
 from bf_pktpy.library.specs.base import Base
 from bf_pktpy.library.specs.packet import Packet
 

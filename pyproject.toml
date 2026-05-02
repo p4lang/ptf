@@ -6,7 +6,6 @@ requires = [
     "setuptools",
     "setuptools_scm[toml]",
     "setuptools_scm_git_archive",
-    "wheel",
 ]
 build-backend = 'setuptools.build_meta'
 
@@ -25,6 +24,7 @@ requires-python = ">=3.7"
 dependencies = [
     "six",
     "getmac",
+    "scapy>=2.5.0",
     "scapy_helper",
     "netifaces",
     "psutil",
@@ -32,9 +32,25 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[dependency-groups]
+dev = [
+    "black==23.3.0; python_version < '3.10'",
+    "black==26.3.1; python_version >= '3.10'",
+    "pytest==7.4.4; python_version < '3.10'",
+    "pytest==9.0.3; python_version >= '3.10'",
+]
+
 [project.readme]
 file = "README.md"
 content-type = "text/markdown; charset=UTF-8"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+script-files = ["ptf", "ptf_nn/ptf_nn_agent.py"]
+license-files = ["LICENSE.OFTest", "LICENSES/Apache-2.0.txt"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools_scm]
 root = "./"

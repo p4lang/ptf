@@ -22,8 +22,8 @@ packets between the PTF agent and the PTF test runner. You will therefore need
 to install the following:
 
   - [pynng](https://github.com/codypiersall/pynng): these are the Python
-    bindings for NNG. You may use the provided
-    [install-pynng.sh](../CI/install-pynng.sh) script to install pynng.
+    bindings for NNG. In a repository checkout, install project dependencies
+    with `uv sync --dev` to make `pynng` available locally.
 
 We provide a [check-pynng.py](../CI/check-pynng.py) script that you can run to
 check that pynng is running properly.

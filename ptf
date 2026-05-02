@@ -737,6 +737,7 @@ logging.info("++++++++ " + time.asctime() + " ++++++++")
 # import after logging is configured so that scapy error logs (from importing
 # packet.py) are silenced and our own warnings are logged properly.
 import ptf.testutils
+import ptf.ptfutils
 
 # Try parsing test params and log them
 # We do this before importing the test modules in case test parameters are being
@@ -899,12 +900,17 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 if __name__ == "__main__":
     profiler = profiler_setup(config)
 
-    # Set up the dataplane
-    ptf.dataplane_instance = ptf.dataplane.DataPlane(config)
-    pcap_setup(config)
-    for port_id, ifname in config["port_map"].items():
-        device, port = port_id
-        ptf.dataplane_instance.port_add(ifname, device, port)
+    if config["port_map"]:
+        import ptf.dataplane
+
+        # Set up the dataplane only when the selected platform exposes ports.
+        ptf.dataplane_instance = ptf.dataplane.DataPlane(config)
+        pcap_setup(config)
+        for port_id, ifname in config["port_map"].items():
+            device, port = port_id
+            ptf.dataplane_instance.port_add(ifname, device, port)
+    else:
+        ptf.dataplane_instance = None
 
     logging.info("*** TEST RUN START: " + time.asctime())
     if config["xunit"]:
@@ -940,9 +946,10 @@ if __name__ == "__main__":
     logging.info("*** TEST RUN END  : " + time.asctime())
 
     # Shutdown the dataplane
-    ptf.dataplane_instance.stop_pcap()  # no-op is pcap not started
-    ptf.dataplane_instance.kill()
-    ptf.dataplane_instance = None
+    if ptf.dataplane_instance is not None:
+        ptf.dataplane_instance.stop_pcap()  # no-op is pcap not started
+        ptf.dataplane_instance.kill()
+        ptf.dataplane_instance = None
 
     profiler_teardown(profiler)
 

@@ -108,8 +108,10 @@ jobs:
           add-paths: Version.txt
           reviewers: fruffy, jafingerhut
           commit-message: ${{ steps.message.outputs.content }}
-          signoff: false
           branch: v${{ env.VERSION }}
           delete-branch: true
           title: Automated Release v${{ env.VERSION }}
           body: ${{ steps.body.outputs.content }}
+          signoff: true
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>

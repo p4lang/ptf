@@ -20,13 +20,12 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 urls = {Homepage = "https://github.com/p4lang/ptf"}
-requires-python = ">=3.9"
+requires-python = ">=3.7"
 dependencies = [
     "six",
     "getmac",
     "scapy>=2.5.0",
     "scapy_helper",
-    "cffi>=2.0",
     "netifaces",
     "psutil",
     "pynng",

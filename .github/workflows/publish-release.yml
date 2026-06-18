@@ -26,3 +26,22 @@ jobs:
     uses: p4lang/.github/.github/workflows/publish-release.yml@main
     with:
       version_file: Version.txt
+
+  publish-to-pypi:
+    name: Publish a Python distribution to PyPI
+    if: ${{ github.repository == 'p4lang/ptf' }}
+    needs: publish-release
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+    - uses: actions/checkout@v6
+    - name: Install uv
+      run: ./CI/install-uv.sh
+    - name: Build a binary wheel and a source tarball
+      run: uv build --out-dir dist/
+    - name: Publish distribution to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        skip-existing: true

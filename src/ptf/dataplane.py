@@ -641,7 +641,19 @@ class DataPlane(Thread):
                         continue
                     else:
                         # Enqueue packet
-                        t = sel.recv()
+                        try:
+                            t = sel.recv()
+                        except Exception as e:
+                            # A transient receive error on a single socket
+                            # (e.g. ENETDOWN while a veth/host interface carrier
+                            # flaps during setup) must not tear down the whole
+                            # dataplane poller thread, otherwise reception stops
+                            # on every port for the rest of the run. Skip this
+                            # socket for now; it will be polled again next loop.
+                            self.logger.warning(
+                                "recv failed on a dataplane socket, skipping: %s", e
+                            )
+                            continue
                         if t is None:
                             continue
                         device_number, port_number, pkt, timestamp = t

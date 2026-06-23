@@ -654,13 +654,9 @@ class DataPlane(Thread):
                         try:
                             t = sel.recv()
                         except Exception as e:
-                            # A transient receive error on a single socket
-                            # (e.g. ENETDOWN while a veth/host interface carrier
-                            # flaps during setup) must not tear down the whole
-                            # dataplane poller thread, otherwise reception stops
-                            # on every port for the rest of the run. Skip this
-                            # socket for now; it will be polled again next loop.
-                            self.logger.warning(
+                            # Skip transient recv errors (e.g. ENETDOWN during
+                            # link flap) so the RX thread keeps running.
+                            self.logger.debug(
                                 "recv failed on a dataplane socket, skipping: %s", e
                             )
                             continue

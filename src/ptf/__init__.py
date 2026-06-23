@@ -1,7 +1,24 @@
+# Copyright 2010 The Board of Trustees of The Leland Stanford Junior University
+# SPDX-License-Identifier: Apache-2.0
+
+# This file was derived from code in the Floodlight OFTest repository
+# https://github.com/floodlight/oftest released under the OpenFlow
+# Software License:
+# https://github.com/floodlight/oftest/blob/master/LICENSE
+# See file README-oftest.md in the ptf repository for more details.
+
 """Docstring to silence pylint; ignores --ignore option for __init__.py"""
+
 import sys
 import os
 import logging
+
+try:
+    from ._version import __version__
+except ImportError:
+    # the generated _version.py file should not be checked-in
+    # if it is missing, we set the version string to "unknown"
+    __version__ = "unknown"
 
 # Global config dictionary
 # Populated by oft.

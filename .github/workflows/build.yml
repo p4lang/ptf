@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2020 Sayan Bandyopadhyay
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Config file for automatic testing using github actions
 #
 
@@ -5,20 +9,40 @@ name: Unit_Tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
-  verify-python:
-    name: Python code verification (src)
+  verify-licenses:
     runs-on: ubuntu-latest
+    name: Validate that all files have copyright and license info
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
+      - name: Install dev dependencies
+        run: |
+          ./CI/install-uv.sh
+          make set-dev
+      - name: Validate presence of copyright and license info (python w/reuse)
+        run: |
+          uvx reuse lint
+  verify-python:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
+        scapy_version: [2.6.1, 2.7.0]
+      # Don't abort other runs when one of them fails, to ease debugging.
+      fail-fast: false
+
+    name: Python code verification (src)
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
       - name: Install dependencies
         run: |
+          ./CI/install-uv.sh
           make set-dev
-          python -m pip install scapy==2.4.5
+          uv pip install scapy==${{ matrix.scapy_version }}
       - name: Verify code (python w/black)
         run: |
           make format-check
@@ -26,32 +50,28 @@ jobs:
         run: | 
           make test
   test:
-    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
+        scapy_version: [2.6.1, 2.7.0]
+      # Don't abort other runs when one of them fails, to ease debugging.
+      fail-fast: false
+
+    name: run ptf unit tests
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: recursive
+    - uses: actions/checkout@v6
+
     - name: Dependencies
       run: |
-        sudo apt-get install python-dev
-        sudo apt-get install python-pip
-        sudo apt-get install cmake
-        sudo apt-get install libffi-dev
-        sudo apt-get install python3-dev
-        sudo apt-get install python3-pip
-        sudo apt-get install ethtool
-        sudo pip install setuptools
-        sudo pip install scapy
-        sudo pip3 install setuptools
-        sudo pip3 install nose2 scapy
-
-        bash CI/travis/install-nanomsg.sh
-        sudo ldconfig
-        bash CI/travis/install-nnpy.sh
+        sudo apt-get install cmake libffi-dev ethtool python3-dev
+        ./CI/install-uv.sh
+        make set-dev
+        uv pip install scapy==${{ matrix.scapy_version }}
 
     - name: Install
       run: |
-        sudo python setup.py install
+        uv run ptf --version
 
     - name: Before_script
       run: |
@@ -59,6 +79,6 @@ jobs:
 
     - name: Script
       run: |
-        python CI/travis/check-nnpy.py
-        ./CI/travis/run_tests.sh
-        sudo python3 /usr/local/bin/nose2 utests.tests.test
+        uv pip --verbose list
+        uv run CI/check-pynng.py
+        ./CI/run_tests.sh

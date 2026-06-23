@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+
+
+# Copyright (c) 2022 Intel Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+###############################################################################
+"""DtelReportHdr template"""
+
+from bf_pktpy.library.specs.packet import Packet
+from bf_pktpy.library.fields import BitField, IntField
+
+
+class DtelReportHdr(Packet):
+    name = "DtelReportHdr"
+    fields_desc = [
+        BitField("ver", 0, 4),
+        BitField("next_proto", 0, 4),
+        BitField("dropped", 0, 1),
+        BitField("congested_queue", 0, 1),
+        BitField("path_tracking_flow", 0, 1),
+        BitField("reserved", 0, 15),
+        BitField("hw_id", 0, 6),
+        IntField("sequence_number", 0),
+        IntField("timestamp", 0),
+    ]
+
+    def _combine(self, body_copy):
+        if body_copy.name == "Ether":
+            self._body = body_copy
+            self.next_proto = 0
+            return self
+        if body_copy.name == "ModHeader":
+            self._body = body_copy
+            self.next_proto = 1
+            return self
+        if body_copy.name == "PostcardHeader":
+            self._body = body_copy
+            self.next_proto = 2
+            return self
+
+        raise ValueError("Unsupported binding")

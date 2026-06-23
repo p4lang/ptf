@@ -1,3 +1,6 @@
+# Copyright 2021 Nex Sabre
+# SPDX-License-Identifier: Apache-2.0
+
 from ptf.testutils import simple_igmp_packet
 
 

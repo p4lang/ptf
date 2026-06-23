@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2015 Antonin Bas
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 PTF Packet Testing Framework
 
 ---
@@ -28,8 +34,8 @@ Two separate targets in makefile were prepared to make our work easier.
 If you want to run a check, type `make format-check`, but if you want to
 reformat your code, please use `make format`.
 
-`Black` is listed in the `requirements-dev.txt`. To install it locally, you
-can use `make set-dev` or `pip install -r requirements-dev.txt`.
+Developer tooling is managed through `uv`. To create the local development
+environment, use `make set-dev` or `uv sync --dev`.
 More information about Black, you find at
 [Black's GitHub Page](https://github.com/psf/black)
 
@@ -41,22 +47,19 @@ More information about Black, you find at
 
 The following software is required to run PTF:
 
- * Python 2.7 or 3.x
- * six 1.16.0
- * Scapy 2.4.5 (unless you provide another packet manipulation module)
- * pypcap (optional - VLAN tests will fail without this)
- * tcpdump (optional - Scapy will complain if it's missing)
+ * Python 3.x
+
+The following packages are optional for running PTF:
+
+ * Scapy 2.5.0 (you may also use the included `bf_pktpy` module instead)
+ * pypcap (VLAN tests will fail without this)
+ * tcpdump (Scapy will complain if it's missing)
 
 Root/sudo privilege is required on the host, in order to run `ptf`.
 
-To install minimal requirements execute:
+The default packet manipulation module for `ptf` is `Scapy`. To install it use:
 ```text
-pip install -r requirements.txt
-```
-
-The default packet manipulator tool for `ptf` is `Scapy`. To install it use:
-```text
-pip install scapy==2.4.5
+pip install scapy==2.5.0
 ```
 
 To enable VLAN tests, you need to install `pypcap`:
@@ -64,9 +67,9 @@ To enable VLAN tests, you need to install `pypcap`:
 pip install pypcap
 ```
 
-For developer purpose, you should install `requirements-dev.txt` with:
+For development, create the local environment with:
 ```text
-pip install -r requirements-dev.txt
+uv sync --dev
 ```
 
 The `tcpdump` is optional, but to install it use:
@@ -77,6 +80,63 @@ yum install tcpdump
 # on Debian base
 apt-get install tcpdump
 ```
+
+### Using `bf_pktpy` as an alternate packet manipulation module
+
+The Python module `bf_pktpy` is included as part of the ptf package.
+It was developed as an alternative to `scapy`.  The tradeoffs of using
+`bf_pktpy` vs. `scapy` are:
+
++ `scapy` implements more functionality, but is licensed under the
+  copyleft GNU General Public License v2.0 (see
+  https://github.com/secdev/scapy/blob/master/LICENSE), so may be
+  undesirable in use cases where you wish your tests to be released
+  under a different license.
++ `bf_pktpy` implements only a small subset of the functionality of
+  `scapy`, but it does include support for very commonly-used packet
+  headers.  It is released under an Apache 2.0 license.
+
+If you want to use `bf_pktpy` when running the command `ptf` from the
+command line, provide the `-pmm` option as shown below.
+
+```bash
+ptf -pmm bf_pktpy.ptf.packet_pktpy <other command line arguments>
+```
+
+If you want to write a Python program that imports `ptf` and causes it
+to use `bf_pktpy` instead of the default `scapy`, you can do so as
+follows in your Python code:
+
+```python
+import ptf
+ptf.config["packet_manipulation_module"] = "bf_pktpy.ptf.packet_pktpy"
+import ptf.packet
+```
+
+The above methods are the highest precedence way of choosing the
+packet manipulation module used by `ptf`.  If you do not use those
+methods, another way is to assign the packet manipulation module name
+to the environment variable `PTF_PACKET_MANIPULATION_MODULE`, e.g. in
+Bash:
+
+```bash
+export PTF_PACKET_MANIPULATION_MODULE="bf_pktpy.ptf.packet_pktpy"
+```
+
+When running such a program, you should see the following line printed
+to standard output confirming that it is using `bf_pktpy` instead of
+`scapy`:
+
+```text
+Using packet manipulation module: bf_pktpy.ptf.packet_pktpy
+```
+
+If instead you see this line of output, `ptf` is using `scapy`:
+
+```text
+Using packet manipulation module: ptf.packet_scapy
+```
+
 
 ## Run PTF
 
@@ -98,12 +158,16 @@ on which to inject packets (along with the corresponding port number).
 
 ## Install PTF
 
-PTF can be installed by running `sudo python setup.py install`. For more
-information on the different options accepted by `setup.py` (e.g. installing in
-a custom location), please refer to the [setuptools documentation]
-(https://pythonhosted.org/setuptools/setuptools.html).
+PTF can be installed with `uv`:
 
-PTF can also be installed with `pip`:
+```bash
+# Install the latest version in an isolated tool environment
+uv tool install ptf
+# Install a specific version
+uv tool install ptf==0.9.1
+```
+
+If you prefer `pip`, that still works:
 
 ```bash
 # Install the latest version
@@ -111,6 +175,9 @@ pip install ptf
 # Install specific version
 pip install ptf==0.9.1
 ```
+
+You can also install a local editable copy of PTF with `uv sync`, or build
+distributions locally with `uv build`.
 
 ---
 
@@ -195,9 +262,9 @@ timeout takes precedence over the global timeout passed on the command line.
 ## Pluggable packet manipulation module
 
 By default, `ptf` uses `Scapy` as the packet manipulation module, but it can 
-also operate on a different one. 
+also operate on a different one, e.g. the included `bf_pktpy` module.
 
-Such module **must define/implement the same symbols**, as defined in `Scapy` 
+Such a module **must define/implement the same symbols**, as defined in `Scapy` 
 implementation of packet. Most of them are just names of most common frame 
 headers (Ether, IP, TCP, UDP, ...).
 
@@ -264,12 +331,12 @@ NICs on the host running PTF, like so:
 
 ### `nn`
 
-We introduce a new platform, `nn`, which uses [nanomsg] (http://nanomsg.org/) to
-send and receive packet to the switch. We support IPC and TCP nanomsg
-sockets. When using this platform, you need to make sure that the Python package
-[nnpy] (https://github.com/nanomsg/nnpy) is installed. With `nn`, do not use
+We introduce a new platform, `nn`, which uses [NNG] (https://nng.nanomsg.org/)
+to send and receive packet to the switch. We support IPC and TCP sockets. When
+using this platform, you need to make sure that the Python package
+[pynng] (https://github.com/codypiersall/pynng) is installed. With `nn`, do not use
 `--interface`, instead use `--device-socket`. For each device, you need to
-provide a list of enabled ports and a nanomsg socket address. For example:
+provide a list of enabled ports and a socket address. For example:
 
     --device-socket 0-{1,2,5-8}@ipc:///tmp/bmv2_packets_1.ipc
 

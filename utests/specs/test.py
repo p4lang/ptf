@@ -1,6 +1,10 @@
+# Copyright 2019 Antonin Bas
+# SPDX-License-Identifier: Apache-2.0
+
 import ptf
 from ptf.base_tests import BaseTest
 from ptf import testutils
+
 
 class TestParamsGet(BaseTest):
     def setUp(self):
@@ -14,12 +18,13 @@ class TestParamsGet(BaseTest):
             for k, v in params.items():
                 print(">>>{}={}".format(k, v))
 
+
 class TestParamGet(BaseTest):
     def setUp(self):
         BaseTest.setUp(self)
 
     def runTest(self):
-        v = testutils.test_param_get('k1', default=-1)
+        v = testutils.test_param_get("k1", default=-1)
         if v is None:
             print(">>>None")
         else:

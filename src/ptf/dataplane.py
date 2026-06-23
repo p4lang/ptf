@@ -1,3 +1,12 @@
+# Copyright 2010 The Board of Trustees of The Leland Stanford Junior University
+# SPDX-License-Identifier: Apache-2.0
+
+# This file was derived from code in the Floodlight OFTest repository
+# https://github.com/floodlight/oftest released under the OpenFlow
+# Software License:
+# https://github.com/floodlight/oftest/blob/master/LICENSE
+# See file README-oftest.md in the ptf repository for more details.
+
 """
 OpenFlow Test Framework
 
@@ -32,14 +41,14 @@ from . import netutils
 from . import mask
 from . import packet
 from .pcap_writer import PcapWriter
-from six import StringIO
+from io import StringIO
 
 try:
-    import nnpy
+    import pynng
 
-    with_nnpy = True
+    with_pynng = True
 except ImportError:
-    with_nnpy = False
+    with_pynng = False
 
 if "linux" in sys.platform:
     from . import afpacket
@@ -200,9 +209,9 @@ class DataPlanePortLinux(DataPlanePortIface, DataPlanePacketSourceIface):
 
 class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     """
-    Wrapper class around nnpy used to capture data packets, send data packets
+    Wrapper class around pynng used to capture data packets, send data packets
     and send port status messages. It implements DataPlanePacketSourceIface by
-    exposing nanomsg receive file descriptor (RCVFD).
+    exposing NNG receive file descriptor (recv_fd).
     Note that there has to be a 1-1 mapping between device and nanomsg
     socket. This is because the device number is not included in the PACKET_OUT
     messages. Maybe something to add in the future?
@@ -225,13 +234,14 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
     MSG_INFO_STATUS_SUCCESS = 0
     MSG_INFO_STATUS_NOT_SUPPORTED = 1
 
-    def __init__(self, device_number, socket_addr, rcv_timeout):
+    def __init__(self, device_number, socket_addr, rcv_timeout, snd_timeout):
         self.device_number = device_number
         self.socket_addr = socket_addr
-        self.socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)
-        self.socket.connect(socket_addr)
+        self.socket = pynng.Pair0()
+        self.socket.recv_timeout = rcv_timeout
+        self.socket.send_timeout = snd_timeout
+        self.socket.dial(socket_addr)
         self.rcv_timeout = rcv_timeout
-        self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.RCVTIMEO, rcv_timeout)
         self.buffers = defaultdict(list)
         self.cvar = Condition()
         self.mac_addresses = {}
@@ -239,14 +249,15 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         self.ports = set()
 
     def close(self):
-        # TODO(antonin): something to do?
-        pass
+        if self.socket:
+            self.socket.close()
+            self.socket = None
 
     def fileno(self):
         """
         Return an integer file descriptor that can be passed to select(2).
         """
-        return self.socket.getsockopt(nnpy.SOL_SOCKET, nnpy.RCVFD)
+        return self.socket.recv_fd
 
     def __send_port_msg(self, msg_type, port_number, more):
         hdr = struct.pack("<iii", msg_type, port_number, more)
@@ -319,13 +330,7 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
             len(packet),
             packet,
         )
-        # because nnpy expects unicode when using str
-        if sys.version_info[0] == 2:
-            msg = list(msg)
-        else:
-            msg = bytearray(msg)
         self.socket.send(msg)
-        # nnpy does not return the number of bytes sent
         return len(packet)
 
     def get_info(self, port_number, cache, send_request, timeout=2):
@@ -358,6 +363,9 @@ class DataPlanePortNN(DataPlanePortIface):
     """
 
     RCV_TIMEOUT = 10000
+    # Time out after a second if the socket is non-functional.
+    # This should be long enough for nanomsg.
+    SND_TIMEOUT = 1000
 
     # indexed by device_number and interface name, maps to a PacketInjectNN instance
     packet_injecters = {}
@@ -370,9 +378,11 @@ class DataPlanePortNN(DataPlanePortIface):
         self.interface_name = interface_name
         self.device_number = device_number
         if (device_number, interface_name) not in self.packet_injecters:
-            self.packet_injecters[
-                (self.device_number, self.interface_name)
-            ] = DataPlanePacketSourceNN(device_number, interface_name, self.RCV_TIMEOUT)
+            self.packet_injecters[(self.device_number, self.interface_name)] = (
+                DataPlanePacketSourceNN(
+                    device_number, interface_name, self.RCV_TIMEOUT, self.SND_TIMEOUT
+                )
+            )
         self.packet_inject = self.packet_injecters[
             (self.device_number, self.interface_name)
         ]
@@ -525,7 +535,7 @@ class DataPlanePortPcap:
         return self.pcap.fileno()
 
     def recv(self):
-        (timestamp, pkt) = next(self.pcap)
+        timestamp, pkt = next(self.pcap)
         return (self.device_number, self.port_number, pkt[:], timestamp)
 
     def get_packet_source(self):
@@ -599,7 +609,7 @@ class DataPlane(Thread):
         #
         if self.config["platform"] == "nn":
             # assert is ok here because this is caught earlier in ptf
-            assert with_nnpy == True
+            assert with_pynng == True
             self.dppclass = DataPlanePortNN
         elif "dataplane" in self.config and "portclass" in self.config["dataplane"]:
             self.dppclass = self.config["dataplane"]["portclass"]
@@ -736,8 +746,9 @@ class DataPlane(Thread):
             self.logger.warn(
                 "The %s kernel may not send packets smaller than 15 bytes", sys.platform
             )
-        if self.pcap_writer:
-            self.pcap_writer.write(packet, time.time(), device_number, port_number)
+        with self.cvar:
+            if self.pcap_writer:
+                self.pcap_writer.write(packet, time.time(), device_number, port_number)
         bytes = self.ports[(device_number, port_number)].send(packet)
         self.tx_counters[(device_number, port_number)] += 1
         if bytes != len(packet):
@@ -753,7 +764,7 @@ class DataPlane(Thread):
         """
         min_port_number = None
         min_time = float("inf")
-        for (port_id, queue) in list(self.packet_queues.items()):
+        for port_id, queue in list(self.packet_queues.items()):
             if port_id[0] != device:
                 continue
             if queue and queue[0][1] < min_time:
@@ -951,9 +962,7 @@ class DataPlane(Thread):
         # Retrieve the packet. Returns (device number, port number, packet, time).
         def grab():
             self.logger.debug("Grabbing packet")
-            for (rcv_port_number, pkt, time) in self.packets(
-                device_number, port_number
-            ):
+            for rcv_port_number, pkt, time in self.packets(device_number, port_number):
                 rcv_device_number = device_number
                 grab_log["recent_packets"].append(pkt)
                 grab_log["packet_count"] += 1
@@ -998,6 +1007,7 @@ class DataPlane(Thread):
         # Explicitly release ports to ensure we don't run out of sockets
         # even if someone keeps holding a reference to the dataplane.
         del self.ports
+        self.waker.close()
 
     def port_down(self, device_number, port_number):
         """Brings the specified port down"""
@@ -1030,8 +1040,9 @@ class DataPlane(Thread):
             self.packet_queues[port_id] = []
 
     def start_pcap(self, filename):
-        assert self.pcap_writer == None
-        self.pcap_writer = PcapWriter(filename)
+        with self.cvar:
+            assert self.pcap_writer == None
+            self.pcap_writer = PcapWriter(filename)
 
     def stop_pcap(self):
         if self.pcap_writer:

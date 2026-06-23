@@ -1,19 +1,7 @@
 #!/usr/bin/env python
 
-# Copyright 2013-present Barefoot Networks, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# Copyright 2013 Barefoot Networks, Inc.
+# SPDX-License-Identifier: Apache-2.0
 
 #
 # Antonin Bas (antonin@barefootnetworks.com)
@@ -25,12 +13,13 @@ import threading
 import scapy.all as sc
 import time
 
-parser = argparse.ArgumentParser(description='PTF Nanomsg tester bridge')
+parser = argparse.ArgumentParser(description="PTF Nanomsg tester bridge")
 parser.add_argument("-ifrom", type=str)
 parser.add_argument("-ito", type=str)
 args = parser.parse_args()
 
 forwarders = {}
+
 
 class Forwarder(threading.Thread):
     def __init__(self, iface_name, other):
@@ -48,6 +37,7 @@ class Forwarder(threading.Thread):
         other_fwd = forwarders[self.other]
         sc.sniff(iface=self.iface_name, prn=lambda x: other_fwd.forward(x))
 
+
 def main():
     f1 = Forwarder(args.ifrom, args.ito)
     f2 = Forwarder(args.ito, args.ifrom)
@@ -60,5 +50,6 @@ def main():
     except KeyboardInterrupt:
         return
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

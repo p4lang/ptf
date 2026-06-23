@@ -1,3 +1,6 @@
+# Copyright 2022 Nex Sabre
+# SPDX-License-Identifier: Apache-2.0
+
 import pytest
 from scapy.layers.inet import IP, UDP, TCP
 from scapy.layers.l2 import Ether

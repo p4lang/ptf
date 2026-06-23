@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+
+
+# Copyright (c) 2021 Intel Corporation.
+# SPDX-License-Identifier: Apache-2.0
+
+###############################################################################
+"""Stream control template"""
+
+from bf_pktpy.library.specs.base import Base
+
+
+# =============================================================================
+class StreamControl(Base):
+    """Stream Control class
+
+    StreamControl
+        rate       (int): rate to send traffic
+        unit       (str): send unit
+        mode       (str):send mode
+
+    Examples:
+        | stream_control = StreamControl(rate=1000000)
+        | stream_control.rate = 25000000000
+    """
+
+    def __init__(self, rate=1000000, unit="kbps", mode="continuous"):
+        self.rate = rate
+        self.unit = unit
+        self.mode = mode
+
+    def _members(self):
+        """Member information"""
+        members = (("rate", self.rate), ("unit", self.unit), ("mode", self.mode))
+        return {"stream_control": members}
+
+
+# =============================================================================

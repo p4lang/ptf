@@ -1,3 +1,12 @@
+# Copyright 2010 The Board of Trustees of The Leland Stanford Junior University
+# SPDX-License-Identifier: Apache-2.0
+
+# This file was derived from code in the Floodlight OFTest repository
+# https://github.com/floodlight/oftest released under the OpenFlow
+# Software License:
+# https://github.com/floodlight/oftest/blob/master/LICENSE
+# See file README-oftest.md in the ptf repository for more details.
+
 """
 Eth platform
 
@@ -14,7 +23,7 @@ def platform_config_update(config):
 
     port_map = {}
 
-    for (device, port, interface) in config["interfaces"]:
+    for device, port, interface in config["interfaces"]:
         port_map[(device, port)] = interface
 
     # Default to a veth configuration compatible with the reference switch

@@ -1,19 +1,7 @@
 #!/usr/bin/env python
 
-# Copyright 2013-present Barefoot Networks, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# Copyright 2013 Barefoot Networks, Inc.
+# SPDX-License-Identifier: Apache-2.0
 
 #
 # Antonin Bas (antonin@barefootnetworks.com)
@@ -26,10 +14,11 @@ import argparse
 import time
 import struct
 import socket
+
 try:
-    import nnpy
+    import pynng
 except ImportError:
-    print("Cannot find nnpy package, please install")
+    print("Cannot find pynng package, please install")
     sys.exit(1)
 import threading
 import os
@@ -40,55 +29,63 @@ from socket import AF_NETLINK, SOCK_DGRAM
 
 # copied from ptf.netutils
 # From bits/ioctls.h
-SIOCGIFHWADDR  = 0x8927          # Get hardware address
-SIOCGIFINDEX   = 0x8933          # name -> if_index mapping
-SIOCGIFFLAGS   = 0x8913          # get the active flag word of the device
-SIOCSIFFLAGS   = 0x8914          # set the active flag word of the device
-IFF_UP         = 0x0001
+SIOCGIFHWADDR = 0x8927  # Get hardware address
+SIOCGIFINDEX = 0x8933  # name -> if_index mapping
+SIOCGIFFLAGS = 0x8913  # get the active flag word of the device
+SIOCSIFFLAGS = 0x8914  # set the active flag word of the device
+IFF_UP = 0x0001
+
 
 def get_if(iff, cmd):
     s = socket.socket()
-    ifreq = ioctl(s, cmd, struct.pack("16s16x",iff.encode("utf-8")))
+    ifreq = ioctl(s, cmd, struct.pack("16s16x", iff.encode("utf-8")))
     s.close()
     return ifreq
+
 
 def get_if_index(iff):
     return int(struct.unpack("I", get_if(iff, SIOCGIFINDEX)[16:20])[0])
 
+
 def get_mac(iff):
-    return ':'.join(
-        ['%02x' % char for char in bytearray(get_if(iff, SIOCGIFHWADDR)[18:24])])
+    return ":".join(
+        ["%02x" % char for char in bytearray(get_if(iff, SIOCGIFHWADDR)[18:24])]
+    )
+
 
 def set_if_status(iff, status):
     s = socket.socket()
-    ifr = struct.pack('16sh', iff.encode("utf-8"), 0)
+    ifr = struct.pack("16sh", iff.encode("utf-8"), 0)
     result = ioctl(s, SIOCGIFFLAGS, ifr)
-    flags = struct.unpack('16sh', result)[1]
+    flags = struct.unpack("16sh", result)[1]
     if status:
-       flags |= IFF_UP
+        flags |= IFF_UP
     else:
-       flags &= ~IFF_UP
-    ifr = struct.pack('16sh', iff.encode("utf-8"), flags)
+        flags &= ~IFF_UP
+    ifr = struct.pack("16sh", iff.encode("utf-8"), flags)
     ioctl(s, SIOCSIFFLAGS, ifr)
     s.close()
+
 
 def get_if_status(iff):
     try:
         s = socket.socket()
-        ifr = struct.pack('16sh', iff.encode("utf-8"), 0)
+        ifr = struct.pack("16sh", iff.encode("utf-8"), 0)
         result = ioctl(s, SIOCGIFFLAGS, ifr)
         s.close()
     except IOError:
         return False
 
-    flags = struct.unpack('16sh', result)[1]
+    flags = struct.unpack("16sh", result)[1]
 
     return flags & IFF_UP > 0
 
+
 def if_exists(iff):
-    ifaces = os.listdir('/sys/class/net')
+    ifaces = os.listdir("/sys/class/net")
 
     return iff in ifaces
+
 
 # Taken from ptf parser
 class ActionInterface(argparse.Action):
@@ -96,7 +93,7 @@ class ActionInterface(argparse.Action):
         # Parse --interface
         def check_interface(value):
             try:
-                dev_and_port, interface = value.split('@', 1)
+                dev_and_port, interface = value.split("@", 1)
                 dev_and_port = dev_and_port.split("-")
                 if len(dev_and_port) == 1:
                     dev, port = 0, int(dev_and_port[0])
@@ -105,11 +102,15 @@ class ActionInterface(argparse.Action):
                 else:
                     raise ValueError("")
             except ValueError:
-                parser.error("incorrect interface syntax (got %s, expected 'port@interface' or 'device-port@interface')" % repr(value))
+                parser.error(
+                    "incorrect interface syntax (got %s, expected 'port@interface' or 'device-port@interface')"
+                    % repr(value)
+                )
             return (dev, port, interface)
 
-        assert(type(values) is str)
+        assert type(values) is str
         getattr(namespace, self.dest).append(check_interface(values))
+
 
 class ActionDeviceSocket(argparse.Action):
     def __init__(self, *args, **kwargs):
@@ -120,10 +121,13 @@ class ActionDeviceSocket(argparse.Action):
         # Parse --device-socket
         def check_device_socket(value):
             try:
-                dev, addr = value.split('@', 1)
+                dev, addr = value.split("@", 1)
                 dev = int(dev)
             except ValueError:
-                parser.error("incorrect device-socket syntax (got %s, expected something of the form <dev id>@<socket addr>)" % repr(value))
+                parser.error(
+                    "incorrect device-socket syntax (got %s, expected something of the form <dev id>@<socket addr>)"
+                    % repr(value)
+                )
             if dev in self.devices_observed:
                 parser.error("cannot specify the same device twice")
             else:
@@ -136,45 +140,78 @@ class ActionDeviceSocket(argparse.Action):
                 parser.error("nanomsg address must start with 'ipc://' or 'tcp://'")
             return (dev, addr)
 
-        assert(type(values) is str)
+        assert type(values) is str
         getattr(namespace, self.dest).append(check_device_socket(values))
 
-parser = argparse.ArgumentParser(description='PTF Nanomsg agent')
+
+parser = argparse.ArgumentParser(description="PTF Nanomsg agent")
 parser.add_argument(
-    "--device-socket", type=str, dest="device_sockets",
-    metavar="DEVICE-SOCKET", action=ActionDeviceSocket, default=[],
-    help="Specify the nanomsg socket to use to send / receive packets for a given device, as well as the ports to enable on the device.May be given multiple times. Example: 0@<socket addr>")
+    "--device-socket",
+    type=str,
+    dest="device_sockets",
+    metavar="DEVICE-SOCKET",
+    action=ActionDeviceSocket,
+    default=[],
+    help="Specify the nanomsg socket to use to send / receive packets for a given device, as well as the ports to enable on the device.May be given multiple times. Example: 0@<socket addr>",
+)
 parser.add_argument(
-    "--interface", "-i", type=str, dest="interfaces",
-    metavar="INTERFACE", action=ActionInterface, default=[],
-    help="Specify a port number and the dataplane interface to use. May be given multiple times. Example: 0-1@eth2 (use eth2 as port 1 of device 0)")
+    "--interface",
+    "-i",
+    type=str,
+    dest="interfaces",
+    metavar="INTERFACE",
+    action=ActionInterface,
+    default=[],
+    help="Specify a port number and the dataplane interface to use. May be given multiple times. Example: 0-1@eth2 (use eth2 as port 1 of device 0)",
+)
 parser.add_argument(
-    "--verbose", "-v", dest="verbose", action='store_true',
-    help="Specify if you need verbose output")
+    "--verbose",
+    "-v",
+    dest="verbose",
+    action="store_true",
+    help="Specify if you need verbose output",
+)
 parser.add_argument(
-    "--set-nn-rcv-buffer", type=int, dest="nn_rcv_buf",
-    metavar="BUFFER_SIZE", default=0,
-    help="Specify a nanomsg socket receive buffer size")
+    "--set-nn-rcv-buffer",
+    type=int,
+    dest="nn_rcv_buf",
+    metavar="BUFFER_SIZE",
+    default=0,
+    help="Specify a nanomsg socket receive buffer size",
+)
 parser.add_argument(
-    "--set-nn-snd-buffer", type=int, dest="nn_snd_buf",
-    metavar="BUFFER_SIZE", default=0,
-    help="Specify a nanomsg socket send buffer size")
+    "--set-nn-snd-buffer",
+    type=int,
+    dest="nn_snd_buf",
+    metavar="BUFFER_SIZE",
+    default=0,
+    help="Specify a nanomsg socket send buffer size",
+)
 parser.add_argument(
-    "--set-iface-rcv-buffer", type=int, dest="iface_rcv_buf",
-    metavar="BUFFER_SIZE", default=0,
-    help="Specify an interface socket receive buffer size")
+    "--set-iface-rcv-buffer",
+    type=int,
+    dest="iface_rcv_buf",
+    metavar="BUFFER_SIZE",
+    default=0,
+    help="Specify an interface socket receive buffer size",
+)
 parser.add_argument(
-    "--set-iface-snd-buffer", type=int, dest="iface_snd_buf",
-    metavar="BUFFER_SIZE", default=0,
-    help="Specify an interface socket send buffer size")
+    "--set-iface-snd-buffer",
+    type=int,
+    dest="iface_snd_buf",
+    metavar="BUFFER_SIZE",
+    default=0,
+    help="Specify an interface socket send buffer size",
+)
 
 args = parser.parse_args()
 
 iface_mgrs = {}
 nano_mgrs = {}
 
-logging.basicConfig(format='%(message)s')
-logger = logging.getLogger('ptf_nn_agent')
+logging.basicConfig(format="%(message)s")
+logger = logging.getLogger("ptf_nn_agent")
+
 
 class IfaceMgr(threading.Thread):
     def __init__(self, dev, port, iface_name, iface_rcv_buf=0, iface_snd_buf=0):
@@ -195,8 +232,11 @@ class IfaceMgr(threading.Thread):
         self.tx_ctr += 1
 
     def received(self, p):
-        logger.debug("IfaceMgr {}-{} ({}) received a packet".format(
-            self.dev, self.port, self.iface_name))
+        logger.debug(
+            "IfaceMgr {}-{} ({}) received a packet".format(
+                self.dev, self.port, self.iface_name
+            )
+        )
         if self.dev in nano_mgrs:
             nano_mgr = nano_mgrs[self.dev]
             nano_mgr.forward(p, self.port)
@@ -215,13 +255,19 @@ class IfaceMgr(threading.Thread):
 
     def port_up(self):
         set_if_status(self.iface_name, True)
-        logger.debug("IfaceMgr {}-{} ({}) status set to UP".format(
-                     self.dev, self.port, self.iface_name))
+        logger.debug(
+            "IfaceMgr {}-{} ({}) status set to UP".format(
+                self.dev, self.port, self.iface_name
+            )
+        )
 
     def port_down(self):
         set_if_status(self.iface_name, False)
-        logger.debug("IfaceMgr {}-{} ({}) status set to DOWN".format(
-                     self.dev, self.port, self.iface_name))
+        logger.debug(
+            "IfaceMgr {}-{} ({}) status set to DOWN".format(
+                self.dev, self.port, self.iface_name
+            )
+        )
 
     def wait_if_ready(self):
         """
@@ -234,12 +280,18 @@ class IfaceMgr(threading.Thread):
             if if_exists(self.iface_name) and get_if_status(self.iface_name):
                 self.ready = True
                 break
-            logger.debug("IfaceMgr {}-{} ({}) status is DOWN".format(
-                     self.dev, self.port, self.iface_name))
+            logger.debug(
+                "IfaceMgr {}-{} ({}) status is DOWN".format(
+                    self.dev, self.port, self.iface_name
+                )
+            )
             time.sleep(1)
 
-        logger.debug("IfaceMgr {}-{} ({}) status changed to UP".format(
-                     self.dev, self.port, self.iface_name))
+        logger.debug(
+            "IfaceMgr {}-{} ({}) status changed to UP".format(
+                self.dev, self.port, self.iface_name
+            )
+        )
 
     def is_ready(self):
         return self.ready
@@ -250,24 +302,35 @@ class IfaceMgr(threading.Thread):
         while True:
             self.wait_if_ready()
             try:
-                self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW,
-                                            socket.htons(0x03))
+                self.socket = socket.socket(
+                    socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x03)
+                )
                 afpacket.enable_auxdata(self.socket)
                 if self.iface_rcv_buf != 0:
-                    self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.iface_rcv_buf)
+                    self.socket.setsockopt(
+                        socket.SOL_SOCKET, socket.SO_RCVBUF, self.iface_rcv_buf
+                    )
 
-                if self.iface_snd_buf  != 0:
-                    self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, self.iface_snd_buf)
+                if self.iface_snd_buf != 0:
+                    self.socket.setsockopt(
+                        socket.SOL_SOCKET, socket.SO_SNDBUF, self.iface_snd_buf
+                    )
 
                 self.socket.bind((self.iface_name, 0))
-                logger.debug("IfaceMgr {}-{} ({}) AF_PACKET socket is open".format(
-                             self.dev, self.port, self.iface_name))
+                logger.debug(
+                    "IfaceMgr {}-{} ({}) AF_PACKET socket is open".format(
+                        self.dev, self.port, self.iface_name
+                    )
+                )
                 while True:
                     msg = afpacket.recv(self.socket, 4096)
                     self.received(msg)
             except (socket.error, RuntimeError) as err:
-                logger.debug("IfaceMgr {}-{} ({}) Error reading from the socket.".format(
-                             self.dev, self.port, self.iface_name))
+                logger.debug(
+                    "IfaceMgr {}-{} ({}) Error reading from the socket.".format(
+                        self.dev, self.port, self.iface_name
+                    )
+                )
                 self.socket.close()
 
 
@@ -294,29 +357,29 @@ class NanomsgMgr(threading.Thread):
         self.daemon = True
         self.dev = dev
         self.socket_addr = socket_addr
-        self.socket = nnpy.Socket(nnpy.AF_SP, nnpy.PAIR)
+        self.socket = pynng.Pair0()
         if nn_rcv_buf != 0:
-            self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.RCVBUF, nn_rcv_buf)
+            self.socket.recv_buffer_size = nn_rcv_buf
         if nn_snd_buf != 0:
-            self.socket.setsockopt(nnpy.SOL_SOCKET, nnpy.SNDBUF, nn_snd_buf)
-        self.socket.bind(socket_addr)
+            self.socket.send_buffer_size = nn_snd_buf
+        self.socket.listen(socket_addr)
 
     def forward(self, p, port):
-        msg = struct.pack("<iii{}s".format(len(p)), self.MSG_TYPE_PACKET_OUT,
-                          port, len(p), p)
-        # because nnpy expects unicode when using str
-        if sys.version_info[0] == 2:
-            msg = list(bytes(msg))
-        else:
-            msg = bytearray(msg)
-
+        msg = struct.pack(
+            "<iii{}s".format(len(p)), self.MSG_TYPE_PACKET_OUT, port, len(p), p
+        )
         self.socket.send(msg)
 
     def handle_info_req(self, port_number, info_id, msg):
         def handle_not_supported():
             fmt = "<iiii"
-            rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number, info_id,
-                              self.MSG_INFO_STATUS_NOT_SUPPORTED)
+            rep = struct.pack(
+                fmt,
+                self.MSG_TYPE_INFO_REP,
+                port_number,
+                info_id,
+                self.MSG_INFO_STATUS_NOT_SUPPORTED,
+            )
             self.socket.send(rep)
 
         def handle_hwaddr():
@@ -326,8 +389,14 @@ class NanomsgMgr(threading.Thread):
                 iface_mgr = iface_mgrs[(self.dev, port_number)]
                 mac = iface_mgr.get_mac()
                 fmt = "<iiii{}s".format(len(mac))
-                rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number,
-                                  info_id, self.MSG_INFO_STATUS_SUCCESS, mac.encode("utf-8"))
+                rep = struct.pack(
+                    fmt,
+                    self.MSG_TYPE_INFO_REP,
+                    port_number,
+                    info_id,
+                    self.MSG_INFO_STATUS_SUCCESS,
+                    mac.encode("utf-8"),
+                )
                 self.socket.send(rep)
 
         def handle_ctrs():
@@ -337,16 +406,22 @@ class NanomsgMgr(threading.Thread):
                 iface_mgr = iface_mgrs[(self.dev, port_number)]
                 rx, tx = iface_mgr.get_ctrs()
                 fmt = "<iiiiii"
-                rep = struct.pack(fmt, self.MSG_TYPE_INFO_REP, port_number,
-                                  info_id, self.MSG_INFO_STATUS_SUCCESS, rx, tx)
+                rep = struct.pack(
+                    fmt,
+                    self.MSG_TYPE_INFO_REP,
+                    port_number,
+                    info_id,
+                    self.MSG_INFO_STATUS_SUCCESS,
+                    rx,
+                    tx,
+                )
                 self.socket.send(rep)
 
         handlers = {
             self.MSG_INFO_TYPE_HWADDR: handle_hwaddr,
-            self.MSG_INFO_TYPE_CTRS:   handle_ctrs,
+            self.MSG_INFO_TYPE_CTRS: handle_ctrs,
         }
         handlers.get(info_id, handle_not_supported)()
-
 
     def handle_set_status_req(self, port_number, status):
         if (self.dev, port_number) in iface_mgrs:
@@ -371,12 +446,16 @@ class NanomsgMgr(threading.Thread):
                 continue
             if msg_type != self.MSG_TYPE_PACKET_IN:
                 continue
-            assert (len(msg) == more)
-            logger.debug("NanomsgMgr {}-{} ({}) received a packet".format(
-                self.dev, port_number, self.socket_addr))
+            assert len(msg) == more
+            logger.debug(
+                "NanomsgMgr {}-{} ({}) received a packet".format(
+                    self.dev, port_number, self.socket_addr
+                )
+            )
             if (self.dev, port_number) in iface_mgrs:
                 iface_mgr = iface_mgrs[(self.dev, port_number)]
                 iface_mgr.forward(msg)
+
 
 def main():
     if args.verbose:
@@ -392,10 +471,10 @@ def main():
     # Wait until all interfaces are up and ready
     for iface in iface_mgrs.values():
         while True:
-          if iface.is_ready():
-              break
-          else:
-              time.sleep(1)
+            if iface.is_ready():
+                break
+            else:
+                time.sleep(1)
 
     for dev, addr in args.device_sockets:
         n = NanomsgMgr(dev, addr, args.nn_rcv_buf, args.nn_snd_buf)
@@ -408,5 +487,6 @@ def main():
     except KeyboardInterrupt:
         return
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

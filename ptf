@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+# Copyright 2010 The Board of Trustees of The Leland Stanford Junior University
+# SPDX-License-Identifier: Apache-2.0
+
+# This file was derived from code in the Floodlight OFTest repository
+# https://github.com/floodlight/oftest released under the OpenFlow
+# Software License:
+# https://github.com/floodlight/oftest/blob/master/LICENSE
+# See file README-oftest.md in the ptf repository for more details.
 """
 @package ptf
 
@@ -16,11 +24,12 @@ import logging
 import unittest
 import time
 import os
-import imp
+import importlib
 import random
 import signal
 import fnmatch
 import copy
+import types
 from collections import OrderedDict
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
@@ -31,7 +40,7 @@ if os.path.exists(os.path.join(pydir, "ptf")):
     sys.path.insert(0, pydir)
 
 import ptf
-from ptf import config
+from ptf import config, __version__
 import ptf.ptfutils
 
 ##@var DEBUG_LEVELS
@@ -97,11 +106,17 @@ config_default = {
     "test_case_timeout": None,
     # Socket options
     "socket_recv_size": 4096,
-    # Packet manipulation provider module
-    "packet_manipulation_module": "ptf.packet_scapy",
     # Other configuration
     "port_map": None,
 }
+
+
+def import_module(root_path, module_name):
+    """Try to import a module and class directly instead of the typical
+    Python method. Allows for dynamic imports."""
+    finder = importlib.machinery.PathFinder()
+    module_specs = finder.find_spec(module_name, [root_path])
+    return module_specs.loader.load_module()
 
 
 def config_setup():
@@ -225,7 +240,7 @@ be subtracted from the result by prefixing them with the '^' character.  """
     # Set up default values
     parser.set_defaults(**config_default)
 
-    parser.add_argument("--version", action="version", version="ptf 0.1")
+    parser.add_argument("--version", action="version", version=__version__)
 
     parser.add_argument("test_specs", nargs="*", help="Tests / Groups to run")
 
@@ -427,6 +442,21 @@ be subtracted from the result by prefixing them with the '^' character.  """
     config = config_default.copy()
     for key in config.keys():
         config[key] = getattr(args, key)
+    # For selecting the packet manipulation module when running the
+    # `ptf` command, the order of precedence is:
+    # (1) If the `--packet-manipulation-module` command line option is
+    #     present, use its value.
+    # (2) Otherwise, if the environment variable
+    #     PTF_PACKET_MANIPULATION_MODULE is defined, use its value.
+    # (3) Otherwise, use "ptf.packet_scapy"
+    pmm_key = "packet_manipulation_module"
+    if getattr(args, pmm_key):
+        # Then use the value from the command line option.
+        config[pmm_key] = getattr(args, pmm_key)
+    elif os.getenv("PTF_PACKET_MANIPULATION_MODULE"):
+        config[pmm_key] = os.getenv("PTF_PACKET_MANIPULATION_MODULE")
+    else:
+        config[pmm_key] = "ptf.packet_scapy"
 
     return (config, args)
 
@@ -544,7 +574,7 @@ def load_test_modules(config):
                 if modname in sys.modules:
                     mod = sys.modules[modname]
                 else:
-                    mod = imp.load_module(modname, *imp.find_module(modname, [root]))
+                    mod = import_module(root, modname)
             except:
                 logging.warning("Could not import file " + filename)
                 raise
@@ -558,7 +588,7 @@ def load_test_modules(config):
                 and hasattr(v, "runTest")
             )
             if tests:
-                for (testname, test) in tests.items():
+                for testname, test in tests.items():
                     # Set default annotation values
                     if not hasattr(test, "_groups"):
                         test._groups = []
@@ -607,8 +637,8 @@ def prune_tests(test_specs, test_modules):
         else:
             negated = False
 
-        for (modname, (mod, tests)) in test_modules.items():
-            for (testname, test) in tests.items():
+        for modname, (mod, tests) in test_modules.items():
+            for testname, test in tests.items():
                 if e in test._groups or e == "%s.%s" % (modname, testname):
                     result.setdefault(modname, (mod, OrderedDict()))
                     if not negated:
@@ -625,6 +655,25 @@ def prune_tests(test_specs, test_modules):
             die("test-spec element %s did not match any tests" % e)
 
     return result
+
+
+def apply_test_timeout(test, default_test_case_timeout=None):
+    original_run = test.run
+
+    def run_with_timeout(self, result=None):
+        from ptf.ptfutils import Timeout
+
+        test_case_timeout = getattr(self, "_testtimeout", None)
+        if test_case_timeout is None:
+            test_case_timeout = default_test_case_timeout
+
+        if test_case_timeout:
+            with Timeout(test_case_timeout):
+                return original_run(result)
+        return original_run(result)
+
+    test.run = types.MethodType(run_with_timeout, test)
+    return test
 
 
 def die(msg, exit_val=1):
@@ -678,7 +727,7 @@ def test_params_parse(config):
 #
 
 # Setup global configuration
-(new_config, args) = config_setup()
+new_config, args = config_setup()
 ptf.config.update(new_config)
 
 logging_setup(config)
@@ -688,6 +737,7 @@ logging.info("++++++++ " + time.asctime() + " ++++++++")
 # import after logging is configured so that scapy error logs (from importing
 # packet.py) are silenced and our own warnings are logged properly.
 import ptf.testutils
+import ptf.ptfutils
 
 # Try parsing test params and log them
 # We do this before importing the test modules in case test parameters are being
@@ -714,26 +764,22 @@ if config["list"]:
     mod_count = 0
     test_count = 0
     all_groups = set()
-    print(
-        """\
+    print("""\
 Tests are shown grouped by module. If a test is in any groups beyond "standard"
-and its module's group then they are shown in parentheses."""
-    )
+and its module's group then they are shown in parentheses.""")
     print()
-    print(
-        """\
+    print("""\
 Tests marked with '!' are disabled because they are experimental, special-purpose,
 or are too long to be run normally. These are not part of the "standard" test
-group or their module's test group."""
-    )
+group or their module's test group.""")
     print()
     print("Test List:")
-    for (modname, (mod, tests)) in test_modules.items():
+    for modname, (mod, tests) in test_modules.items():
         mod_count += 1
         desc = (mod.__doc__ or "No description").strip().split("\n")[0]
         start_str = "  Module " + mod.__name__ + ": "
         print(start_str + _space_to(22, start_str) + desc)
-        for (testname, test) in list(tests.items()):
+        for testname, test in list(tests.items()):
             try:
                 desc = (test.__doc__ or "").strip()
                 desc = desc.split("\n")[0]
@@ -765,15 +811,15 @@ test_modules = prune_tests(test_specs, test_modules)
 
 # Check if test list is requested; display and exit if so
 if config["list_test_names"]:
-    for (modname, (mod, tests)) in test_modules.items():
-        for (testname, test) in tests.items():
+    for modname, (mod, tests) in test_modules.items():
+        for testname, test in tests.items():
             print("%s.%s" % (modname, testname))
     sys.exit(0)
 
 # Generate the test suite
 test_suite = []
-for (modname, (mod, tests)) in test_modules.items():
-    for (testname, test) in tests.items():
+for modname, (mod, tests) in test_modules.items():
+    for testname, test in tests.items():
         test_suite.append(test())
 
 if config["shard_id"] < 0 or config["shard_id"] >= config["num_shards"]:
@@ -786,6 +832,11 @@ elif config["test_order"] == "rand":
     seed = config["test_order_seed"]
     random.seed(seed)
     random.shuffle(test_suite)
+
+test_suite = [
+    apply_test_timeout(test, config["test_case_timeout"]) for test in test_suite
+]
+test_suite = unittest.TestSuite(test_suite)
 
 
 if config["platform_dir"] is None:
@@ -803,15 +854,13 @@ logging.info("Importing platform: " + platform_name)
 # TODO(antonin): put this check in platforms/nn.py ?
 if platform_name == "nn":
     try:
-        import nnpy
+        import pynng
     except:
-        die("Cannot use 'nn' platform if nnpy package is not installed")
+        die("Cannot use 'nn' platform if pynng package is not installed")
 
 platform_mod = None
 try:
-    platform_mod = imp.load_module(
-        platform_name, *imp.find_module(platform_name, [config["platform_dir"]])
-    )
+    platform_mod = import_module(config["platform_dir"], platform_name)
 except:
     logging.warn("Failed to import " + platform_name + " platform module")
     raise
@@ -851,12 +900,17 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 if __name__ == "__main__":
     profiler = profiler_setup(config)
 
-    # Set up the dataplane
-    ptf.dataplane_instance = ptf.dataplane.DataPlane(config)
-    pcap_setup(config)
-    for port_id, ifname in config["port_map"].items():
-        device, port = port_id
-        ptf.dataplane_instance.port_add(ifname, device, port)
+    if config["port_map"]:
+        import ptf.dataplane
+
+        # Set up the dataplane only when the selected platform exposes ports.
+        ptf.dataplane_instance = ptf.dataplane.DataPlane(config)
+        pcap_setup(config)
+        for port_id, ifname in config["port_map"].items():
+            device, port = port_id
+            ptf.dataplane_instance.port_add(ifname, device, port)
+    else:
+        ptf.dataplane_instance = None
 
     logging.info("*** TEST RUN START: " + time.asctime())
     if config["xunit"]:
@@ -871,38 +925,16 @@ if __name__ == "__main__":
         )
     else:
         runner = unittest.TextTestRunner(verbosity=2)
-    test_case_timeout = config["test_case_timeout"]
-    run_failures = []
-    run_errors = []
+    result = runner.run(test_suite)
+    run_failures = result.failures
+    run_errors = result.errors
     run_timeouts = []
-    from ptf.ptfutils import Timeout
-
-    for t in test_suite:
-        if t._testtimeout is not None:
-            this_test_timeout = t._testtimeout
-        else:
-            this_test_timeout = test_case_timeout
-
-        if this_test_timeout:
-            with Timeout(this_test_timeout):
-                result = runner.run(t)
-        else:
-            result = runner.run(t)
-
-        run_failures.extend(result.failures)
-        run_errors.extend(result.errors)
-
-        if this_test_timeout:
-            for case in result.errors:
-                traceback_str = case[1]
-                # TODO: hacky? could not think of a better way
-                if "raise Timeout.TimeoutError()" in traceback_str:
-                    logging.info("Test case failed because of timeout")
-                    run_timeouts.append(case)
-
-        if config["failfast"] and not result.wasSuccessful():
-            logging.info("Test failed and failfast mode enabled, stopping")
-            break
+    for case in result.errors:
+        traceback_str = case[1]
+        # TODO: hacky? could not think of a better way
+        if "raise Timeout.TimeoutError()" in traceback_str:
+            logging.info("Test case failed because of timeout")
+            run_timeouts.append(case)
 
     ptf.open_logfile("main")
     if ptf.testutils.skipped_test_count > 0:
@@ -914,9 +946,10 @@ if __name__ == "__main__":
     logging.info("*** TEST RUN END  : " + time.asctime())
 
     # Shutdown the dataplane
-    ptf.dataplane_instance.stop_pcap()  # no-op is pcap not started
-    ptf.dataplane_instance.kill()
-    ptf.dataplane_instance = None
+    if ptf.dataplane_instance is not None:
+        ptf.dataplane_instance.stop_pcap()  # no-op is pcap not started
+        ptf.dataplane_instance.kill()
+        ptf.dataplane_instance = None
 
     profiler_teardown(profiler)
 

@@ -1,5 +1,9 @@
+# Copyright 2015 Antonin Bas
+# SPDX-License-Identifier: Apache-2.0
+
 import socket
 import struct
+
 
 # thrift does not support unsigned integers
 def hex_to_i16(h):

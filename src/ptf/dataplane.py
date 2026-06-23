@@ -651,7 +651,15 @@ class DataPlane(Thread):
                         continue
                     else:
                         # Enqueue packet
-                        t = sel.recv()
+                        try:
+                            t = sel.recv()
+                        except Exception as e:
+                            # Skip transient recv errors (e.g. ENETDOWN during
+                            # link flap) so the RX thread keeps running.
+                            self.logger.debug(
+                                "recv failed on a dataplane socket, skipping: %s", e
+                            )
+                            continue
                         if t is None:
                             continue
                         device_number, port_number, pkt, timestamp = t

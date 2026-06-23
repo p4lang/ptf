@@ -15,7 +15,7 @@ jobs:
     if: ${{ github.repository == 'p4lang/ptf' }}
     runs-on: [ubuntu-22.04]
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Install uv
       run: ./CI/install-uv.sh
     - name: Build a binary wheel and a source tarball

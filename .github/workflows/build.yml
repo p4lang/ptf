@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Validate that all files have copyright and license info
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install dev dependencies
         run: |
           ./CI/install-uv.sh
@@ -37,7 +37,7 @@ jobs:
     name: Python code verification (src)
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install dependencies
         run: |
           ./CI/install-uv.sh
@@ -60,7 +60,7 @@ jobs:
     name: run ptf unit tests
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
     - name: Dependencies
       run: |

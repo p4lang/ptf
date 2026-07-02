@@ -47,7 +47,7 @@ More information about Black, you find at
 
 The following software is required to run PTF:
 
- * Python 3.x
+ * Python >=3.10
 
 The following packages are optional for running PTF:
 
@@ -136,6 +136,13 @@ If instead you see this line of output, `ptf` is using `scapy`:
 ```text
 Using packet manipulation module: ptf.packet_scapy
 ```
+
+## Dependency Version Support
+
+As with all toolchain dependencies, we aim to support tools as long as they are
+still receiving free public security updates.
+
+See Python's support window at https://endoflife.date/python.
 
 
 ## Run PTF

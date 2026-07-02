@@ -16,7 +16,7 @@ permissions:
 jobs:
   monthly-release:
     if: ${{ github.repository == 'p4lang/ptf' }}
-    uses: p4lang/.github/.github/workflows/bump-version.yml@main
+    uses: p4lang/.github/.github/workflows/monthly-release.yml@main
     with:
       version_file: Version.txt
       reviewers: fruffy, jafingerhut

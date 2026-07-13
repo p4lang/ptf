@@ -19,7 +19,6 @@ import ptf
 import ptf.dataplane
 import ptf.parse
 import ptf.ptfutils
-import codecs
 from io import StringIO
 
 global skipped_test_count
@@ -83,6 +82,25 @@ def ip_make_tos(tos, ecn, dscp):
     return tos
 
 
+def _add_payload_and_padding(pkt, pktlen, payload=None):
+    """Add a truncated payload and standard padding up to pktlen."""
+    available = max(0, pktlen - len(pkt))
+
+    if payload is not None:
+        if isinstance(payload, str):
+            payload = payload.encode()
+        else:
+            payload = bytes(payload)
+        payload = payload[:available]
+        pkt = pkt / payload
+        available -= len(payload)
+
+    if available:
+        pkt = pkt / bytes(bytearray(x % 256 for x in range(available)))
+
+    return pkt
+
+
 def simple_tcp_packet_ext_taglist(
     pktlen=100,
     eth_dst="00:01:02:03:04:05",
@@ -106,6 +124,7 @@ def simple_tcp_packet_ext_taglist(
     ip_ihl=None,
     ip_options=None,
     with_tcp_chksum=True,
+    payload=None,
 ):
     """
     Return a simple dataplane TCP packet without tag or with one or multiple tags
@@ -132,6 +151,7 @@ def simple_tcp_packet_ext_taglist(
     @param tcp_dport TCP destination port
     @param tcp_flags TCP Control flags
     @param with_tcp_chksum Valid TCP checksum
+    @param payload TCP payload, truncated if necessary to fit pktlen
 
     Generates a simple TCP request.  Users
     shouldn't assume anything about this packet other than that
@@ -201,9 +221,7 @@ def simple_tcp_packet_ext_taglist(
                 )
                 / tcp_hdr
             )
-    pkt = pkt / codecs.decode(
-        "".join(["%02x" % (x % 256) for x in range(pktlen - len(pkt))]), "hex"
-    )
+    pkt = _add_payload_and_padding(pkt, pktlen, payload)
 
     return pkt
 
@@ -230,6 +248,7 @@ def simple_tcp_packet(
     ip_ihl=None,
     ip_options=None,
     with_tcp_chksum=True,
+    payload=None,
 ):
     """
     Return a simple dataplane TCP packet
@@ -253,6 +272,7 @@ def simple_tcp_packet(
     @param tcp_sport TCP source port
     @param tcp_flags TCP Control flags
     @param with_tcp_chksum Valid TCP checksum
+    @param payload TCP payload, truncated if necessary to fit pktlen
 
     Generates a simple TCP request.  Users
     shouldn't assume anything about this packet other than that
@@ -293,6 +313,7 @@ def simple_tcp_packet(
         ip_ihl=ip_ihl,
         ip_options=ip_options,
         with_tcp_chksum=with_tcp_chksum,
+        payload=payload,
     )
     return pkt
 
@@ -314,6 +335,7 @@ def simple_tcpv6_packet(
     tcp_sport=1234,
     tcp_dport=80,
     tcp_flags="S",
+    payload=None,
 ):
     """
     Return a simple IPv6/TCP packet
@@ -335,6 +357,7 @@ def simple_tcpv6_packet(
     @param tcp_dport TCP destination port
     @param tcp_sport TCP source port
     @param tcp_flags TCP Control flags
+    @param payload TCP payload, truncated if necessary to fit pktlen
 
     Generates a simple TCP request. Users shouldn't assume anything about this
     packet other than that it is a valid ethernet/IPv6/TCP frame.
@@ -352,7 +375,7 @@ def simple_tcpv6_packet(
         src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
     )
     pkt /= packet.TCP(sport=tcp_sport, dport=tcp_dport, flags=tcp_flags)
-    pkt /= "D" * (pktlen - len(pkt))
+    pkt = _add_payload_and_padding(pkt, pktlen, payload)
 
     return pkt
 
@@ -379,6 +402,7 @@ def simple_udp_packet(
     ip_id=1,
     with_udp_chksum=True,
     udp_payload=None,
+    payload=None,
 ):
     """
     Return a simple dataplane UDP packet
@@ -400,6 +424,10 @@ def simple_udp_packet(
     @param udp_dport UDP destination port
     @param udp_sport UDP source port
     @param with_udp_chksum Valid UDP checksum
+    @param udp_payload UDP payload retained for compatibility. Cannot be used
+        together with payload
+    @param payload UDP payload, truncated if necessary to fit pktlen. Cannot be
+        used together with udp_payload
 
     Generates a simple UDP packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/UDP frame.
@@ -456,11 +484,10 @@ def simple_udp_packet(
                 / udp_hdr
             )
 
-    if udp_payload:
-        pkt = pkt / udp_payload
-
-    pkt = pkt / codecs.decode(
-        "".join(["%02x" % (x % 256) for x in range(pktlen - len(pkt))]), "hex"
+    if payload is not None and udp_payload is not None:
+        raise ValueError("Specify either payload or udp_payload, not both")
+    pkt = _add_payload_and_padding(
+        pkt, pktlen, payload if payload is not None else udp_payload
     )
 
     return pkt
@@ -762,7 +789,7 @@ def simple_nvgre_packet(
         pkt = pkt / inner_frame
     else:
         pkt = pkt / packet.IP()
-        pkt = pkt / ("D" * (pktlen - len(pkt)))
+        pkt = _add_payload_and_padding(pkt, pktlen)
 
     return pkt
 
@@ -1138,7 +1165,7 @@ def simple_gre_packet(
             pkt["GRE"].proto = 0x86DD
     else:
         pkt = pkt / packet.IP()
-        pkt = pkt / ("D" * (pktlen - len(pkt)))
+        pkt = _add_payload_and_padding(pkt, pktlen)
 
     return pkt
 
@@ -1258,7 +1285,7 @@ def simple_grev6_packet(
             pkt["GRE"].proto = 0x86DD
     else:
         pkt = pkt / packet.IP()
-        pkt = pkt / ("D" * (pktlen - len(pkt)))
+        pkt = _add_payload_and_padding(pkt, pktlen)
 
     return pkt
 
@@ -1426,7 +1453,7 @@ def simple_gre_erspan_packet(
         pkt = pkt / inner_frame
     else:
         pkt = pkt / packet.IP()
-        pkt = pkt / ("D" * (pktlen - len(pkt)))
+        pkt = _add_payload_and_padding(pkt, pktlen)
 
     return pkt
 
@@ -1567,7 +1594,7 @@ def ipv4_erspan_pkt(
         pkt = pkt / inner_frame
     else:
         pkt = pkt / packet.IP()
-        pkt = pkt / ("D" * (pktlen - len(pkt)))
+        pkt = _add_payload_and_padding(pkt, pktlen)
 
     return pkt
 
@@ -1723,7 +1750,7 @@ def ipv4_erspan_platform_pkt(
         pkt = pkt / inner_frame
     else:
         pkt = pkt / packet.IP()
-        pkt = pkt / ("D" * (pktlen - len(pkt)))
+        pkt = _add_payload_and_padding(pkt, pktlen)
 
     return pkt
 
@@ -1746,6 +1773,7 @@ def simple_udpv6_packet(
     udp_dport=80,
     with_udp_chksum=True,
     udp_payload=None,
+    payload=None,
 ):
     """
     Return a simple IPv6/UDP packet
@@ -1767,6 +1795,10 @@ def simple_udpv6_packet(
     @param udp_dport UDP destination port
     @param udp_sport UDP source port
     @param with_udp_chksum Valid UDP checksum
+    @param udp_payload UDP payload retained for compatibility. Cannot be used
+        together with payload
+    @param payload UDP payload, truncated if necessary to fit pktlen. Cannot be
+        used together with udp_payload
 
     Generates a simple UDP request. Users shouldn't assume anything about this
     packet other than that it is a valid ethernet/IPv6/UDP frame.
@@ -1786,9 +1818,11 @@ def simple_udpv6_packet(
         pkt /= packet.UDP(sport=udp_sport, dport=udp_dport)
     else:
         pkt /= packet.UDP(sport=udp_sport, dport=udp_dport, chksum=0)
-    if udp_payload:
-        pkt = pkt / udp_payload
-    pkt /= "D" * (pktlen - len(pkt))
+    if payload is not None and udp_payload is not None:
+        raise ValueError("Specify either payload or udp_payload, not both")
+    pkt = _add_payload_and_padding(
+        pkt, pktlen, payload if payload is not None else udp_payload
+    )
 
     return pkt
 
@@ -1888,7 +1922,7 @@ def simple_ipv4ip_packet(
             pkt["IP"].proto = 41
     else:
         pkt = pkt / packet.IP()
-        pkt = pkt / ("D" * (pktlen - len(pkt)))
+        pkt = _add_payload_and_padding(pkt, pktlen)
         pkt["IP"].proto = 4
 
     return pkt
@@ -1961,7 +1995,7 @@ def simple_ipv6ip_packet(
             pkt["IPv6"].nh = 41
     else:
         pkt = pkt / packet.IP()
-        pkt = pkt / ("D" * (pktlen - len(pkt)))
+        pkt = _add_payload_and_padding(pkt, pktlen)
         pkt["IPv6"].nh = 4
 
     return pkt
@@ -1984,6 +2018,7 @@ def simple_icmp_packet(
     icmp_type=8,
     icmp_code=0,
     icmp_data="",
+    payload=None,
 ):
     """
     Return a simple ICMP packet
@@ -2004,7 +2039,10 @@ def simple_icmp_packet(
     @param ip_id IP Identification
     @param icmp_type ICMP type
     @param icmp_code ICMP code
-    @param icmp_data ICMP data
+    @param icmp_data ICMP payload retained for compatibility. Cannot be used
+        together with payload
+    @param payload ICMP payload, truncated if necessary to fit pktlen. Cannot be
+        used together with icmp_data
 
     Generates a simple ICMP ECHO REQUEST.  Users
     shouldn't assume anything about this packet other than that
@@ -2022,17 +2060,19 @@ def simple_icmp_packet(
             / packet.Dot1Q(prio=vlan_pcp, id=0, vlan=vlan_vid)
             / packet.IP(src=ip_src, dst=ip_dst, ttl=ip_ttl, tos=ip_tos, id=ip_id)
             / packet.ICMP(type=icmp_type, code=icmp_code)
-            / icmp_data
         )
     else:
         pkt = (
             packet.Ether(dst=eth_dst, src=eth_src)
             / packet.IP(src=ip_src, dst=ip_dst, ttl=ip_ttl, tos=ip_tos, id=ip_id)
             / packet.ICMP(type=icmp_type, code=icmp_code)
-            / icmp_data
         )
 
-    pkt = pkt / ("0" * (pktlen - len(pkt)))
+    if payload is not None and icmp_data:
+        raise ValueError("Specify either payload or icmp_data, not both")
+    pkt = _add_payload_and_padding(
+        pkt, pktlen, payload if payload is not None else icmp_data
+    )
 
     return pkt
 
@@ -2053,6 +2093,7 @@ def simple_icmpv6_packet(
     ipv6_fl=0,
     icmp_type=8,
     icmp_code=0,
+    payload=None,
 ):
     """
     Return a simple ICMPv6 packet
@@ -2073,6 +2114,7 @@ def simple_icmpv6_packet(
     @param ipv6_fl IPv6 flow label
     @param icmp_type ICMP type
     @param icmp_code ICMP code
+    @param payload ICMP payload, truncated if necessary to fit pktlen
 
     Generates a simple ICMP ECHO REQUEST. Users shouldn't assume anything
     about this packet other than that it is a valid ethernet/IPv6/ICMP frame.
@@ -2090,7 +2132,7 @@ def simple_icmpv6_packet(
         src=ipv6_src, dst=ipv6_dst, fl=ipv6_fl, tc=ipv6_tc, hlim=ipv6_hlim
     )
     pkt /= packet.ICMPv6Unknown(type=icmp_type, code=icmp_code)
-    pkt /= "D" * (pktlen - len(pkt))
+    pkt = _add_payload_and_padding(pkt, pktlen, payload)
 
     return pkt
 
@@ -2193,6 +2235,7 @@ def simple_arp_packet(
     ip_tgt="192.168.0.2",
     hw_snd="00:06:07:08:09:0a",
     hw_tgt="00:00:00:00:00:00",
+    payload=None,
 ):
     """
     Return a simple ARP packet
@@ -2206,6 +2249,7 @@ def simple_arp_packet(
     @param ip_tgt Target IP
     @param hw_snd Sender hardware address
     @param hw_tgt Target hardware address
+    @param payload ARP payload, truncated if necessary to fit pktlen
 
     Generates a simple ARP REQUEST.  Users
     shouldn't assume anything about this packet other than that
@@ -2220,13 +2264,17 @@ def simple_arp_packet(
         pkt /= packet.Dot1Q(vlan=vlan_vid, prio=vlan_pcp)
     pkt /= packet.ARP(hwsrc=hw_snd, hwdst=hw_tgt, pdst=ip_tgt, psrc=ip_snd, op=arp_op)
 
-    pkt = pkt / ("\0" * (pktlen - len(pkt)))
+    pkt = _add_payload_and_padding(pkt, pktlen, payload)
 
     return pkt
 
 
 def simple_eth_packet(
-    pktlen=60, eth_dst="00:01:02:03:04:05", eth_src="00:06:07:08:09:0a", eth_type=0x88CC
+    pktlen=60,
+    eth_dst="00:01:02:03:04:05",
+    eth_src="00:06:07:08:09:0a",
+    eth_type=0x88CC,
+    payload=None,
 ):
 
     if MINSIZE > pktlen:
@@ -2234,7 +2282,7 @@ def simple_eth_packet(
 
     pkt = packet.Ether(dst=eth_dst, src=eth_src, type=eth_type)
 
-    pkt = pkt / ("0" * (pktlen - len(pkt)))
+    pkt = _add_payload_and_padding(pkt, pktlen, payload)
 
     return pkt
 
@@ -2248,6 +2296,7 @@ def simple_eth_raw_packet_with_taglist(
     dl_vlan_cfi_list=[0],
     dl_tpid_list=[0x8100],
     dl_vlanid_list=[1],
+    payload=None,
 ):
     """
     Return a simple dataplane Layer 2 packet without tag or with one or multiple tags
@@ -2263,6 +2312,7 @@ def simple_eth_raw_packet_with_taglist(
     @param dl_vlan_cfi_list The VLAN CFI list. Not used when dl_taglist_enable is False.
     @param dl_tpid_list The TPID list. Not used when dl_taglist_enable is False.
     @param dl_vlanid_list The VLAN ID list. Not used when dl_taglist_enable is False.
+    @param payload Ethernet payload, truncated if necessary to fit pktlen
 
     Generates a simple Layer 2 packet.
     """
@@ -2285,10 +2335,7 @@ def simple_eth_raw_packet_with_taglist(
     else:
         pkt.type = pktlen - len(pkt)
 
-    # Fill payload length
-    pkt = pkt / codecs.decode(
-        "".join(["%02x" % (x % 256) for x in range(pktlen - len(pkt))]), "hex"
-    )
+    pkt = _add_payload_and_padding(pkt, pktlen, payload)
     return pkt
 
 
@@ -2310,6 +2357,7 @@ def simple_ip_packet(
     ip_ihl=None,
     ip_options=None,
     ip_proto=0,
+    payload=None,
 ):
     """
     Return a simple dataplane IP packet
@@ -2328,6 +2376,7 @@ def simple_ip_packet(
     @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
+    @param payload IP payload, truncated if necessary to fit pktlen
 
     Generates a simple IP packet.  Users
     shouldn't assume anything about this packet other than that
@@ -2377,9 +2426,7 @@ def simple_ip_packet(
                 options=ip_options,
             )
 
-    pkt = pkt / codecs.decode(
-        "".join(["%02x" % (x % 256) for x in range(pktlen - len(pkt))]), "hex"
-    )
+    pkt = _add_payload_and_padding(pkt, pktlen, payload)
 
     return pkt
 
@@ -2399,6 +2446,7 @@ def simple_ip_only_packet(
     tcp_dport=80,
     tcp_flags="S",
     with_tcp_chksum=True,
+    payload=None,
 ):
     """
     Return a simple dataplane IP packet
@@ -2412,6 +2460,7 @@ def simple_ip_only_packet(
     @param ip_dscp IP ToS DSCP
     @param ip_ttl IP TTL
     @param ip_id IP ID
+    @param payload TCP payload, truncated if necessary to fit pktlen
 
     Generates a simple IP packet.  Users
     shouldn't assume anything about this packet other than that
@@ -2451,9 +2500,7 @@ def simple_ip_only_packet(
             / tcp_hdr
         )
 
-    pkt = pkt / codecs.decode(
-        "".join(["%02x" % (x % 256) for x in range(pktlen - len(pkt))]), "hex"
-    )
+    pkt = _add_payload_and_padding(pkt, pktlen, payload)
 
     return pkt
 
@@ -2542,6 +2589,7 @@ def simple_qinq_tcp_packet(
     tcp_dport=80,
     ip_ihl=None,
     ip_options=None,
+    payload=None,
 ):
     """
     Return a doubly tagged dataplane TCP packet
@@ -2563,6 +2611,7 @@ def simple_qinq_tcp_packet(
     @param ip_dscp IP ToS DSCP
     @param tcp_dport TCP destination port
     @param ip_sport TCP source port
+    @param payload TCP payload, truncated if necessary to fit pktlen
 
     Generates a TCP request.  Users
     shouldn't assume anything about this packet other than that
@@ -2583,9 +2632,7 @@ def simple_qinq_tcp_packet(
         / packet.TCP(sport=tcp_sport, dport=tcp_dport)
     )
 
-    pkt = pkt / codecs.decode(
-        "".join(["%02x" % (x % 256) for x in range(pktlen - len(pkt))]), "hex"
-    )
+    pkt = _add_payload_and_padding(pkt, pktlen, payload)
 
     return pkt
 
@@ -3725,6 +3772,7 @@ def simple_rocev2_packet(
     bth_ack_req=0,
     bth_psn=0,
     rocev2_payload=None,
+    payload=None,
 ):
     """
     Return a simple dataplane ROCEv2 packet
@@ -3757,7 +3805,10 @@ def simple_rocev2_packet(
     @param bth_dst_qp BTH Destination QP,
     @param bth_ack_req BTH Acknowledge Request,
     @param bth_psn BTH Packet Sequence Number,
-    @param rocev2_payload
+    @param rocev2_payload ROCEv2 payload retained for compatibility. Cannot be
+        used together with payload
+    @param payload ROCEv2 payload, truncated if necessary to fit pktlen. Cannot
+        be used together with rocev2_payload
 
     Generates a simple ROCEv2 packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/UDP/ROCEv2 frame.
@@ -3834,11 +3885,10 @@ def simple_rocev2_packet(
                 / bth_hdr
             )
 
-    if rocev2_payload:
-        pkt = pkt / rocev2_payload
-
-    pkt = pkt / codecs.decode(
-        "".join(["%02x" % (x % 256) for x in range(pktlen - len(pkt))]), "hex"
+    if payload is not None and rocev2_payload is not None:
+        raise ValueError("Specify either payload or rocev2_payload, not both")
+    pkt = _add_payload_and_padding(
+        pkt, pktlen, payload if payload is not None else rocev2_payload
     )
 
     return pkt
@@ -3876,6 +3926,7 @@ def simple_rocev2v6_packet(
     bth_ack_req=0,
     bth_psn=0,
     rocev2_payload=None,
+    payload=None,
 ):
     """
     Return a simple dataplane IPv6/ROCEv2 packet
@@ -3907,7 +3958,10 @@ def simple_rocev2v6_packet(
     @param bth_dst_qp BTH Destination QP,
     @param bth_ack_req BTH Acknowledge Request,
     @param bth_psn BTH Packet Sequence Number,
-    @param rocev2_payload
+    @param rocev2_payload ROCEv2 payload retained for compatibility. Cannot be
+        used together with payload
+    @param payload ROCEv2 payload, truncated if necessary to fit pktlen. Cannot
+        be used together with rocev2_payload
 
     Generates a simple IPv6/ROCEv2 packet. Users shouldn't assume anything about
     this packet other than that it is a valid ethernet/IP/UDP/ROCEv2 frame.
@@ -3946,10 +4000,11 @@ def simple_rocev2v6_packet(
     pkt /= packet.UDP(sport=udp_sport, dport=udp_dport)
     pkt /= bth_hdr
 
-    if rocev2_payload:
-        pkt = pkt / rocev2_payload
-
-    pkt /= "D" * (pktlen - len(pkt))
+    if payload is not None and rocev2_payload is not None:
+        raise ValueError("Specify either payload or rocev2_payload, not both")
+    pkt = _add_payload_and_padding(
+        pkt, pktlen, payload if payload is not None else rocev2_payload
+    )
 
     return pkt
 

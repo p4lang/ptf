@@ -26,6 +26,50 @@ def gen_xid():
     return random.randrange(1, 0xFFFFFFFF)
 
 
+def chown_to_invoking_user(path, recursive=False):
+    """
+    Give a file or directory created by ptf back to the user who ran sudo.
+
+    ptf needs root to open raw sockets, so it is normally started with sudo.
+    Everything it writes (logs, pcaps, xUnit results) would then be owned by
+    root, leaving the invoking user with artifacts they can neither read nor
+    remove. This is a no-op when ptf is not running under sudo.
+    """
+
+    # Only root can hand a file to somebody else. Without sudo there is
+    # nothing to undo either: the files already belong to whoever ran ptf.
+    if os.geteuid() != 0:
+        return
+
+    sudo_uid = os.environ.get("SUDO_UID")
+    sudo_gid = os.environ.get("SUDO_GID")
+    if sudo_uid is None or sudo_gid is None:
+        return
+
+    try:
+        uid, gid = int(sudo_uid), int(sudo_gid)
+    except ValueError:
+        logging.warning(
+            "Ignoring malformed SUDO_UID/SUDO_GID: %s/%s", sudo_uid, sudo_gid
+        )
+        return
+
+    paths = [path]
+    if recursive:
+        for dirpath, dirnames, filenames in os.walk(path):
+            paths.extend(os.path.join(dirpath, name) for name in dirnames + filenames)
+
+    for target in paths:
+        try:
+            # lchown, not chown: the output directories are owned by an
+            # unprivileged user by the time we walk them, so following a
+            # symlink placed there would let that user have any file on the
+            # system chowned to themselves.
+            os.lchown(target, uid, gid)
+        except OSError as e:
+            logging.warning("Could not change ownership of %s: %s", target, e)
+
+
 """
 Wait on a condition variable until the given function returns non-None or a timeout expires.
 The condition variable must already be acquired.

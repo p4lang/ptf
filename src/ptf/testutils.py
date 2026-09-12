@@ -19,7 +19,8 @@ import ptf
 import ptf.dataplane
 import ptf.parse
 import ptf.ptfutils
-from io import StringIO
+
+logger = logging.getLogger(__name__)
 
 global skipped_test_count
 skipped_test_count = 0
@@ -40,7 +41,7 @@ FILTERS = []
 
 
 def reset_filters():
-    FILTERS = []
+    FILTERS.clear()
 
 
 # Needs to be a callable
@@ -602,7 +603,7 @@ def simple_geneve_packet(
     @param inner_frame The inner Ethernet frame
     """
     if packet.GENEVE is None:
-        logging.error(
+        logger.error(
             "A GENEVE packet was requested but GENEVE is not supported by your Scapy. See README for more information"
         )
         return None
@@ -726,7 +727,7 @@ def simple_nvgre_packet(
     this packet other than that it is a valid ethernet/IP/NVGRE frame.
     """
     if packet.NVGRE is None:
-        logging.error(
+        logger.error(
             "A NVGRE packet was requested but NVGRE is not supported by your Scapy. See README for more information"
         )
         return None
@@ -853,7 +854,7 @@ def simple_vxlan_packet(
     this packet other than that it is a valid ethernet/IP/UDP/VXLAN frame.
     """
     if packet.VXLAN is None:
-        logging.error(
+        logger.error(
             "A VXLAN packet was requested but VXLAN is not supported by your Scapy. See README for more information"
         )
         return None
@@ -1366,7 +1367,7 @@ def simple_gre_erspan_packet(
     this packet other than that it is a valid ethernet/IP/GRE/ERSPAN frame.
     """
     if packet.GRE is None or packet.ERSPAN is None:
-        logging.error(
+        logger.error(
             "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information"
         )
         return None
@@ -1519,7 +1520,7 @@ def ipv4_erspan_pkt(
     @param inner_frame payload of the GRE packet
     """
     if packet.GRE is None or packet.ERSPAN is None or packet.ERSPAN_III is None:
-        logging.error(
+        logger.error(
             "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information"
         )
         return None
@@ -1671,7 +1672,7 @@ def ipv4_erspan_platform_pkt(
         or packet.ERSPAN_III is None
         or packet.PlatformSpecific is None
     ):
-        logging.error(
+        logger.error(
             "A GRE/ERSPAN packet was requested but GRE or ERSPAN is not supported by your Scapy. See README for more information"
         )
         return None
@@ -2532,7 +2533,7 @@ def simple_mpls_packet(
 
     """
     if packet.MPLS is None:
-        logging.error(
+        logger.error(
             "A MPLS packet was requested but MPLS is not supported by your Scapy. See README for more information"
         )
         return None
@@ -2685,7 +2686,7 @@ def simple_igmp_packet(
     this packet other than that it is a valid ethernet/IP/IGMP frame.
     """
     if packet.IGMP is None:
-        logging.error(
+        logger.error(
             "An IGMP packet was requested but IGMP is not supported by your Scapy. See README for more information"
         )
         return None
@@ -3062,7 +3063,7 @@ def get_egr_list(parent, ports, how_many, exclude_list=[]):
             count += 1
             if count >= how_many:
                 return egr_ports
-    logging.debug("Could not generate enough egress ports for test")
+    logger.debug("Could not generate enough egress ports for test")
     return []
 
 
@@ -3159,17 +3160,10 @@ def inspect_packet(pkt):
     Wrapper around scapy's show() method.
     @returns A string showing the dissected packet.
     """
-    out = None
-    backup = sys.stdout
     try:
-        tmp = StringIO()
-        sys.stdout = tmp
-        pkt.show2()
-        out = tmp.getvalue()
-        tmp.close()
-    finally:
-        sys.stdout = backup
-    return out
+        return pkt.show2(dump=True)
+    except TypeError:
+        return packet.format_packet(pkt)
 
 
 def nonstandard(cls):
@@ -3297,7 +3291,7 @@ def verify_packet(test, pkt, port_id, timeout=None):
     if not timeout:
         timeout = ptf.ptfutils.default_timeout
     device, port = port_to_tuple(port_id)
-    logging.debug("Checking for pkt on device %d, port %d", device, port)
+    logger.debug("Checking for pkt on device %d, port %d", device, port)
     result = dp_poll(
         test, device_number=device, port_number=port, timeout=timeout, exp_pkt=pkt
     )
@@ -3317,7 +3311,7 @@ def verify_no_packet(test, pkt, port_id, timeout=None):
     if timeout is None:
         timeout = ptf.ptfutils.default_negative_timeout
     device, port = port_to_tuple(port_id)
-    logging.debug("Negative check for pkt on device %d, port %d", device, port)
+    logger.debug("Negative check for pkt on device %d, port %d", device, port)
     result = dp_poll(
         test, device_number=device, port_number=port, exp_pkt=pkt, timeout=timeout
     )
@@ -3338,7 +3332,7 @@ def verify_no_other_packets(test, device_number=0, timeout=None):
         return
     if timeout is None:
         timeout = ptf.ptfutils.default_negative_timeout
-    logging.debug(
+    logger.debug(
         "Checking for unexpected packets on all ports of device %d" % device_number
     )
     result = dp_poll(test, device_number=device_number, timeout=timeout)
@@ -3426,7 +3420,7 @@ def verify_packets_any(
         if device != device_number:
             continue
         if port in ports:
-            logging.debug("Checking for pkt on device %d, port %d", device_number, port)
+            logger.debug("Checking for pkt on device %d, port %d", device_number, port)
             result = dp_poll(
                 test,
                 device_number=device,
@@ -3477,7 +3471,7 @@ def verify_packet_any_port(
         timeout = ptf.ptfutils.default_timeout
     if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
-    logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
+    logger.debug("Checking for pkt on device %d, port %r", device_number, ports)
     result = dp_poll(test, device_number=device_number, timeout=timeout, exp_pkt=pkt)
     verify_no_other_packets(test, device_number=device_number, timeout=n_timeout)
 
@@ -3531,7 +3525,7 @@ def verify_any_packet_any_port(
 
     received = False
     match_index = 0
-    logging.debug("Checking for pkt on device %d, port %r", device_number, ports)
+    logger.debug("Checking for pkt on device %d, port %r", device_number, ports)
     result = dp_poll(test, device_number=device_number, timeout=timeout)
 
     if isinstance(result, test.dataplane.PollSuccess) and result.port in ports:
@@ -3586,7 +3580,7 @@ def verify_each_packet_on_each_port(
     if not n_timeout:
         n_timeout = ptf.ptfutils.default_negative_timeout
     for port, pkt in zip(ports, pkts):
-        logging.debug("Checking for pkt on device %d, port %d", device_number, port)
+        logger.debug("Checking for pkt on device %d, port %d", device_number, port)
         result = dp_poll(
             test,
             device_number=device_number,
@@ -3646,7 +3640,7 @@ def verify_each_packet_on_multiple_port_lists(
             )
             if rcv_device != device_number:
                 continue
-            logging.debug("Checking for pkt on device %d, port %d", device_number, port)
+            logger.debug("Checking for pkt on device %d, port %d", device_number, port)
             if ptf.dataplane.match_exp_pkt(pkt, rcv_pkt):
                 pkt_cnt += 1
                 rcv_ports.add(port_list.index(rcv_port))
@@ -3666,7 +3660,7 @@ def verify_packet_prefix(test, pkt, port, len, device_number=0, timeout=None):
     """
     Check that an expected packet is received
     """
-    logging.debug("Checking for pkt on port %r", port)
+    logger.debug("Checking for pkt on port %r", port)
     if timeout is None:
         timeout = ptf.ptfutils.default_timeout
     result = test.dataplane.poll(
@@ -3815,7 +3809,7 @@ def simple_rocev2_packet(
     """
 
     if packet.BTH is None:
-        logging.error(
+        logger.error(
             "A ROCEv2 packet was requested but ROCEv2 is not supported by your Scapy. See README for more information"
         )
         return None
@@ -3968,7 +3962,7 @@ def simple_rocev2v6_packet(
     """
 
     if packet.BTH is None:
-        logging.error(
+        logger.error(
             "A ROCEv2 packet was requested but ROCEv2 is not supported by your Scapy. See README for more information"
         )
         return None

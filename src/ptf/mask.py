@@ -3,8 +3,6 @@
 
 import warnings
 
-from io import StringIO
-import sys
 from . import packet
 
 
@@ -123,13 +121,9 @@ class Mask:
         return hdr_offset * 8 + offset, bitwidth
 
     def __str__(self):
-        old_stdout = sys.stdout
-        sys.stdout = buffer = StringIO()
-        print("\npacket status: %s" % "OK" if self.valid else "INVALID")
-        print("packet:")
-        packet.hexdump(self.exp_pkt)  # noqa
-        print("\npacket's mask:")
-        packet.hexdump(self.mask)  # noqa
-
-        sys.stdout = old_stdout
-        return buffer.getvalue()
+        status = "OK" if self.valid else "INVALID"
+        return "\npacket status: %s\npacket:\n%s\n\npacket's mask:\n%s\n" % (
+            status,
+            packet.format_hexdump(self.exp_pkt).rstrip(),
+            packet.format_hexdump(self.mask).rstrip(),
+        )

@@ -23,8 +23,8 @@ configuration.
 for filters should include a callback or a counter
 """
 
-import sys
 import os
+import sys
 import socket
 import time
 import select
@@ -41,7 +41,6 @@ from . import netutils
 from . import mask
 from . import packet
 from .pcap_writer import PcapWriter
-from io import StringIO
 
 try:
     import pynng
@@ -142,23 +141,32 @@ class DataPlanePortLinux(DataPlanePortIface, DataPlanePacketSourceIface):
     ETH_P_ALL = 0x03
     RCV_TIMEOUT = 10000
 
-    def __init__(self, interface_name, device_number, port_number, config={}):
+    def __init__(self, interface_name, device_number, port_number, config=None):
         """
         @param interface_name The name of the physical interface like eth1
         """
         self.interface_name = interface_name
         self.device_number = device_number
         self.port_number = port_number
-        self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, 0)
-        afpacket.enable_auxdata(self.socket)
-        self.socket.bind((interface_name, self.ETH_P_ALL))
-        netutils.set_promisc(self.socket, interface_name)
-        self.socket.settimeout(self.RCV_TIMEOUT)
-        self.recv_size = config.get("socket_recv_size", self.RCV_SIZE_DEFAULT)
+        self.socket = None
+        try:
+            self.socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, 0)
+            afpacket.enable_auxdata(self.socket)
+            self.socket.bind((interface_name, self.ETH_P_ALL))
+            netutils.set_promisc(self.socket, interface_name)
+            self.socket.settimeout(self.RCV_TIMEOUT)
+        except Exception:
+            self.close()
+            raise
+        self.recv_size = (config or {}).get("socket_recv_size", self.RCV_SIZE_DEFAULT)
 
     def __del__(self):
-        if self.socket:
+        self.close()
+
+    def close(self):
+        if self.socket is not None:
             self.socket.close()
+            self.socket = None
 
     def fileno(self):
         """
@@ -260,6 +268,9 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         return self.socket.recv_fd
 
     def __send_port_msg(self, msg_type, port_number, more):
+        if self.socket is None:
+            # The socket is closed; do nothing.
+            return
         hdr = struct.pack("<iii", msg_type, port_number, more)
         self.socket.send(hdr)
 
@@ -277,8 +288,9 @@ class DataPlanePacketSourceNN(DataPlanePacketSourceIface):
         self.__send_port_msg(self.MSG_TYPE_PORT_ADD, port_number, 0)
 
     def port_remove(self, port_number):
-        self.ports.remove(port_number)
-        self.__send_port_msg(self.MSG_TYPE_PORT_REMOVE, port_number, 0)
+        if port_number in self.ports:
+            self.ports.remove(port_number)
+            self.__send_port_msg(self.MSG_TYPE_PORT_REMOVE, port_number, 0)
 
     def port_bring_up(self, port_number):
         self.__send_port_msg(
@@ -367,37 +379,70 @@ class DataPlanePortNN(DataPlanePortIface):
     # This should be long enough for nanomsg.
     SND_TIMEOUT = 1000
 
-    # indexed by device_number and interface name, maps to a PacketInjectNN instance
+    # Indexed by device number and interface name, maps to a shared packet source.
     packet_injecters = {}
+    packet_injecters_lock = Lock()
 
-    def __init__(self, interface_name, device_number, port_number, config={}):
+    def __init__(self, interface_name, device_number, port_number, config=None):
         """
         @param interface_name The addr of the socket (like ipc://<path to file>
         or tcp://<iface>:<port>)
         """
         self.interface_name = interface_name
         self.device_number = device_number
-        if (device_number, interface_name) not in self.packet_injecters:
-            self.packet_injecters[(self.device_number, self.interface_name)] = (
-                DataPlanePacketSourceNN(
-                    device_number, interface_name, self.RCV_TIMEOUT, self.SND_TIMEOUT
-                )
-            )
-        self.packet_inject = self.packet_injecters[
-            (self.device_number, self.interface_name)
-        ]
         self.port_number = port_number
-        self.packet_inject.port_add(port_number)
+        self.packet_inject = None
+        key = (device_number, interface_name)
+        with self.packet_injecters_lock:
+            if key not in self.packet_injecters:
+                self.packet_injecters[key] = DataPlanePacketSourceNN(
+                    device_number,
+                    interface_name,
+                    self.RCV_TIMEOUT,
+                    self.SND_TIMEOUT,
+                )
+            self.packet_inject = self.packet_injecters[key]
+            self.packet_inject.port_add(port_number)
 
     def __del__(self):
-        if self.packet_inject:
-            self.packet_inject.port_remove(self.port_number)
+        self.close()
+
+    def close(self):
+        """
+        Close the port.
+
+        The packet source and its nanomsg socket are shared by all ports of
+        the same device. The final port closes and unregisters that source.
+        """
+        if self.packet_inject is None:
+            return
+        key = (self.device_number, self.interface_name)
+        error = None
+        with self.packet_injecters_lock:
+            injecter = self.packet_inject
+            try:
+                injecter.port_remove(self.port_number)
+            except Exception as exception:
+                error = exception
+                injecter.ports.discard(self.port_number)
+            if not injecter.ports:
+                try:
+                    injecter.close()
+                except Exception as exception:
+                    if error is None:
+                        error = exception
+                finally:
+                    if self.packet_injecters.get(key) is injecter:
+                        del self.packet_injecters[key]
+            self.packet_inject = None
+        if error is not None:
+            raise error
 
     def get_packet_source(self):
         """
         @retval An object implementing DataPlanePacketSourceIface
         """
-        return self.packet_injecters[(self.device_number, self.interface_name)]
+        return self.packet_inject
 
     def send(self, packet):
         """
@@ -405,41 +450,31 @@ class DataPlanePortNN(DataPlanePortIface):
         @param packet The packet data to send to the port
         @retval The number of bytes sent
         """
-        return self.packet_injecters[(self.device_number, self.interface_name)].send(
-            self.port_number, packet
-        )
+        return self.packet_inject.send(self.port_number, packet)
 
     def down(self):
         """
         Bring the physical link down.
         """
-        self.packet_injecters[
-            (self.device_number, self.interface_name)
-        ].port_bring_down(self.port_number)
+        self.packet_inject.port_bring_down(self.port_number)
 
     def up(self):
         """
         Bring the physical link up.
         """
-        self.packet_injecters[(self.device_number, self.interface_name)].port_bring_up(
-            self.port_number
-        )
+        self.packet_inject.port_bring_up(self.port_number)
 
     def mac(self):
         """
         Return mac address
         """
-        return self.packet_injecters[(self.device_number, self.interface_name)].get_mac(
-            self.port_number
-        )
+        return self.packet_inject.get_mac(self.port_number)
 
     def nn_counters(self):
         """
         Return counters
         """
-        return self.packet_injecters[
-            (self.device_number, self.interface_name)
-        ].get_nn_counters(self.port_number)
+        return self.packet_inject.get_nn_counters(self.port_number)
 
 
 class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):
@@ -451,24 +486,33 @@ class DataPlanePort(DataPlanePortIface, DataPlanePacketSourceIface):
     ETH_P_ALL = 0x03
     RCV_TIMEOUT = 10000
 
-    def __init__(self, interface_name, device_number, port_number, config={}):
+    def __init__(self, interface_name, device_number, port_number, config=None):
         """
         @param interface_name The name of the physical interface like eth1
         """
         self.interface_name = interface_name
         self.device_number = device_number
         self.port_number = port_number
-        self.socket = socket.socket(
-            socket.AF_PACKET, socket.SOCK_RAW, socket.htons(self.ETH_P_ALL)
-        )
-        self.socket.bind((interface_name, 0))
-        netutils.set_promisc(self.socket, interface_name)
-        self.socket.settimeout(self.RCV_TIMEOUT)
-        self.recv_size = config.get("socket_recv_size", self.RCV_SIZE_DEFAULT)
+        self.socket = None
+        try:
+            self.socket = socket.socket(
+                socket.AF_PACKET, socket.SOCK_RAW, socket.htons(self.ETH_P_ALL)
+            )
+            self.socket.bind((interface_name, 0))
+            netutils.set_promisc(self.socket, interface_name)
+            self.socket.settimeout(self.RCV_TIMEOUT)
+        except Exception:
+            self.close()
+            raise
+        self.recv_size = (config or {}).get("socket_recv_size", self.RCV_SIZE_DEFAULT)
 
     def __del__(self):
-        if self.socket:
+        self.close()
+
+    def close(self):
+        if self.socket is not None:
             self.socket.close()
+            self.socket = None
 
     def fileno(self):
         """
@@ -525,7 +569,7 @@ class DataPlanePortPcap:
     socket. libpcap understands how to read the VLAN tag from the kernel.
     """
 
-    def __init__(self, interface_name, device_number, port_number, config={}):
+    def __init__(self, interface_name, device_number, port_number, config=None):
         self.device_number = device_number
         self.port_number = port_number
         self.pcap = pcap.pcap(interface_name)
@@ -543,6 +587,14 @@ class DataPlanePortPcap:
 
     def send(self, packet):
         return self.pcap.inject(packet, len(packet))
+
+    def close(self):
+        close = getattr(self.pcap, "close", None)
+        try:
+            if callable(close):
+                close()
+        finally:
+            self.pcap = None
 
     def down(self):
         pass
@@ -568,6 +620,7 @@ class DataPlane(Thread):
 
     def __init__(self, config=None):
         Thread.__init__(self)
+        self.daemon = True
 
         # dict from device number, port number to port object
         self.ports = {}
@@ -589,7 +642,7 @@ class DataPlane(Thread):
         self.waker = ptfutils.EventDescriptor()
         self.killed = False
 
-        self.logger = logging.getLogger("dataplane")
+        self.logger = logging.getLogger(__name__)
         self.pcap_writer = None
 
         if config is None:
@@ -634,15 +687,23 @@ class DataPlane(Thread):
         """
         Activity function for class
         """
+        select_errors = 0
         while not self.killed:
             sockets = set([p.get_packet_source() for p in list(self.ports.values())])
             sockets.add(self.waker)
             try:
                 sel_in, sel_out, sel_err = select.select(sockets, [], [], 1)
-            except:
-                print(sys.exc_info())
-                self.logger.error("Select error, exiting")
-                break
+            except Exception:
+                if self.killed:
+                    break
+                self.logger.exception("Select error, retrying")
+                select_errors += 1
+                if select_errors >= 3:
+                    self.logger.error("Too many consecutive select errors, exiting")
+                    break
+                time.sleep(0.01)
+                continue
+            select_errors = 0
 
             with self.cvar:
                 for sel in sel_in:
@@ -673,7 +734,9 @@ class DataPlane(Thread):
                             self.pcap_writer.write(
                                 pkt, timestamp, device_number, port_number
                             )
-                        queue = self.packet_queues[(device_number, port_number)]
+                        queue = self.packet_queues.get((device_number, port_number))
+                        if queue is None:
+                            continue
                         if len(queue) >= self.qlen:
                             # Queue full, throw away oldest
                             queue.pop(0)
@@ -697,11 +760,19 @@ class DataPlane(Thread):
         """
         port_id = (device_number, port_number)
         with self.cvar:
-            self.ports[port_id] = self.dppclass(
-                interface_name, device_number, port_number, self.config
-            )
-            self.ports[port_id]._port_number = port_number
-            self.ports[port_id]._device_number = device_number
+            old_port = self.ports.pop(port_id, None)
+            self.packet_queues.pop(port_id, None)
+        if old_port is not None:
+            close = getattr(old_port, "close", None)
+            if callable(close):
+                close()
+        new_port = self.dppclass(
+            interface_name, device_number, port_number, self.config
+        )
+        with self.cvar:
+            self.ports[port_id] = new_port
+            new_port._port_number = port_number
+            new_port._device_number = device_number
             self.packet_queues[port_id] = []
             # Need to wake up event loop to change the sockets being selected
             # on.
@@ -718,8 +789,11 @@ class DataPlane(Thread):
                     )
                 )
                 return False
-            del self.ports[port_id]
+            port = self.ports.pop(port_id)
             del self.packet_queues[port_id]
+        close = getattr(port, "close", None)
+        if callable(close):
+            close()
         self.waker.notify()
         return True
 
@@ -823,25 +897,19 @@ class DataPlane(Thread):
             this packet. If the expected packet is a scapy packet, it's used to
             include detailed information about the fields in the packet.
             """
-            try:
-                stdout_save = sys.stdout
-                # The scapy packet dissection methods print directly to stdout,
-                # so we have to redirect stdout to a string.
-                sys.stdout = StringIO()
-
-                print("========== RECEIVED ==========")
-                if isinstance(self.expected_packet, packet.Packet):
-                    # Dissect this packet as if it were an instance of
-                    # the expected packet's class.
-                    packet.ls(self.expected_packet.__class__(self.packet))
-                    print("--")
-                packet.hexdump(self.packet)
-                print("==============================")
-
-                return sys.stdout.getvalue()
-            finally:
-                sys.stdout.close()
-                sys.stdout = stdout_save  # Restore the original stdout.
+            lines = ["========== RECEIVED =========="]
+            if isinstance(self.expected_packet, packet.Packet):
+                # Dissect this packet as if it were an instance of the
+                # expected packet's class.
+                lines.append(
+                    packet.format_packet(
+                        self.expected_packet.__class__(self.packet)
+                    ).rstrip()
+                )
+                lines.append("--")
+            lines.append(packet.format_hexdump(self.packet).rstrip())
+            lines.append("==============================")
+            return "\n".join(lines) + "\n"
 
     class PollFailure(PollResult):
         """
@@ -870,49 +938,46 @@ class DataPlane(Thread):
             in the output. If the expected packet is a scapy packet object, the
             output will include information about the fields in the packet.
             """
-            try:
-                stdout_save = sys.stdout
-                # The scapy packet dissection methods print directly to stdout,
-                # so we have to redirect stdout to a string.
-                sys.stdout = StringIO()
-
-                if self.expected_packet is not None:
-                    print("========== EXPECTED ==========")
-                    if isinstance(self.expected_packet, packet.Packet):
-                        packet.ls(self.expected_packet)
-                        print("--")
-                        packet.hexdump(self.expected_packet)
-                    elif isinstance(self.expected_packet, mask.Mask):
-                        print("Mask:")
-                        print(self.expected_packet)
-                    else:
-                        packet.hexdump(self.expected_packet)
-
-                print("========== RECEIVED ==========")
-                if self.recent_packets:
-                    print(
-                        "%d total packets. Displaying most recent %d packets:"
-                        % (self.packet_count, len(self.recent_packets))
-                    )
-                    for recent_packet in self.recent_packets:
-                        print("------------------------------")
-                        if isinstance(self.expected_packet, packet.Packet):
-                            # Dissect this packet as if it were an instance of
-                            # the expected packet's class.
-                            packet.ls(self.expected_packet.__class__(recent_packet))
-                            print("--")
-                        packet.hexdump(recent_packet)
+            lines = []
+            if self.expected_packet is not None:
+                lines.append("========== EXPECTED ==========")
+                if isinstance(self.expected_packet, packet.Packet):
+                    lines.append(packet.format_packet(self.expected_packet).rstrip())
+                    lines.append("--")
+                    lines.append(packet.format_hexdump(self.expected_packet).rstrip())
+                elif isinstance(self.expected_packet, mask.Mask):
+                    lines.extend(("Mask:", str(self.expected_packet).rstrip()))
                 else:
-                    print("%d total packets." % self.packet_count)
-                print("==============================")
+                    lines.append(packet.format_hexdump(self.expected_packet).rstrip())
 
-                return sys.stdout.getvalue()
-            finally:
-                sys.stdout.close()
-                sys.stdout = stdout_save  # Restore the original stdout.
+            lines.append("========== RECEIVED ==========")
+            if self.recent_packets:
+                lines.append(
+                    "%d total packets. Displaying most recent %d packets:"
+                    % (self.packet_count, len(self.recent_packets))
+                )
+                for recent_packet in self.recent_packets:
+                    lines.append("------------------------------")
+                    if isinstance(self.expected_packet, packet.Packet):
+                        lines.append(
+                            packet.format_packet(
+                                self.expected_packet.__class__(recent_packet)
+                            ).rstrip()
+                        )
+                        lines.append("--")
+                    lines.append(packet.format_hexdump(recent_packet).rstrip())
+            else:
+                lines.append("%d total packets." % self.packet_count)
+            lines.append("==============================")
+            return "\n".join(lines) + "\n"
 
     def poll(
-        self, device_number=0, port_number=None, timeout=None, exp_pkt=None, filters=[]
+        self,
+        device_number=0,
+        port_number=None,
+        timeout=None,
+        exp_pkt=None,
+        filters=None,
     ):
         """
         Poll one or all dataplane ports for a packet
@@ -937,7 +1002,7 @@ class DataPlane(Thread):
         """
 
         def filter_check(pkt):
-            for f in filters:
+            for f in filters or ():
                 if not f(pkt):
                     return False
             return True
@@ -997,13 +1062,52 @@ class DataPlane(Thread):
         """
         Stop the dataplane thread.
         """
-        self.killed = True
-        self.waker.notify()
-        self.join()
-        # Explicitly release ports to ensure we don't run out of sockets
-        # even if someone keeps holding a reference to the dataplane.
-        del self.ports
-        self.waker.close()
+        errors = []
+        try:
+            self.stop_pcap()
+        except Exception as error:
+            errors.append(error)
+            self.logger.exception("Failed to stop dataplane packet capture")
+        if not self.killed:
+            self.killed = True
+            self.waker.notify()
+        if self.is_alive():
+            self.join(timeout=5)
+        if self.is_alive():
+            self.logger.warning(
+                "Dataplane thread did not stop promptly; closing its ports"
+            )
+        # Close each port explicitly. A caller can keep a reference to the
+        # dataplane after this call. Explicit closing makes sure that the
+        # sockets do not stay open. This matters when ptf runs inside
+        # another process: an open nanomsg socket must not live longer
+        # than the run.
+        for port in list(self.ports.values()):
+            close = getattr(port, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except Exception as error:
+                    errors.append(error)
+                    self.logger.exception("Failed to close a dataplane port")
+        if self.is_alive():
+            self.waker.notify()
+            self.join(timeout=1)
+        if self.is_alive():
+            self.logger.error("Dataplane thread did not stop after port cleanup")
+            errors.append(RuntimeError("dataplane thread did not stop"))
+        self.ports.clear()
+        self.packet_queues.clear()
+        try:
+            self.waker.close()
+        except Exception as error:
+            errors.append(error)
+            self.logger.exception("Failed to close the dataplane wake descriptor")
+        if errors:
+            raise RuntimeError(
+                "dataplane cleanup failed: %s"
+                % "; ".join(str(error) for error in errors)
+            )
 
     def port_down(self, device_number, port_number):
         """Brings the specified port down"""
@@ -1044,6 +1148,9 @@ class DataPlane(Thread):
     def stop_pcap(self):
         if self.pcap_writer:
             with self.cvar:
-                self.pcap_writer.close()
+                writer = self.pcap_writer
                 self.pcap_writer = None
-                self.cvar.notify_all()
+                try:
+                    writer.close()
+                finally:
+                    self.cvar.notify_all()

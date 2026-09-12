@@ -3,11 +3,12 @@
 
 import logging
 import os
+import signal
 
 import pytest
 
 import ptf
-from ptf.ptfutils import chown_to_invoking_user
+from ptf.ptfutils import EventDescriptor, Timeout, chown_to_invoking_user
 
 INVOKING_UID = 1234
 INVOKING_GID = 5678
@@ -163,3 +164,32 @@ class TestLogFileOwnership:
 
         assert logfile.exists()
         assert chown_calls == [(str(logfile), INVOKING_UID, INVOKING_GID)]
+
+
+def test_event_descriptor_close_is_idempotent():
+    descriptor = EventDescriptor()
+    descriptor.close()
+    descriptor.close()
+
+
+@pytest.mark.skipif(not hasattr(signal, "SIGALRM"), reason="requires SIGALRM")
+def test_timeout_restores_previous_signal_state():
+    previous_handler = signal.getsignal(signal.SIGALRM)
+    previous_timer = signal.getitimer(signal.ITIMER_REAL)
+
+    def handler(signum, frame):
+        pass
+
+    try:
+        signal.signal(signal.SIGALRM, handler)
+        signal.setitimer(signal.ITIMER_REAL, 60)
+        with Timeout(1):
+            pass
+        remaining, interval = signal.getitimer(signal.ITIMER_REAL)
+        assert signal.getsignal(signal.SIGALRM) is handler
+        assert 55 < remaining <= 60
+        assert interval == 0
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous_handler)
+        signal.setitimer(signal.ITIMER_REAL, *previous_timer)

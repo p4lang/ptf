@@ -13,10 +13,26 @@
 Scapy implementation of packet manipulation module
 """
 
+import logging
+
 import ptf
 from ptf import config
-import sys
-import logging
+
+logger = logging.getLogger(__name__)
+
+_ptf_packet_config = {
+    name: config.get(name, False)
+    for name in (
+        "disable_ipv6",
+        "disable_vxlan",
+        "disable_erspan",
+        "disable_geneve",
+        "disable_mpls",
+        "disable_nvgre",
+        "disable_igmp",
+        "disable_rocev2",
+    )
+}
 
 try:
     import scapy.config
@@ -34,8 +50,8 @@ try:
     if not config.get("disable_ipv6", False):
         import scapy.route6
         import scapy.layers.inet6
-except ImportError:
-    sys.exit("Need to install scapy for packet parsing")
+except ImportError as error:
+    raise ImportError("Need to install scapy for packet parsing") from error
 
 Packet = scapy.packet.Packet
 Ether = scapy.layers.l2.Ether
@@ -65,10 +81,10 @@ if not config.get("disable_rocev2", False):
         scapy.main.load_contrib("roce")
         BTH = scapy.contrib.roce.BTH
         ptf.enable_logging()
-        logging.info("ROCEv2 support found in Scapy")
+        logger.info("ROCEv2 support found in Scapy")
     except:
         ptf.enable_logging()
-        logging.warn("ROCEv2 support not found in Scapy")
+        logger.warning("ROCEv2 support not found in Scapy")
         pass
 
 if not config.get("disable_ipv6", False):
@@ -89,10 +105,10 @@ if not config.get("disable_erspan", False):
         ERSPAN_III = scapy.contrib.erspan.ERSPAN_III
         PlatformSpecific = scapy.contrib.erspan.ERSPAN_PlatformSpecific
         ptf.enable_logging()
-        logging.info("ERSPAN support found in Scapy")
+        logger.info("ERSPAN support found in Scapy")
     except:
         ptf.enable_logging()
-        logging.warn("ERSPAN support not found in Scapy")
+        logger.warning("ERSPAN support not found in Scapy")
         pass
 
 GENEVE = None
@@ -102,10 +118,10 @@ if not config.get("disable_geneve", False):
         scapy.main.load_contrib("geneve")
         GENEVE = scapy.contrib.geneve.GENEVE
         ptf.enable_logging()
-        logging.info("GENEVE support found in Scapy")
+        logger.info("GENEVE support found in Scapy")
     except:
         ptf.enable_logging()
-        logging.warn("GENEVE support not found in Scapy")
+        logger.warning("GENEVE support not found in Scapy")
         pass
 
 MPLS = None
@@ -115,10 +131,10 @@ if not config.get("disable_mpls", False):
         scapy.main.load_contrib("mpls")
         MPLS = scapy.contrib.mpls.MPLS
         ptf.enable_logging()
-        logging.info("MPLS support found in Scapy")
+        logger.info("MPLS support found in Scapy")
     except:
         ptf.enable_logging()
-        logging.warn("MPLS support not found in Scapy")
+        logger.warning("MPLS support not found in Scapy")
         pass
 
 NVGRE = None
@@ -151,16 +167,25 @@ if not config.get("disable_igmp", False):
         scapy.main.load_contrib("igmp")
         IGMP = scapy.contrib.igmp.IGMP
         ptf.enable_logging()
-        logging.info("IGMP support found in Scapy")
+        logger.info("IGMP support found in Scapy")
     except:
         ptf.enable_logging()
-        logging.warn("IGMP support not found in Scapy")
+        logger.warning("IGMP support not found in Scapy")
         pass
 
 
 # Scapy has its own hexdump
 hexdump = scapy.utils.hexdump
 ls = scapy.packet.ls
+
+
+def format_hexdump(value):
+    return scapy.utils.hexdump(value, dump=True)
+
+
+def format_packet(value):
+    return value.show2(dump=True)
+
 
 # The names below are assigned here so that, like the other names
 # above, they can be used by importers of the ptf.packet module as if

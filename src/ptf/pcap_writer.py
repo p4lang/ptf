@@ -125,7 +125,11 @@ class PcapWriter(object):
         self.stream.flush()
 
     def close(self):
-        self.stream.close()
+        if self.stream is not None:
+            try:
+                self.stream.close()
+            finally:
+                self.stream = None
 
 
 def rdpcap_one_packet(f, path: Union[str, os.PathLike], return_packet_metadata: bool):

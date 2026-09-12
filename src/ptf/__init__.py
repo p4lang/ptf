@@ -30,6 +30,20 @@ config = {}
 # Populated by oft.
 dataplane_instance = None
 
+# A runner installs a scoped logfile opener while it is active. Keeping this
+# hook here preserves the long-standing ptf.open_logfile() API used by tests
+# without making those tests aware of runner internals.
+_logfile_opener = None
+_logging_disable_stack = []
+
+
+def _close_owned_handlers(logger):
+    """Remove and close handlers created by PTF, leaving caller handlers alone."""
+    for handler in list(logger.handlers):
+        if getattr(handler, "_ptf_owned", False):
+            logger.removeHandler(handler)
+            handler.close()
+
 
 def open_logfile(name):
     """
@@ -38,6 +52,9 @@ def open_logfile(name):
     When using a log directory a new logfile is created for each test. The same
     code is used to implement a single logfile in the absence of --log-dir.
     """
+
+    if _logfile_opener is not None:
+        return _logfile_opener(name)
 
     _format = "%(asctime)s.%(msecs)03d  %(name)-10s: %(levelname)-8s: %(message)s"
     _datefmt = "%H:%M:%S"
@@ -49,15 +66,13 @@ def open_logfile(name):
 
     logger = logging.getLogger()
 
-    # Remove any existing handlers
-    for handler in list(logger.handlers):
-        logger.removeHandler(handler)
-        handler.close()
+    _close_owned_handlers(logger)
 
     formatter = logging.Formatter(_format, _datefmt)
 
     # Add a new handler
     handler = logging.FileHandler(filename, mode="a")
+    handler._ptf_owned = True
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     ptfutils.chown_to_invoking_user(filename)
@@ -65,6 +80,7 @@ def open_logfile(name):
     # We log all ERROR and CRITICAL messages to stdout as well as to the
     # logfile.
     stream_handler = logging.StreamHandler()
+    stream_handler._ptf_owned = True
     stream_handler.setLevel(logging.ERROR)
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
@@ -75,6 +91,7 @@ def disable_logging():
     Temporarily disable all logging by setting the global log level to
     CRITICAL, which is the highest log level in use.
     """
+    _logging_disable_stack.append(logging.root.manager.disable)
     logging.disable(logging.CRITICAL)
 
 
@@ -82,4 +99,5 @@ def enable_logging():
     """
     Turn logging back on after a call to disable_logging().
     """
-    logging.disable(logging.NOTSET)
+    if _logging_disable_stack:
+        logging.disable(_logging_disable_stack.pop())

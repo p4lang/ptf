@@ -18,6 +18,8 @@ import fcntl
 import logging
 import signal
 
+logger = logging.getLogger(__name__)
+
 default_timeout = None  # set by ptf
 default_negative_timeout = None  # set by ptf
 
@@ -49,7 +51,7 @@ def chown_to_invoking_user(path, recursive=False):
     try:
         uid, gid = int(sudo_uid), int(sudo_gid)
     except ValueError:
-        logging.warning(
+        logger.warning(
             "Ignoring malformed SUDO_UID/SUDO_GID: %s/%s", sudo_uid, sudo_gid
         )
         return
@@ -67,7 +69,7 @@ def chown_to_invoking_user(path, recursive=False):
             # system chowned to themselves.
             os.lchown(target, uid, gid)
         except OSError as e:
-            logging.warning("Could not change ownership of %s: %s", target, e)
+            logger.warning("Could not change ownership of %s: %s", target, e)
 
 
 """
@@ -106,19 +108,29 @@ class EventDescriptor:
         fcntl.fcntl(self.pipe_wr, fcntl.F_SETFL, os.O_NONBLOCK)
 
     def close(self):
-        os.close(self.pipe_rd)
-        os.close(self.pipe_wr)
+        if self.pipe_rd is not None:
+            os.close(self.pipe_rd)
+            self.pipe_rd = None
+        if self.pipe_wr is not None:
+            os.close(self.pipe_wr)
+            self.pipe_wr = None
 
     def notify(self):
+        if self.pipe_wr is None:
+            return
         try:
             os.write(self.pipe_wr, "x".encode("utf-8"))
         except OSError as e:
-            logging.warn("Failed to notify EventDescriptor: %s", e)
+            logger.warning("Failed to notify EventDescriptor: %s", e)
 
     def wait(self):
+        if self.pipe_rd is None:
+            return
         os.read(self.pipe_rd, 1)
 
     def fileno(self):
+        if self.pipe_rd is None:
+            return -1
         return self.pipe_rd
 
 
@@ -130,34 +142,42 @@ class Timeout:
         pass
 
     def __init__(self, sec):
-        try:
-            from signal import alarm
-
-            self.supported = True
-        except ImportError:
-            logging.warn(
+        self.supported = all(
+            hasattr(signal, name)
+            for name in ("SIGALRM", "ITIMER_REAL", "getitimer", "setitimer")
+        )
+        if not self.supported:
+            logger.warning(
                 "Your platform does not support alarm signals, "
                 "the Timeout feature is therefore not supported"
             )
-            self.supported = False
             return
         self.sec = sec
         if sec > 0:
             self.valid = True
         else:
             self.valid = False
-            logging.warn("Invalid timeout requested")
+            logger.warning("Invalid timeout requested")
 
     def __enter__(self):
         if not self.supported or not self.valid:
-            return
+            return self
+        self.previous_handler = signal.getsignal(signal.SIGALRM)
+        self.previous_timer = signal.getitimer(signal.ITIMER_REAL)
+        self.started_at = time.monotonic()
         signal.signal(signal.SIGALRM, self.raise_timeout)
-        signal.alarm(self.sec)
+        signal.setitimer(signal.ITIMER_REAL, self.sec)
+        return self
 
     def __exit__(self, *args):
         if not self.supported or not self.valid:
             return
-        signal.alarm(0)  # disable alarm
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, self.previous_handler)
+        delay, interval = self.previous_timer
+        if delay > 0:
+            delay = max(delay - (time.monotonic() - self.started_at), 1e-6)
+        signal.setitimer(signal.ITIMER_REAL, delay, interval)
 
     def raise_timeout(self, *args):
         raise Timeout.TimeoutError()

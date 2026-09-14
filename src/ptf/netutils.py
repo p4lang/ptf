@@ -27,9 +27,16 @@
 import ctypes
 import fcntl
 import socket
+import struct
 
 # Constant from Linux /usr/include/linux/if.h or net/if.h
 IFF_PROMISC = 0x100
+
+# Constants from Linux /usr/include/linux/if_packet.h.
+SOL_PACKET = 263
+PACKET_ADD_MEMBERSHIP = 1
+PACKET_DROP_MEMBERSHIP = 2
+PACKET_MR_PROMISC = 1
 
 # Constants from Linux bits/ioctls.h or linux/sockios.h
 SIOCGIFHWADDR = 0x8927  # Get hardware address
@@ -42,10 +49,8 @@ class ifreq(ctypes.Structure):
 
 
 def get_if(iff: str, cmd: int) -> bytes:
-    s = socket.socket()
-    ifreq = fcntl.ioctl(s, cmd, struct.pack("16s16x", iff.encode("utf-8")))
-    s.close()
-    return ifreq
+    with socket.socket() as sock:
+        return fcntl.ioctl(sock, cmd, struct.pack("16s16x", iff.encode("utf-8")))
 
 
 # Given iff, the name of a network interface (e.g. 'veth0') as a
@@ -62,6 +67,23 @@ def get_mac(iff: str) -> str:
 # interface in promiscuous mode if parameter val != 0, or into
 # non-promiscuous mode if val == 0.
 def set_promisc(s, iff, val=1):
+    """Change promiscuous membership for one packet socket.
+
+    Linux drops this membership automatically when the socket closes, unlike
+    changing the interface-wide IFF_PROMISC flag.
+    """
+    if hasattr(socket, "if_nametoindex"):
+        membership = struct.pack(
+            "IHH8s", socket.if_nametoindex(iff), PACKET_MR_PROMISC, 0, b""
+        )
+        option = PACKET_ADD_MEMBERSHIP if val else PACKET_DROP_MEMBERSHIP
+        try:
+            s.setsockopt(SOL_PACKET, option, membership)
+            return
+        except OSError:
+            # Retain the ioctl fallback for platforms without packet-socket
+            # membership support.
+            pass
     ifr = ifreq()
     ifr.ifr_ifrn = bytes(iff, "utf-8")
     # Get current interface flags

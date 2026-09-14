@@ -15,7 +15,9 @@ The default one is Scapy, but one can develop its own packet manipulation framew
 then, create an implementation of packet module for it (for Scapy it is packet_scapy.py)
 """
 
+import logging as _logging
 import os as _os
+
 from ptf import config
 
 # When module ptf.packet is imported, this is the order of precedence for
@@ -43,15 +45,46 @@ else:
     else:
         _packet_manipulation_module = "ptf.packet_scapy"
 
+_packet_config = {
+    name: config.get(name, False)
+    for name in (
+        "disable_ipv6",
+        "disable_vxlan",
+        "disable_erspan",
+        "disable_geneve",
+        "disable_mpls",
+        "disable_nvgre",
+        "disable_igmp",
+        "disable_rocev2",
+    )
+}
+
 __module = __import__(_packet_manipulation_module, fromlist=["*"])
 __keys = []
 
 # import logic - everything from __all__ if provided, otherwise
 # everything not starting with underscore.
-print("Using packet manipulation module: %s" % __module.__name__)
+_logging.getLogger(__name__).info(
+    "Using packet manipulation module: %s", __module.__name__
+)
 if "__all__" in __module.__dict__:
     __keys = __module.__dict__["__all__"]
 else:
     __keys = [k for k in __module.__dict__ if not k.startswith("_")]
 
 locals().update({k: getattr(__module, k) for k in __keys})
+
+
+if "format_hexdump" not in locals():
+
+    def format_hexdump(value):
+        try:
+            return bytes(value).hex(" ")
+        except (TypeError, ValueError):
+            return repr(value)
+
+
+if "format_packet" not in locals():
+
+    def format_packet(value):
+        return repr(value)

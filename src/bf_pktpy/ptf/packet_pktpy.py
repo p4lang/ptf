@@ -10,10 +10,28 @@ Bf_pktpy implementation of packet manipulation module. For more information,
 see PTF documentation (section "Pluggable packet manipulation module").
 """
 
-import bf_pktpy.packets
+import logging
+
 import bf_pktpy.commands
+import bf_pktpy.packets
 from bf_pktpy.all import hexdump as bf_pktpy_hexdump, ls as bf_pktpy_ls
 from ptf import config
+
+logger = logging.getLogger(__name__)
+
+_ptf_packet_config = {
+    name: config.get(name, False)
+    for name in (
+        "disable_ipv6",
+        "disable_vxlan",
+        "disable_erspan",
+        "disable_geneve",
+        "disable_mpls",
+        "disable_nvgre",
+        "disable_igmp",
+        "disable_rocev2",
+    )
+}
 
 # Headers set to None are not yet implemented (or conditionally being set)
 Packet = bf_pktpy.packets.Packet
@@ -53,7 +71,7 @@ if not config.get("disable_erspan", False):
         ERSPAN_III = bf_pktpy.packets.ERSPAN_III
         PlatformSpecific = bf_pktpy.packets.ERSPAN_PlatformSpecific
     except ImportError as e:
-        print("ERSPAN support not found in bf_pktpy. Details:\n%s" % e)
+        logger.warning("ERSPAN support not found in bf_pktpy. Details:\n%s", e)
 
 GENEVE = None
 
@@ -68,7 +86,7 @@ if not config.get("disable_igmp", False):
     try:
         IGMP = bf_pktpy.packets.IGMP
     except ImportError as e:
-        print("IGMP support not found in bf_pktpy. Details:\n%s" % e)
+        logger.warning("IGMP support not found in bf_pktpy. Details:\n%s", e)
 
 
 ##############################################################################
@@ -111,6 +129,18 @@ def get_erspan_alternative():
 # bf_pktpy implementation of hexdump
 hexdump = bf_pktpy_hexdump
 ls = bf_pktpy_ls
+
+
+def format_hexdump(value):
+    result = bf_pktpy_hexdump(value, dump=True)
+    if isinstance(result, (list, tuple)):
+        return "\n".join(result)
+    return str(result)
+
+
+def format_packet(value):
+    return str(value)
+
 
 # The names below are assigned here so that, like the other names
 # above, they can be used by importers of the ptf.packet module as if

@@ -21,6 +21,8 @@ import os
 import ptf
 from ptf import config
 
+logger = logging.getLogger(__name__)
+
 
 class BaseTest(unittest.TestCase):
     def __str__(self):
@@ -28,13 +30,13 @@ class BaseTest(unittest.TestCase):
 
     def setUp(self):
         ptf.open_logfile(str(self))
-        logging.info("** START TEST CASE " + str(self))
+        logger.info("** START TEST CASE " + str(self))
 
     def run(self, result=None):
         unittest.TestCase.run(self, result)
 
     def tearDown(self):
-        logging.info("** END TEST CASE " + str(self))
+        logger.info("** END TEST CASE " + str(self))
 
     def before_send(self, pkt, device_number=0, port_number=-1):
         """

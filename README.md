@@ -163,6 +163,116 @@ if you use a Python interface to configure your data plane (as part of your
 tests). The `--interface` option (or `-i`) can be used to specify the interfaces
 on which to inject packets (along with the corresponding port number).
 
+## Using PTF as a Python library
+
+The `ptf` binary is a command line parser around the library module
+`ptf.runner`. The library supports scoped in-process execution.
+
+### Run tests in the current process
+
+Do these steps:
+
+1. Construct a `PtfConfig` object. Each option group of the binary corresponds
+   to one dataclass: `TestSelectionOptions`, `PlatformOptions`,
+   `LoggingOptions`, `TestBehaviorOptions`, and `SocketOptions`.
+2. Give this object to `runner.run()`.
+3. Read the return value of `run()`. The value `0` means that all selected
+   tests passed. The value `1` means that at least one test failed, errored, or
+   was skipped while `fail_skipped` is set.
+
+`run()` performs the same steps as the binary: it sets up logging, loads the
+test modules and the platform, starts the data plane, executes the tests, and
+releases PTF-owned resources. It restores PTF configuration, imported test and
+platform modules, Python paths, random state, logging, profiling, and test
+utility globals before returning. A
+fatal configuration or environment problem raises `PtfError`.
+
+Only one `run()` call may be active in a process because existing PTF tests use
+process-global configuration and dataplane objects. The call can run on a
+non-main thread unless a selected test uses a signal-based timeout. Independent
+PTF processes, including parallel invocations of the `ptf` binary, remain fully
+supported.
+
+```python
+from ptf import runner
+
+config = runner.PtfConfig(
+    pypath=["/path/to/my/library"],  # same as --pypath
+    test_selection=runner.TestSelectionOptions(
+        test_dir="mytests/",
+        test_specs=["standard"],  # same as the positional arguments
+    ),
+    platform=runner.PlatformOptions(
+        platform="eth",
+        interfaces=[  # same as --interface
+            runner.Interface(0, 0, "veth1"),
+            runner.Interface(0, 1, "veth3"),
+        ],
+    ),
+    logging=runner.LoggingOptions(log_file="ptf.log"),
+    test_behavior=runner.TestBehaviorOptions(
+        # Same as --test-params: a dictionary, or a "key=value;key=value"
+        # string. The binary and run() evaluate each string value as a Python
+        # expression; a dictionary entry is passed to the tests as given.
+        test_params={"key1": 17, "key2": True},
+    ),
+)
+exit_code = runner.run(config)
+```
+
+### Integrate output and logging
+
+`RunOutput` configures runtime-only integration. PTF does not close or replace
+handlers owned by the caller. Framework output and unittest progress can be
+routed independently, and PTF log records can be forwarded to a caller-owned
+logger:
+
+```python
+output = runner.RunOutput(
+    stdout=my_output_stream,
+    stderr=my_status_stream,
+    logger=logging.getLogger("my_application.ptf"),
+)
+exit_code = runner.run(config, output=output)
+```
+
+Set `LoggingOptions(log_file=None)` when the application should receive PTF
+records without creating PTF-owned log and pcap files.
+
+Test code which logs through `logging.*` continues to use the application's
+root logging policy. PTF modules log below the `ptf` logger. The command line
+and serialized-configuration entry points additionally capture root logging to
+preserve the traditional PTF log-file behavior.
+
+### Configuration formats
+
+* `PtfConfig.to_dict()` converts the configuration to the flat dictionary
+  format of the global `ptf.config`. `PtfConfig.from_dict()` converts such a
+  dictionary back to a `PtfConfig`. `run()` also accepts the dictionary
+  directly.
+* `PtfConfig.to_json()` converts the configuration to JSON text.
+  `PtfConfig.from_json()` converts the JSON text back to a `PtfConfig`.
+  Values in `extra_config` must themselves be JSON-serializable.
+
+### Run a serialized configuration
+
+To run a serialized configuration in a process that a caller has already
+isolated, for example in a network namespace, write the configuration with
+`to_json()` and run:
+
+    python -m ptf.runner <config-file>
+
+Use `-` instead of `<config-file>` to read the JSON configuration from stdin.
+
+### Global state
+
+Test modules retain compatibility with the global `ptf.config` dictionary,
+`ptf.dataplane_instance`, and globals in `ptf.testutils` and `ptf.ptfutils`.
+`run()` scopes and restores that state, but the packet manipulation module and
+its feature flags are fixed when `ptf.packet` is first imported. A later
+in-process run requesting a different packet configuration raises `PtfError`;
+start a new PTF process for that case.
+
 ## Install PTF
 
 PTF can be installed with `uv`:

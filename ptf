@@ -187,21 +187,21 @@ be subtracted from the result by prefixing them with the '^' character.  """
                     try:
                         ports = ports.strip("{}")
                         ports = ports.split(",")
-                    except:
+                    except AttributeError:
                         raise ValueError("")
                     for port in ports:
                         try:
                             p = int(port)
                             port_set.add(p)
                             continue
-                        except:
+                        except ValueError:
                             pass
                         try:
                             p1, p2 = port.split("-", 1)
                             p1, p2 = int(p1), int(p2)
                             for p in range(p1, p2 + 1):  # p2 included
                                 port_set.add(p)
-                        except:
+                        except ValueError:
                             raise ValueError("")
                     return port_set
 
@@ -575,7 +575,7 @@ def load_test_modules(config):
                     mod = sys.modules[modname]
                 else:
                     mod = import_module(root, modname)
-            except:
+            except Exception:
                 logging.warning("Could not import file " + filename)
                 raise
 
@@ -701,7 +701,7 @@ def test_params_parse(config):
     namespace = {}
     try:
         exec(params_str, namespace)
-    except:
+    except ImportError:
         logging.error(
             "Error when parsing test params "
             "(provided with '--test-params' / '-t'). "
@@ -783,7 +783,7 @@ group or their module's test group.""")
             try:
                 desc = (test.__doc__ or "").strip()
                 desc = desc.split("\n")[0]
-            except:
+            except Exception:
                 desc = "No description"
             groups = set(test._groups) - set(["all", "standard", modname])
             all_groups.update(test._groups)
@@ -855,19 +855,19 @@ logging.info("Importing platform: " + platform_name)
 if platform_name == "nn":
     try:
         import pynng
-    except:
+    except Exception:
         die("Cannot use 'nn' platform if pynng package is not installed")
 
 platform_mod = None
 try:
     platform_mod = import_module(config["platform_dir"], platform_name)
-except:
+except Exception:
     logging.warn("Failed to import " + platform_name + " platform module")
     raise
 
 try:
     platform_mod.platform_config_update(config)
-except:
+except Exception:
     logging.warn("Could not run platform host configuration")
     raise
 

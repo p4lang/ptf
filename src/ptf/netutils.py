@@ -27,6 +27,7 @@
 import ctypes
 import fcntl
 import socket
+import struct
 
 # Constant from Linux /usr/include/linux/if.h or net/if.h
 IFF_PROMISC = 0x100

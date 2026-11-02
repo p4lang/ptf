@@ -43,9 +43,12 @@ jobs:
           ./CI/install-uv.sh
           make set-dev
           uv pip install scapy==${{ matrix.scapy_version }}
-      - name: Verify code (python w/black)
+      - name: Verify formatting (python w/ruff)
         run: |
           make format-check
+      - name: Lint (python w/ruff)
+        run: |
+          make lint
       - name: Run pytests (utests/tests)
         run: | 
           make test

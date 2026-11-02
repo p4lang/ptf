@@ -25,10 +25,6 @@ from bf_pktpy.library.fields.x_short_field import XShortField
 from bf_pktpy.library.fields.x_3byte_field import X3ByteField
 from bf_pktpy.library.fields.x_int_field import XIntField
 from bf_pktpy.library.fields.x_long_field import XLongField
-from bf_pktpy.library.fields.enum_field import EnumField
-from bf_pktpy.library.fields.x_short_enum_field import XShortEnumField
-from bf_pktpy.library.fields.byte_enum_field import ByteEnumField
-from bf_pktpy.library.fields.bit_enum_field import BitEnumField
 from bf_pktpy.library.fields.short_enum_field import ShortEnumField
 from bf_pktpy.library.fields.ip_list_field import IPListField
 from bf_pktpy.library.fields.ipoptions_list_field import IPOptionsListField

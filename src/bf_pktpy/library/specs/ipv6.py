@@ -16,7 +16,7 @@ class IPv6(Container):
     """IPv6 class"""
 
     fields = (
-        "version ihl tos len id flags frag ttl proto chksum src dst " "options"
+        "version ihl tos len id flags frag ttl proto chksum src dst options"
     ).split()
 
     def __init__(self, **kwargs):

@@ -5,7 +5,6 @@ from bf_pktpy.library.fields import StrField
 
 
 class Raw(Packet):
-
     name = "Raw"
     fields_desc = [StrField("load", b"")]
 

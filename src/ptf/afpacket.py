@@ -121,9 +121,7 @@ def recv(sk, bufsize):
     assert cmsghdr.cmsg_level == SOL_PACKET
     assert cmsghdr.cmsg_type == PACKET_AUXDATA
 
-    auxdata = struct_tpacket_auxdata.from_buffer(
-        ctrl_buf, sizeof(struct_cmsghdr)
-    )  # pylint: disable=E1101
+    auxdata = struct_tpacket_auxdata.from_buffer(ctrl_buf, sizeof(struct_cmsghdr))  # pylint: disable=E1101
 
     if auxdata.tp_vlan_tci != 0 or auxdata.tp_status & TP_STATUS_VLAN_VALID:
         # Insert VLAN tag

@@ -45,7 +45,6 @@ def gtpu_flag_condition(packet):
 
 
 class GTPU(Packet):
-
     name = "GTPU"
     fields_desc = [
         BitField("pn", 0, 1),

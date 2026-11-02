@@ -5,12 +5,17 @@
 .PHONY: format-check
 format-check:
 	@echo "Checking format..."
-	uv run black --check src/ ptf
+	uv run ruff format --check src/ ptf
 
 .PHONY: format
 format:
 	@echo "Formatting..."
-	uv run black src/ ptf
+	uv run ruff format src/ ptf
+
+.PHONY: lint
+lint:
+	@echo "Linting..."
+	uv run ruff check .
 
 .PHONY: set-dev
 set-dev:

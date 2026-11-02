@@ -21,7 +21,6 @@ except ImportError:
     print("Cannot find pynng package, please install")
     sys.exit(1)
 import threading
-import os
 import logging
 from fcntl import ioctl
 from ptf import afpacket

@@ -316,7 +316,7 @@ class ToBeValidListOfIPv6Addresses:
                         if is_hex(value) and (0 <= eval(str(value)) < pow(2, 128)):
                             values[i] = hex(eval(str(value)))
                             continue
-                        print("-ERROR- Value from list must be a valid IPv6 " "address")
+                        print("-ERROR- Value from list must be a valid IPv6 address")
                         return
             self.data[instance] = values
             return

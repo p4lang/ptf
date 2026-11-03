@@ -40,9 +40,7 @@ class SimpleL3SwitchCpuHeader(Packet):
         mirror = kwargs.pop("mirror_type", 0)
         if isinstance(mirror, six.string_types):
             if mirror.lower() not in self.MIRROR_TYPE_MAPPING:
-                raise ValueError(
-                    "Mirror type can be only either 'Ingress' or " "'Egress'"
-                )
+                raise ValueError("Mirror type can be only either 'Ingress' or 'Egress'")
             mirror = self.MIRROR_TYPE_MAPPING[mirror.lower()]
         kwargs["mirror_type"] = mirror
 

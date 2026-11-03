@@ -132,7 +132,7 @@ def rdpcap_one_packet(f, path: Union[str, os.PathLike], return_packet_metadata: 
     pkt_header_bytes = f.read(PcapPktHeader.size)
     if len(pkt_header_bytes) == 0:
         if return_packet_metadata:
-            return None, None, None, None, None
+            return None, None, None, None
         return None
     if len(pkt_header_bytes) != PcapPktHeader.size:
         raise ValueError(
@@ -151,7 +151,7 @@ def rdpcap_one_packet(f, path: Union[str, os.PathLike], return_packet_metadata: 
             "" % (caplength, path, len(pkt_data))
         )
     if return_packet_metadata:
-        return pkt_data, timestamp_sec, timestamp_micro, length
+        return pkt_data, timestamp_sec, timestamp_microsec, length
     return pkt_data
 
 

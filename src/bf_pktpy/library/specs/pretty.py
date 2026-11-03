@@ -259,9 +259,7 @@ def footnote(instances):
     """Pretty print additional help"""
     if instances:
         _print_line(["-" * 87], 81)
-        line = (" This class contains one or more objects. To learn" " about:").ljust(
-            87
-        )
+        line = (" This class contains one or more objects. To learn about:").ljust(87)
         _print_line([line], len(line))
         new_dict = {}
         # reverse key-value for sorting

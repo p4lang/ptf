@@ -13,6 +13,8 @@ import sys
 import os
 import logging
 
+from . import ptfutils
+
 try:
     from ._version import __version__
 except ImportError:
@@ -58,6 +60,7 @@ def open_logfile(name):
     handler = logging.FileHandler(filename, mode="a")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+    ptfutils.chown_to_invoking_user(filename)
 
     # We log all ERROR and CRITICAL messages to stdout as well as to the
     # logfile.

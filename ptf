@@ -29,6 +29,7 @@ import random
 import signal
 import fnmatch
 import copy
+import shutil
 import types
 from collections import OrderedDict
 
@@ -470,10 +471,9 @@ def logging_setup(config):
 
     if config["log_dir"] != None:
         if os.path.exists(config["log_dir"]):
-            import shutil
-
             shutil.rmtree(config["log_dir"])
         os.makedirs(config["log_dir"])
+        ptf.ptfutils.chown_to_invoking_user(config["log_dir"])
     else:
         if os.path.exists(config["log_file"]):
             os.remove(config["log_file"])
@@ -490,10 +490,9 @@ def xunit_setup(config):
         return
 
     if os.path.exists(config["xunit_dir"]):
-        import shutil
-
         shutil.rmtree(config["xunit_dir"])
     os.makedirs(config["xunit_dir"])
+    ptf.ptfutils.chown_to_invoking_user(config["xunit_dir"])
 
 
 def pcap_setup(config):
@@ -535,6 +534,7 @@ def profiler_teardown(profiler):
 
     profiler.disable()
     profiler.dump_stats(config["profile_file"])
+    ptf.ptfutils.chown_to_invoking_user(config["profile_file"])
 
 
 def load_test_modules(config):
@@ -926,6 +926,9 @@ if __name__ == "__main__":
     else:
         runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(test_suite)
+    if config["xunit"]:
+        # The XML result files are only written once the run completes.
+        ptf.ptfutils.chown_to_invoking_user(config["xunit_dir"], recursive=True)
     run_failures = result.failures
     run_errors = result.errors
     run_timeouts = []

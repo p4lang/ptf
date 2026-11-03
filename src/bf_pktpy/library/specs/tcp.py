@@ -16,7 +16,7 @@ class TCP(Container):
     """TCP class"""
 
     fields = (
-        "sport dport seq ack dataofs reserved flags window chksum " "urgptr options"
+        "sport dport seq ack dataofs reserved flags window chksum urgptr options"
     ).split()
 
     def __init__(self, **kwargs):

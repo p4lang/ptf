@@ -1039,6 +1039,7 @@ class DataPlane(Thread):
         with self.cvar:
             assert self.pcap_writer == None
             self.pcap_writer = PcapWriter(filename)
+            ptfutils.chown_to_invoking_user(filename)
 
     def stop_pcap(self):
         if self.pcap_writer:

@@ -16,6 +16,7 @@ from ptf.testutils import *
 from switch_sai_thrift.ttypes import *
 
 from ptf.mask import Mask
+from ptf.packet import IP
 
 switch_inited = 0
 port_list = []

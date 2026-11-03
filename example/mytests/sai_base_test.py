@@ -8,6 +8,8 @@ Tests will usually inherit from one of these classes to have the controller
 and/or dataplane automatically set up.
 """
 
+import os
+
 import ptf
 from ptf.base_tests import BaseTest
 from ptf import config

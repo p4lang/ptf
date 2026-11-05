@@ -4,25 +4,20 @@
 
 set -eu
 
-UV_VERSION="${UV_VERSION:-0.11.7}"
-UV_INSTALL_DIR="${HOME}/.local/bin"
-
 if command -v uv >/dev/null 2>&1; then
     exit 0
 fi
 
-mkdir -p "${UV_INSTALL_DIR}"
-
 if command -v curl >/dev/null 2>&1; then
-    env UV_UNMANAGED_INSTALL="${UV_INSTALL_DIR}" \
-        sh -c "$(curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh)"
+    curl -LsSf https://astral.sh/uv/install.sh | bash
 elif command -v wget >/dev/null 2>&1; then
-    env UV_UNMANAGED_INSTALL="${UV_INSTALL_DIR}" \
-        sh -c "$(wget -qO- https://astral.sh/uv/${UV_VERSION}/install.sh)"
+    wget -qO- https://astral.sh/uv/install.sh | bash
 else
     echo "Neither curl nor wget is available to install uv" >&2
     exit 1
 fi
+
+UV_INSTALL_DIR="${HOME}/.local/bin"
 
 export PATH="${UV_INSTALL_DIR}:${PATH}"
 if [ -n "${GITHUB_PATH:-}" ]; then

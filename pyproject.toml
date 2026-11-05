@@ -28,7 +28,8 @@ dependencies = [
     "scapy_helper",
     "netifaces",
     "psutil",
-    "pynng",
+    # pynng < 1.0.0b2 fails to build with newer GCC versions due to warnings treated as errors.
+    "pynng>=1.0.0b2",
 ]
 dynamic = ["version"]
 

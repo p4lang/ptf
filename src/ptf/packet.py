@@ -16,7 +16,11 @@ then, create an implementation of packet module for it (for Scapy it is packet_s
 """
 
 import os as _os
+from typing import TYPE_CHECKING
 from ptf import config
+
+if TYPE_CHECKING:
+    from ptf.packet_scapy import *
 
 # When module ptf.packet is imported, this is the order of precedence for
 # deciding which packet manipulation module is used:

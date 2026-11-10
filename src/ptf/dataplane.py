@@ -958,7 +958,9 @@ class DataPlane(Thread):
         # Retrieve the packet. Returns (device number, port number, packet, time).
         def grab():
             self.logger.debug("Grabbing packet")
-            for rcv_port_number, pkt, time in self.packets(device_number, port_number):
+            for rcv_port_number, pkt, timestamp in self.packets(
+                device_number, port_number
+            ):
                 rcv_device_number = device_number
                 grab_log["recent_packets"].append(pkt)
                 grab_log["packet_count"] += 1
@@ -972,7 +974,7 @@ class DataPlane(Thread):
                     continue
                 if not exp_pkt or match_exp_pkt(exp_pkt, pkt):
                     return DataPlane.PollSuccess(
-                        rcv_device_number, rcv_port_number, pkt, exp_pkt, time
+                        rcv_device_number, rcv_port_number, pkt, exp_pkt, timestamp
                     )
 
             self.logger.debug("Did not find packet")

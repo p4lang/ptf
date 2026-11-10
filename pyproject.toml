@@ -28,7 +28,8 @@ dependencies = [
     "scapy_helper",
     "netifaces",
     "psutil",
-    "pynng",
+    # pynng < 1.0.0b2 fails to build with newer GCC versions due to warnings treated as errors.
+    "pynng>=1.0.0b2",
 ]
 dynamic = ["version"]
 
@@ -44,7 +45,16 @@ file = "README.md"
 content-type = "text/markdown; charset=UTF-8"
 
 [tool.ruff.lint]
-select = ["E9", "F632", "F811", "F821"]
+select = [
+    "E9",
+    "F402",
+    "F5",
+    "F6",
+    "F7",
+    "F81",
+    "F82",
+    "PLE",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

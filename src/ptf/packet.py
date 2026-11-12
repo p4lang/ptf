@@ -20,7 +20,49 @@ from typing import TYPE_CHECKING
 from ptf import config
 
 if TYPE_CHECKING:
-    from ptf.packet_scapy import *
+    from ptf.packet_scapy import (
+        ARP,
+        BOOTP,
+        BTH,
+        DHCP,
+        Dot1Q,
+        ERSPAN,
+        ERSPAN_III,
+        Ether,
+        GENEVE,
+        GRE,
+        ICMP,
+        ICMPv6EchoRequest,
+        ICMPv6MLReport,
+        ICMPv6Unknown,
+        IGMP,
+        IP,
+        IPOption,
+        IPv6,
+        IPv6ExtHdrRouting,
+        LLC,
+        MPLS,
+        NVGRE,
+        PADDING,
+        Packet,
+        PlatformSpecific,
+        SNAP,
+        TCP,
+        UDP,
+        VXLAN,
+        bridge_and_sniff,
+        hexdump,
+        ls,
+        send,
+        sendp,
+        sniff,
+        sr,
+        sr1,
+        srloop,
+        srp,
+        srp1,
+        srploop,
+    )
 
 # When module ptf.packet is imported, this is the order of precedence for
 # deciding which packet manipulation module is used:

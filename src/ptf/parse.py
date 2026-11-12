@@ -57,31 +57,31 @@ def parse_ipv6(ip_str):
 def packet_type_classify(ether):
     try:
         dot1q = ether[scapy.Dot1Q]
-    except:
+    except IndexError:
         dot1q = None
 
     try:
         ip = ether[scapy.IP]
-    except:
+    except IndexError:
         ip = None
 
     try:
         tcp = ether[scapy.TCP]
-    except:
+    except IndexError:
         tcp = None
 
     try:
         udp = ether[scapy.UDP]
-    except:
+    except IndexError:
         udp = None
 
     try:
         icmp = ether[scapy.ICMP]
-    except:
+    except IndexError:
         icmp = None
 
     try:
         arp = ether[scapy.ARP]
-    except:
+    except IndexError:
         arp = None
     return (dot1q, ip, tcp, udp, icmp, arp)

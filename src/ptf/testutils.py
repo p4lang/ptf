@@ -56,7 +56,7 @@ def ether_filter(pkt_str):
     try:
         pkt = packet.Ether(pkt_str)
         return True
-    except:
+    except Exception:
         return False
 
 
@@ -64,7 +64,7 @@ def ipv6_filter(pkt_str):
     try:
         pkt = packet.Ether(pkt_str)
         return packet.IPv6 in pkt
-    except:
+    except Exception:
         return False
 
 
@@ -3096,7 +3096,7 @@ def test_param_get(key, default=None):
 
     try:
         return params[key]
-    except:
+    except KeyError:
         return default
 
 
@@ -3126,7 +3126,7 @@ def port_param_get(port, key, default=None):
 
     try:
         return params[int(port)][key.lower()]
-    except:
+    except Exception:
         return default
 
 
@@ -3241,7 +3241,7 @@ def port_to_tuple(port):
     if type(port) is str:
         try:
             return 0, int(port)
-        except:
+        except ValueError:
             pass
     return None
 

@@ -179,9 +179,9 @@ class Interface:
         route = routes[0]
         try:
             address = str(ipaddress.IPv4Address(route.gateway))
-        except ValueError:
+        except ValueError as ex:
             if name:
-                raise ValueError("Unable to gw ip for interface %r" % name)
+                raise ValueError("Unable to gw ip for interface %r" % name) from ex
             address = ""
         if not address:
             routes = Interface.get_routes()

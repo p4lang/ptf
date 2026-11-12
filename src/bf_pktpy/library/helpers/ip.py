@@ -21,14 +21,14 @@ def _get_src_ip_addr_system_independent(cmd, output_regex):
         output, error = process.communicate()
         ret_code = process.returncode
     except (OSError, ValueError, subprocess.CalledProcessError) as ex:
-        raise OSError(ex)
+        raise OSError(ex) from ex
     if error:
         raise OSError(ret_code, error)
 
     try:
         return next(match for match in re.findall(output_regex, six.ensure_str(output)))
-    except StopIteration:
-        raise RuntimeError("Could not get egress IP from OS")
+    except StopIteration as ex:
+        raise RuntimeError("Could not get egress IP from OS") from ex
 
 
 def get_src_ip_addr(dst_ip):

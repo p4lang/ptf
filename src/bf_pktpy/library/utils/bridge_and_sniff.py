@@ -28,8 +28,10 @@ def generate_default_prn(peers, xfrms):
             return
         try:
             new_pkt = proc(pkt)
-        except Exception:
-            raise RuntimeError("Transforming pkt using %r failed" % proc.__name__)
+        except Exception as ex:
+            raise RuntimeError(
+                "Transforming pkt using %r failed" % proc.__name__
+            ) from ex
 
         if new_pkt is True:
             # if True, will forward packet as is
@@ -48,8 +50,8 @@ def generate_default_prn(peers, xfrms):
                 result = sock.sendto(new_pkt.pack(), (new_pkt.dst, 0))
             if result == 0:
                 raise IOError("Cannot forward packet ..")
-        except Exception:
-            raise IOError("Unable to send successfully")
+        except Exception as ex:
+            raise IOError("Unable to send successfully") from ex
 
     return func
 

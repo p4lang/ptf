@@ -72,8 +72,8 @@ class ERSPAN(Base):
         try:
             self._body / body
             return self
-        except ValueError:
-            raise ValueError("Unsupported value type")
+        except ValueError as ex:
+            raise ValueError("Unsupported value type") from ex
 
     def _members(self):
         """Members information"""

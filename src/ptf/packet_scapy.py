@@ -66,7 +66,7 @@ if not config.get("disable_rocev2", False):
         BTH = scapy.contrib.roce.BTH
         ptf.enable_logging()
         logging.info("ROCEv2 support found in Scapy")
-    except:
+    except Exception:
         ptf.enable_logging()
         logging.warn("ROCEv2 support not found in Scapy")
         pass
@@ -90,7 +90,7 @@ if not config.get("disable_erspan", False):
         PlatformSpecific = scapy.contrib.erspan.ERSPAN_PlatformSpecific
         ptf.enable_logging()
         logging.info("ERSPAN support found in Scapy")
-    except:
+    except Exception:
         ptf.enable_logging()
         logging.warn("ERSPAN support not found in Scapy")
         pass
@@ -103,7 +103,7 @@ if not config.get("disable_geneve", False):
         GENEVE = scapy.contrib.geneve.GENEVE
         ptf.enable_logging()
         logging.info("GENEVE support found in Scapy")
-    except:
+    except Exception:
         ptf.enable_logging()
         logging.warn("GENEVE support not found in Scapy")
         pass
@@ -116,7 +116,7 @@ if not config.get("disable_mpls", False):
         MPLS = scapy.contrib.mpls.MPLS
         ptf.enable_logging()
         logging.info("MPLS support found in Scapy")
-    except:
+    except Exception:
         ptf.enable_logging()
         logging.warn("MPLS support not found in Scapy")
         pass
@@ -152,7 +152,7 @@ if not config.get("disable_igmp", False):
         IGMP = scapy.contrib.igmp.IGMP
         ptf.enable_logging()
         logging.info("IGMP support found in Scapy")
-    except:
+    except Exception:
         ptf.enable_logging()
         logging.warn("IGMP support not found in Scapy")
         pass

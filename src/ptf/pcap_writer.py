@@ -248,6 +248,9 @@ if __name__ == "__main__":
     print("Writing test pcap to test.pcap")
     pcap_writer = PcapWriter("test.pcap")
     pcap_writer.write(
-        "\x00\x01\x02\x03\x04\x05\x00\x0a\x0b\x0c\x0d\x0e\x08\x00", time.time(), 42
+        b"\x00\x01\x02\x03\x04\x05\x00\x0a\x0b\x0c\x0d\x0e\x08\x00",
+        time.time(),
+        42,
+        1,
     )
     pcap_writer.close()

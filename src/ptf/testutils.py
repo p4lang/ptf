@@ -2771,11 +2771,11 @@ def __dhcp_mac_to_chaddr(mac_addr="00:01:02:03:04:05"):
     Private helper function to convert a 6-byte MAC address of form:
       '00:01:02:03:04:05'
     into a 16-byte chaddr byte string of form:
-      '\x00\x01\x02\x03\x04\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+      b'\x00\x01\x02\x03\x04\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
     """
-    chaddr = "".join([chr(int(octet, 16)) for octet in mac_addr.split(":")])
-    chaddr += "\x00" * 10
+    chaddr = bytes(int(octet, 16) for octet in mac_addr.split(":"))
+    chaddr += b"\x00" * 10
     return chaddr
 
 
@@ -2881,7 +2881,7 @@ def dhcp_offer_packet(
             ("end"),
         ]
     )
-    pkt /= packet.PADDING("\x00" * padding_bytes)
+    pkt /= packet.PADDING(b"\x00" * padding_bytes)
     return pkt
 
 
@@ -3001,7 +3001,7 @@ def dhcp_ack_packet(
             ("end"),
         ]
     )
-    pkt /= packet.PADDING("\x00" * padding_bytes)
+    pkt /= packet.PADDING(b"\x00" * padding_bytes)
     return pkt
 
 

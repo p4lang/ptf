@@ -40,7 +40,7 @@ FILTERS = []
 
 
 def reset_filters():
-    FILTERS = []
+    FILTERS.clear()
 
 
 # Needs to be a callable

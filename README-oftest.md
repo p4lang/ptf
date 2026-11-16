@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # Files in `ptf` repository derived from `oftest` repository code
 
-Some source files in the `ptf` repository were derived from code in the
+Some source files in the `ptf` repository were derived from code in
 the Floodlight OFTest repository:
 
 https://github.com/floodlight/oftest
@@ -15,12 +15,19 @@ The code in that repository has this copyright and license information:
 
 ```
 Copyright 2010 The Board of Trustees of The Leland Stanford Junior University
-Releaesd under the OpenFlow Software License
+Released under the OpenFlow Software License
 https://github.com/floodlight/oftest/blob/master/LICENSE
 ```
 
 A copy of the OpenFlow Software License is also included in the file
 [`LICENSE.OFTest`](LICENSE.OFTest) in the `ptf` repository.
+
+The URL `http://www.openflowswitch.org/wp/legal/` mentioned in
+`LICENSE.OFTest` no longer works.  An archived copy of that page from
+February 2011, which contains the same license text, is available at
+https://web.archive.org/web/20110212091439/http://www.openflowswitch.org:80/wp/legal/.
+`LICENSE.OFTest` itself is kept identical to the upstream `oftest`
+LICENSE file.
 
 Most files in this repository that were derived from `oftest` files
 have the same file name in both repositories, and are listed below
@@ -50,7 +57,7 @@ Those files were copied into this repository for the convenience of
 `ptf` users that wish to use it as a non-copylefted alternative to
 Scapy.
 
-Summary of abbrevation meanings:
+Summary of abbreviation meanings:
 
 + S - file has same name in `ptf` repository as the file from `oftest`
   repository that it was copied from.

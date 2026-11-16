@@ -99,9 +99,9 @@ class Mask:
                     .fields.keys()
                 )
             ]  # build & parse packet to be sure all fields are correctly filled
-        except Exception:  # noqa
+        except Exception as ex:  # noqa
             self.valid = False
-            raise MaskException("Can not build or decode Packet")
+            raise MaskException("Can not build or decode Packet") from ex
 
         if field_name not in [x.name for x in fields_desc]:
             self.valid = False

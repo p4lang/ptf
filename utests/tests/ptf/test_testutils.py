@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from ptf.testutils import (
+    add_filter,
+    get_filters,
+    reset_filters,
     simple_igmp_packet,
     simple_tcp_packet,
     simple_tcpv6_packet,
@@ -42,3 +45,12 @@ def test_protocol_specific_and_generic_payload_are_mutually_exclusive():
         assert str(error) == "Specify either payload or udp_payload, not both"
     else:
         raise AssertionError("Expected conflicting payload arguments to fail")
+
+
+def test_reset_filters_removes_the_added_filters():
+    add_filter(bool)
+    reset_filters()
+    add_filter(bool)
+    assert get_filters() == [bool]
+    reset_filters()
+    assert get_filters() == []

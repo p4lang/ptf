@@ -639,7 +639,7 @@ class DataPlane(Thread):
             sockets.add(self.waker)
             try:
                 sel_in, sel_out, sel_err = select.select(sockets, [], [], 1)
-            except:
+            except Exception:
                 print(sys.exc_info())
                 self.logger.error("Select error, exiting")
                 break

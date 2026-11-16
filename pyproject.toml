@@ -46,6 +46,8 @@ content-type = "text/markdown; charset=UTF-8"
 
 [tool.ruff.lint]
 select = [
+    "B904",
+    "E722",
     "E9",
     "F402",
     "F5",

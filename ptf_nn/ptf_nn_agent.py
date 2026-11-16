@@ -245,7 +245,7 @@ class IfaceMgr(threading.Thread):
         try:
             mac = get_mac(self.iface_name)
             return mac
-        except:
+        except Exception:
             # if not supported on platform
             return None
 

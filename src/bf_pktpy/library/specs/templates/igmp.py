@@ -65,7 +65,7 @@ class IGMP(Base):
         type = int(hex_str[:2], 16)
         mrcode = int(hex_str[2:4], 16)
         chksum = int(hex_str[4:8], 16)
-        gaddr = int(hex_str[8:16], 16)
+        gaddr = hex_str[8:16]
         gaddr = ".".join([str(int(gaddr[x : x + 2], 16)) for x in range(0, 8, 2)])
         kwargs = {"type": type, "mrcode": mrcode, "chksum": chksum, "gaddr": gaddr}
         return IGMP(**kwargs)

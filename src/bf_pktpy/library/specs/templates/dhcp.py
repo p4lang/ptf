@@ -173,14 +173,18 @@ class DHCP(Base):
                     key = opt
                 else:
                     raise ValueError("Invalid type %r", type(opt))
-                opt_val, opt_len, opt_def = _options.get(key)
+                if key not in _options:
+                    raise ValueError("Unsupported option %r" % key)
+                opt_val, opt_len, opt_def = _options[key]
                 hex_str = hex(opt_val)[2:]
                 if hex_str == "ff":
                     self.options += hex_str
                     continue
                 if opt_def == "_TYPES_":
                     len_ = hex(opt_len)[2:].zfill(2)
-                    type_ = _types.get(value)
+                    if value not in _types:
+                        raise ValueError("Unsupported message type %r" % value)
+                    type_ = _types[value]
                     hex_str += len_ + hex(type_)[2:].zfill(2)
                 else:
                     if opt_len == -1:
